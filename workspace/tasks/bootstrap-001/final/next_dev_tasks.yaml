@@ -1,0 +1,89 @@
+task_batch:
+  source_task: bootstrap-001
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 将 MVP 设计拆分为小型、可测试、可评审的开发任务。
+
+tasks:
+  - id: dev-001
+    title: 基础 Agent 抽象和产物 I/O
+    priority: high
+    scope:
+      - 创建最小化的 agents/base_agent.py。
+      - 创建 YAML、JSON 和文本产物读写 helper。
+      - 添加覆盖基础行为的单元测试。
+    out_of_scope:
+      - 真实外部模型 API 调用。
+      - 完整 Agent 编排。
+      - PR 或 merge 自动化。
+    acceptance_criteria:
+      - BaseAgent 能接收结构化输入并返回结构化结果。
+      - 产物 helper 能读取和写入 YAML、JSON 和文本文件。
+      - 所有路径相对仓库根目录。
+      - python -m pytest -q 通过。
+
+  - id: dev-002
+    title: 任务状态管理器
+    priority: high
+    scope:
+      - 定义任务状态结构。
+      - 实现本地 JSON 状态读写。
+      - 记录 task id、step、status、artifact paths 和 errors。
+    out_of_scope:
+      - 数据库持久化。
+      - 远程状态同步。
+    acceptance_criteria:
+      - 可以创建、保存、加载和更新任务状态。
+      - 状态文件保存在 workspace/tasks/{task_id}/ 下。
+      - 单元测试覆盖正常路径和错误路径。
+
+  - id: dev-003
+    title: 本地编排脚本
+    priority: medium
+    scope:
+      - 创建一个本地 CLI 或脚本读取 config/pipeline.yaml。
+      - 按固定 workflow 调用占位 Agent。
+      - 写入任务状态并输出下一步提示。
+    out_of_scope:
+      - 并发调度。
+      - 远程队列。
+      - 自动 PR 操作。
+    acceptance_criteria:
+      - 能运行一个本地任务并生成预期目录。
+      - 编排失败时能写入错误状态。
+      - 人工质量门处不会自动进入 PR 或 merge 步骤。
+
+  - id: dev-004
+    title: 设计评审 Agent 骨架
+    priority: medium
+    scope:
+      - 创建 design reviewer Agent 骨架。
+      - 读取分析、架构和设计产物。
+      - 输出结构化 review JSON。
+    out_of_scope:
+      - 复杂评分模型。
+      - 外部模型 API 调用。
+    acceptance_criteria:
+      - 能生成包含 decision、checks、blocking_issues 的 review JSON。
+      - blocking issue 存在时，编排流程能停止。
+      - 测试覆盖通过和不通过两类评审结果。
+
+  - id: dev-005
+    title: 编码 Agent 骨架
+    priority: medium
+    scope:
+      - 创建 coder Agent 的最小接口。
+      - 支持从任务说明读取开发范围和验收标准。
+      - 输出代码变更计划或草稿产物。
+    out_of_scope:
+      - 自动修改大量文件。
+      - 自动提交或自动合并。
+    acceptance_criteria:
+      - coder Agent 能读取 dev task 并输出结构化实现计划。
+      - 默认不执行 PR 或 merge 操作。
+      - 生成产物保存在 workspace/tasks/{task_id}/ 下。
+
+human_gate:
+  required_before_starting_dev: true
+  required_before_pr_or_merge: true
+  suggested_next_command: ./scripts/run_codex_dev_001.sh

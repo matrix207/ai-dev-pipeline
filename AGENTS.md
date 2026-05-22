@@ -1,46 +1,46 @@
 # AGENTS.md
 
-## Project role
+## 项目角色
 
-You are working inside `ai-dev-pipeline`, a project that builds a pragmatic, evolvable multi-agent AI development pipeline.
+你正在 `ai-dev-pipeline` 仓库内工作。本项目用于构建一个务实、可演进的多 Agent AI 开发流水线。
 
-The project should eventually support:
+项目最终应支持：
 
-- project analysis agent
-- requirement analyst agent
-- architecture analyst agent
-- system design agent
-- coder agent
-- design reviewer agent
-- code reviewer agent
-- task orchestration
-- artifact persistence
-- human approval gates
+- 项目分析 Agent
+- 需求分析 Agent
+- 架构分析 Agent
+- 系统设计 Agent
+- 编码 Agent
+- 设计评审 Agent
+- 代码评审 Agent
+- 任务编排
+- 产物持久化
+- 人工审批质量门
 
-## Current milestone
+## 当前里程碑
 
-Current task: `bootstrap-001`.
+当前任务：`bootstrap-001`。
 
-Goal: use this project to analyze, design, and then gradually develop itself.
+目标：使用本项目分析、设计并逐步开发项目自身。
 
-Do not overbuild. Prioritize a runnable MVP.
+不要过度设计。优先交付可运行的 MVP。
 
-## Mandatory principles
+## 强制原则
 
-1. Use structured artifacts.
-2. Keep all paths relative to the repository root.
-3. Preserve intermediate task outputs under `workspace/tasks/{task_id}/`.
-4. Do not delete user files.
-5. Do not introduce external services unless requested.
-6. Do not hard-code API keys or secrets.
-7. Prefer Python 3.10+.
-8. Keep development tasks small and reviewable.
-9. Generation and review responsibilities must be separated.
-10. Human approval is required before PR/merge-related actions.
+1. 使用结构化产物。
+2. 所有路径保持相对仓库根目录。
+3. 中间任务输出保存在 `workspace/tasks/{task_id}/` 下。
+4. 不要删除用户文件。
+5. 未经要求不要引入外部服务。
+6. 不要硬编码 API key 或 secret。
+7. 优先使用 Python 3.10+。
+8. 开发任务必须小而可评审。
+9. 生成职责和评审职责必须分离。
+10. PR 或 merge 相关操作前必须获得人工审批。
 
-## Output rules
+## 产物规则
 
-When producing artifacts for `bootstrap-001`, write exactly these files:
+为 `bootstrap-001` 生成产物时，只写入以下文件：
 
 - `workspace/tasks/bootstrap-001/analysis/project_context.yaml`
 - `workspace/tasks/bootstrap-001/architecture/mvp_architecture.md`
@@ -48,4 +48,4 @@ When producing artifacts for `bootstrap-001`, write exactly these files:
 - `workspace/tasks/bootstrap-001/review/design_review.json`
 - `workspace/tasks/bootstrap-001/final/next_dev_tasks.yaml`
 
-When implementing `dev-001`, write small, testable Python modules only.
+实现 `dev-001` 时，只编写小型、可测试的 Python 模块。

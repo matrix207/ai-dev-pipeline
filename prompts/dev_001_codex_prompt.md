@@ -1,25 +1,25 @@
-You are Codex running inside the `ai-dev-pipeline` repository.
+你是 Codex，正在 `ai-dev-pipeline` 仓库内运行。
 
-Read:
+请读取：
 
 - `AGENTS.md`
 - `workspace/tasks/bootstrap-001/final/next_dev_tasks.yaml`
 - `workspace/tasks/bootstrap-001/design/mvp_system_design.yaml`
 
-Task: implement dev-001 only.
+任务：只实现 `dev-001`。
 
-Expected scope:
+预期范围：
 
-- Create a minimal `agents/base_agent.py`.
-- Create artifact read/write helpers.
-- Create a local mock model/client abstraction if needed.
-- Add tests under `tests/`.
-- Do not call external model APIs yet.
-- Do not implement all agents yet.
+- 创建最小化的 `agents/base_agent.py`。
+- 创建产物读写辅助模块。
+- 如有需要，创建本地 mock model/client 抽象。
+- 在 `tests/` 下添加测试。
+- 暂时不要调用外部模型 API。
+- 暂时不要实现所有 Agent。
 
-Acceptance:
+验收标准：
 
-- `python -m pytest` passes.
-- Code is small and readable.
-- No secrets are introduced.
-- All paths are relative to repository root.
+- `python -m pytest` 通过。
+- 代码小而可读。
+- 不引入 secret。
+- 所有路径都相对仓库根目录。

@@ -1,0 +1,73 @@
+task:
+  id: bootstrap-001
+  source: workspace/tasks/bootstrap-001/input/project_brief.yaml
+  status: analyzed
+
+project_context:
+  project_name: ai-dev-pipeline
+  display_name: AI 开发流水线项目
+  summary: >
+    本项目要构建一个本地优先、可演进的多 Agent AI 开发流水线。
+    项目自身将作为第一批使用对象，通过结构化产物完成项目分析、架构设计、
+    系统设计、设计评审和后续开发任务拆分。
+  primary_language: 简体中文
+  human_facing_content:
+    - README.md
+    - AGENTS.md
+    - docs/
+    - prompts/
+    - workspace/tasks/bootstrap-001/
+
+goals:
+  business:
+    - 降低需求分析、系统设计、编码、检视和测试中的重复劳动。
+    - 建立可回溯、可评审、可恢复的 Agent 协作流程。
+    - 在关键质量门保留人工审批。
+  technical:
+    - 以 Python 3.10+ 实现本地 MVP。
+    - 使用本地文件系统保存任务状态和结构化产物。
+    - 先支持单机 CLI 编排，再扩展更多 Agent 能力。
+
+scope:
+  in_scope:
+    - 项目上下文管理
+    - 任务状态管理
+    - Agent 基础抽象
+    - 产物读写
+    - 本地任务编排脚本
+    - 设计评审 Agent 骨架
+    - 编码 Agent 骨架
+    - 人工确认质量门
+  out_of_scope:
+    - Web UI
+    - 移动端 App
+    - 自动合并 PR
+    - 企业级权限系统
+    - 外部托管服务依赖
+    - 大规模 Agent 市场
+
+constraints:
+  paths:
+    - 所有路径保持相对仓库根目录。
+    - 中间产物保存在 workspace/tasks/{task_id}/ 下。
+  security:
+    - 不硬编码 API key 或 secret。
+    - 不把 .env 内容写入产物。
+  implementation:
+    - 优先小任务、小模块、小测试。
+    - 生成职责和评审职责分离。
+    - PR 或 merge 相关操作前必须人工审批。
+
+assumptions:
+  - 初始 MVP 只运行在本地开发环境中。
+  - 第一阶段可以使用 mock model/client 骨架，不直接调用外部模型 API。
+  - 当前仓库以中文作为面向人阅读内容的主语言。
+
+risks:
+  - 过早引入复杂编排会拖慢 MVP 落地。
+  - 产物 schema 不稳定会影响后续 Agent 串联。
+  - 生成和评审如果共用同一职责边界，容易降低质量门价值。
+
+recommended_next_step:
+  task_id: dev-001
+  description: 实现基础 Agent 抽象和产物 I/O，作为后续任务编排的最小可运行底座。

@@ -1,0 +1,115 @@
+system:
+  name: ai-dev-pipeline
+  stage: mvp
+  description: >
+    本设计定义本地可运行的多 Agent AI 开发流水线 MVP。
+    MVP 以 CLI、结构化产物、任务状态和人工质量门为核心，不引入外部服务。
+
+runtime:
+  language: python
+  minimum_version: "3.10"
+  execution_mode: local_cli
+  artifact_backend: local_filesystem
+  state_backend: local_json
+
+modules:
+  agents:
+    purpose: 定义 Agent 的通用接口和后续 Agent 骨架。
+    initial_files:
+      - agents/base_agent.py
+    responsibilities:
+      - 接收结构化输入。
+      - 返回结构化运行结果。
+      - 不直接负责全局任务编排。
+    design_notes:
+      - BaseAgent 应保持小型抽象，先覆盖 name、run 和 result。
+      - 真实模型调用可以在后续任务中通过 client 注入。
+  artifacts:
+    purpose: 统一读写任务产物。
+    initial_files:
+      - artifacts/io.py
+    responsibilities:
+      - 基于相对路径读取 YAML、JSON 和文本文件。
+      - 确保写入目录存在。
+      - 避免各 Agent 重复处理路径细节。
+    design_notes:
+      - helper 函数应显式接收仓库根目录或任务目录。
+      - 不读取 .env 或 secret 文件。
+  state:
+    purpose: 保存和读取任务执行状态。
+    initial_files:
+      - tasks/state.py
+    responsibilities:
+      - 记录 task id、step、status、artifacts 和 errors。
+      - 支持状态文件的加载和保存。
+      - 为编排器提供最小恢复能力。
+  orchestration:
+    purpose: 串联本地 MVP workflow。
+    initial_files:
+      - scripts/run_local_task.py
+    responsibilities:
+      - 读取 config/pipeline.yaml。
+      - 按步骤调用 Agent 或占位实现。
+      - 在人工质量门停止并输出下一步提示。
+  review:
+    purpose: 提供设计评审 Agent 骨架。
+    initial_files:
+      - agents/design_reviewer_agent.py
+    responsibilities:
+      - 读取分析、架构和设计产物。
+      - 输出结构化 review JSON。
+      - 标记 blocking issues 和建议。
+
+artifact_contracts:
+  task_root_pattern: workspace/tasks/{task_id}
+  required_bootstrap_outputs:
+    - workspace/tasks/bootstrap-001/analysis/project_context.yaml
+    - workspace/tasks/bootstrap-001/architecture/mvp_architecture.md
+    - workspace/tasks/bootstrap-001/design/mvp_system_design.yaml
+    - workspace/tasks/bootstrap-001/review/design_review.json
+    - workspace/tasks/bootstrap-001/final/next_dev_tasks.yaml
+  supported_formats:
+    - yaml
+    - json
+    - markdown
+    - text
+
+workflow:
+  bootstrap:
+    task_id: bootstrap-001
+    steps:
+      - project_analysis
+      - mvp_architecture
+      - mvp_system_design
+      - design_review
+      - next_dev_tasks
+    human_gate:
+      required: true
+      before:
+        - dev_implementation
+  dev_001:
+    goal: 实现基础 Agent 抽象和产物 I/O。
+    expected_scope:
+      - agents/base_agent.py
+      - artifacts/io.py
+      - tests/
+
+quality_rules:
+  - 开发任务保持小型、可测试、可评审。
+  - 生成与评审职责分离。
+  - 所有路径相对仓库根目录。
+  - 不硬编码 API key 或 secret。
+  - 不自动执行 PR 或 merge 操作。
+
+testing:
+  required_commands:
+    - python -m pytest -q
+  initial_focus:
+    - BaseAgent 的输入输出行为。
+    - 产物读写 helper 的 YAML、JSON 和文本路径。
+    - 任务状态序列化和反序列化。
+
+assumptions:
+  - "`dev-001` 可以先使用 mock model/client，不调用外部模型 API。"
+  - 早期编排流程以脚本和 CLI 为主。
+  - 中文是面向人阅读内容的默认语言。
