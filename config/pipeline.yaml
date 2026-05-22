@@ -1,0 +1,27 @@
+agent_config:
+  project_name: ai-dev-pipeline
+  workspace_root: ./workspace
+  artifact_root: ./workspace/tasks
+  task_timeout_seconds: 1800
+  max_review_rounds: 3
+  human_gate_required: true
+
+models:
+  codex:
+    provider: openai
+    usage: local_coding_agent
+    auth: chatgpt_or_api_key
+
+workflows:
+  bootstrap:
+    task_id: bootstrap-001
+    steps:
+      - project_analysis
+      - mvp_architecture
+      - mvp_system_design
+      - design_review
+      - next_dev_tasks
+
+persistence:
+  artifact_backend: local_filesystem
+  state_backend: local_json

@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage.json
+
+# Local secrets
+.env
+*.secret
+
+# Runtime artifacts
+logs/
+workspace/tasks/*/logs/
+
+# Keep task artifacts by default during MVP.
+# Later, decide whether to keep them in git or external artifact storage.

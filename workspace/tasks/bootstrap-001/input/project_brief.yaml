@@ -1,0 +1,95 @@
+task:
+  id: bootstrap-001
+  title: AI开发流水线项目自举分析
+  type: project_bootstrap
+  priority: high
+  owner: human_lead
+
+project:
+  display_name: AI开发流水线项目
+  name: ai-dev-pipeline
+  root_dir: ./
+  workspace_dir: ./workspace
+  task_dir_pattern: ./workspace/tasks/{task_id}
+  description: >
+    本项目目标是搭建一个多Agent协作的AI开发流水线。
+    项目自身也将使用该流水线进行分析、架构设计、系统设计和开发。
+    先从MVP开始，逐步扩展到完整多Agent协同和多端管理。
+
+business_goal:
+  primary: 降低软件开发过程中需求分析、系统设计、编码、检视和测试的人工重复劳动。
+  secondary:
+    - 建立可回溯的Agent开发流程
+    - 支持人机协作质量门
+    - 支持后续移动端查看状态和审批
+    - 支持多模型协同，避免单模型局限
+
+mvp_scope:
+  in_scope:
+    - 项目上下文管理
+    - 任务状态管理
+    - Agent基础抽象
+    - 项目分析Agent
+    - 架构分析Agent
+    - 系统设计Agent
+    - 设计检视Agent
+    - 编码Agent接口骨架
+    - 本地任务编排脚本
+    - 中间产物保存
+    - 人工确认质量门
+  out_of_scope:
+    - 完整移动端App
+    - 全自动架构决策
+    - 自动合并PR
+    - 企业级权限系统
+    - 大规模Agent市场
+    - 复杂多租户管理
+
+initial_agents:
+  - name: project_analyst_agent
+    role: 项目分析Agent
+    responsibility: 分析项目目标、边界、风险和MVP范围
+  - name: architecture_analyst_agent
+    role: 架构分析Agent
+    responsibility: 设计MVP技术架构和模块拆分
+  - name: system_design_agent
+    role: 系统设计Agent
+    responsibility: 输出MVP模块级设计和开发任务
+  - name: design_reviewer_agent
+    role: 设计检视Agent
+    responsibility: 检查设计完整性、一致性、可实现性
+  - name: coder_agent
+    role: 编码Agent
+    responsibility: 根据设计文档实现代码和测试
+
+constraints:
+  runtime:
+    primary_os: ubuntu
+    fallback_os: macos
+    language: python
+    task_timeout_seconds: 1800
+  architecture:
+    principles:
+      - 先MVP后扩展
+      - Agent职责清晰
+      - 产物结构化
+      - 人工质量门
+      - 失败可恢复
+      - 中间产物可追溯
+  model_strategy:
+    generation_and_review_must_use_different_models: true
+    simple_tasks_use_light_model: true
+    complex_design_use_strong_model: true
+
+success_criteria:
+  phase_0:
+    - 产出项目上下文包 project_context.yaml
+    - 产出MVP架构方案 mvp_architecture.md
+    - 产出MVP系统设计 mvp_system_design.yaml
+    - 产出下一批开发任务 next_dev_tasks.yaml
+  phase_1:
+    - 可以运行一个本地任务
+    - 可以保存任务状态
+    - 可以调用至少一个Agent或Agent占位实现
+    - 可以生成设计检视报告
+    - 可以生成代码或代码草稿
