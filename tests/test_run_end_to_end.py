@@ -9,7 +9,12 @@ from scripts.run_end_to_end import format_end_to_end_summary, main, run_end_to_e
 from tasks import load_state
 
 
-def write_end_to_end_config(tmp_path: Path) -> None:
+def write_end_to_end_config(
+    tmp_path: Path,
+    *,
+    validation_command: list[str] | None = None,
+) -> None:
+    validation_command = validation_command or [sys.executable, "-c", "print('ok')"]
     write_yaml(
         tmp_path,
         "config/pipeline.yaml",
@@ -21,7 +26,7 @@ def write_end_to_end_config(tmp_path: Path) -> None:
                     "steps": [
                         {
                             "name": "test_validation",
-                            "commands": [[sys.executable, "-c", "print('ok')"]],
+                            "commands": [validation_command],
                         },
                         "code_review",
                         "goal_effect_validation",
@@ -32,7 +37,6 @@ def write_end_to_end_config(tmp_path: Path) -> None:
                     "steps": [
                         {
                             "name": "optimization_dispatch",
-                            "tasks_path": "workspace/tasks/workflow-001/input/dispatch_tasks.yaml",
                             "dispatch_all": True,
                         },
                         {
@@ -54,10 +58,7 @@ def write_end_to_end_config(tmp_path: Path) -> None:
                             "name": "test_validation",
                             "commands": [[sys.executable, "-c", "print('ok')"]],
                         },
-                        {
-                            "name": "code_review",
-                            "task_definition_path": "workspace/tasks/workflow-001/input/review_tasks.yaml",
-                        },
+                        "code_review",
                         "goal_effect_validation",
                     ],
                 },
@@ -89,6 +90,10 @@ def test_run_end_to_end_writes_decision_summary(tmp_path: Path) -> None:
     assert summary["current_result"]["validation_state"]["status"] == "waiting_for_human_merge_approval"
     assert summary["current_result"]["dispatch_state"]["status"] == "waiting_for_human_merge_approval"
     assert summary["current_result"]["review_state"]["status"] == "waiting_for_human_merge_approval"
+    assert len(summary["execution_summary"]["completed"]) == 3
+    assert summary["execution_summary"]["skipped"] == []
+    assert summary["execution_summary"]["failed"] == []
+    assert summary["retry_plan"]["status"] == "not_required"
     assert summary["next_recommended_action"]["reason"] == "来自端到端反馈闭环生成的下一轮优化任务。"
 
     saved = read_yaml(tmp_path, "workspace/tasks/workflow-001/final/decision_summary.yaml")
@@ -115,8 +120,54 @@ def test_run_end_to_end_uses_unique_dispatch_task_ids_on_rerun(tmp_path: Path) -
     assert any(task["id"].endswith("-2") for task in dispatch_tasks["tasks"])
 
 
+def test_run_end_to_end_dry_run_does_not_write_artifacts(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+
+    summary = run_end_to_end(tmp_path, dry_run=True)
+
+    assert summary["status"] == "dry_run"
+    assert summary["run_strategy"] == {"dry_run": True, "rerun_policy": "new_ids"}
+    assert summary["execution_summary"]["next"]
+    assert not (tmp_path / "workspace/tasks/workflow-001/final/decision_summary.yaml").exists()
+    assert not (tmp_path / "workspace/tasks/workflow-001/state.json").exists()
+
+
+def test_run_end_to_end_skip_completed_reuses_existing_subworkflows(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+
+    first = run_end_to_end(tmp_path)
+    second = run_end_to_end(tmp_path, rerun_policy="skip_completed")
+
+    assert first["execution_summary"]["completed"]
+    assert len(second["execution_summary"]["skipped"]) == 3
+    assert second["execution_summary"]["completed"] == []
+    dispatch_tasks = read_yaml(tmp_path, "workspace/tasks/workflow-001/input/dispatch_tasks.yaml")
+    assert all(not task["id"].endswith("-2") for task in dispatch_tasks["tasks"])
+
+
+def test_run_end_to_end_outputs_retry_plan_when_a_stage_fails(tmp_path: Path) -> None:
+    write_end_to_end_config(
+        tmp_path,
+        validation_command=[sys.executable, "-c", "raise SystemExit(1)"],
+    )
+    write_validation_goal(tmp_path)
+
+    summary = run_end_to_end(tmp_path)
+
+    assert summary["execution_summary"]["failed"][0]["step"] == "validation"
+    assert summary["retry_plan"]["status"] == "retry_required"
+    assert summary["retry_plan"]["failed_step"] == "validation"
+    assert summary["retry_plan"]["recommended_command"] == (
+        "python scripts/run_end_to_end.py --rerun-policy skip_completed"
+    )
+
+
 def test_format_end_to_end_summary_is_human_readable() -> None:
     summary = {
+        "status": "ready_for_human_decision",
+        "run_strategy": {"rerun_policy": "skip_completed"},
         "goal_effect": {
             "validation_status": "passed",
             "alignment_score": 1.0,
@@ -135,11 +186,18 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
             "priority": "medium",
             "reason": "来自端到端反馈闭环生成的下一轮优化任务。",
         },
+        "execution_summary": {
+            "completed": [{"step": "validation"}],
+            "skipped": [{"step": "dispatch"}],
+            "failed": [],
+        },
+        "retry_plan": {"status": "not_required"},
     }
 
     output = format_end_to_end_summary(summary)
 
     assert "AI Dev Pipeline End-to-End Summary" in output
+    assert "Rerun policy: skip_completed" in output
     assert "Dispatch state: waiting_for_human_merge_approval" in output
     assert "workflow-002: Next workflow task" in output
 
@@ -149,11 +207,20 @@ def test_run_end_to_end_cli_json_output(tmp_path: Path, capsys) -> None:
     write_validation_goal(tmp_path)
 
     old_argv = sys.argv
-    sys.argv = ["run_end_to_end.py", "--repo-root", str(tmp_path), "--json"]
+    sys.argv = [
+        "run_end_to_end.py",
+        "--repo-root",
+        str(tmp_path),
+        "--rerun-policy",
+        "skip_completed",
+        "--json",
+    ]
     try:
         exit_code = main()
     finally:
         sys.argv = old_argv
 
     assert exit_code == 0
-    assert json.loads(capsys.readouterr().out)["task_id"] == "workflow-001"
+    output = json.loads(capsys.readouterr().out)
+    assert output["task_id"] == "workflow-001"
+    assert output["run_strategy"]["rerun_policy"] == "skip_completed"

@@ -1,0 +1,43 @@
+{
+  "task_id": "workflow-002",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Dry run",
+      "result": "pass",
+      "evidence": "scripts/run_end_to_end.py supports --dry-run and returns a planned execution_summary without writing task artifacts."
+    },
+    {
+      "name": "Rerun policy",
+      "result": "pass",
+      "evidence": "scripts/run_end_to_end.py supports --rerun-policy new_ids, skip_completed and force."
+    },
+    {
+      "name": "Skip completed",
+      "result": "pass",
+      "evidence": "workflow-002 decision_summary.yaml shows validation, dispatch and review under execution_summary.skipped after skip_completed rerun."
+    },
+    {
+      "name": "Retry plan",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers retry_required when validation fails, and the successful workflow-002 decision_summary.yaml reports not_required."
+    },
+    {
+      "name": "Decision summary groups",
+      "result": "pass",
+      "evidence": "decision_summary.yaml explicitly separates execution_summary.completed, skipped, failed and next."
+    },
+    {
+      "name": "Reusable workflow inputs",
+      "result": "pass",
+      "evidence": "scripts/run_local_task.py derives dispatch/review input paths from the current parent task id instead of hardcoding workflow-001."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 75 passed."
+    }
+  ],
+  "blocking_issues": []
+}

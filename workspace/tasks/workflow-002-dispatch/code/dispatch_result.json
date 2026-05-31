@@ -1,0 +1,511 @@
+{
+  "status": "dispatched",
+  "selected_task": {
+    "id": "workflow-002-feedback-002",
+    "title": "把下一轮优化任务接入调度执行",
+    "priority": "medium",
+    "recommended_agent": "CoderAgent",
+    "risk_level": "medium",
+    "human_gate": {
+      "goal_approval_required": true,
+      "risk_approval_required": false,
+      "merge_approval_required": true
+    },
+    "source_tasks": [
+      "workflow-002"
+    ],
+    "source_feedback_paths": [
+      "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+    ]
+  },
+  "tasks_path": "workspace/tasks/workflow-002/input/dispatch_tasks.yaml",
+  "task_batch": {
+    "source_task": "workflow-002",
+    "source_tasks": [
+      "workflow-002"
+    ],
+    "source_feedback_paths": [
+      "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+    ],
+    "goal": "端到端命令生成的可调度任务队列。"
+  },
+  "source_tasks": [
+    "workflow-002"
+  ],
+  "source_feedback_paths": [
+    "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+  ],
+  "execution": {
+    "status": "ready",
+    "tasks_path": "workspace/tasks/workflow-002/input/dispatch_tasks.yaml",
+    "task_batch": {
+      "source_task": "workflow-002",
+      "source_tasks": [
+        "workflow-002"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+      ],
+      "goal": "端到端命令生成的可调度任务队列。"
+    },
+    "selected_task": {
+      "id": "workflow-002-feedback-002",
+      "title": "把下一轮优化任务接入调度执行",
+      "priority": "medium",
+      "recommended_agent": "CoderAgent",
+      "risk_level": "medium",
+      "human_gate": {
+        "goal_approval_required": true,
+        "risk_approval_required": false,
+        "merge_approval_required": true
+      },
+      "source_tasks": [
+        "workflow-002"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+      ]
+    },
+    "execution_allowed": true,
+    "blocking_issues": [],
+    "execution_plan": [
+      {
+        "order": 1,
+        "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 2,
+        "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 3,
+        "description": "保留 goal approval 和 merge approval 人工质量门。",
+        "recommended_agent": "CoderAgent"
+      }
+    ],
+    "out_of_scope": [
+      "接入外部代码托管平台 API。",
+      "执行自动 merge。"
+    ],
+    "acceptance_criteria": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ]
+  },
+  "dispatch_result": {
+    "task_id": "workflow-002-feedback-002",
+    "title": "把下一轮优化任务接入调度执行",
+    "priority": "medium",
+    "scope": [
+      "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+      "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+      "保留 goal approval 和 merge approval 人工质量门。"
+    ],
+    "out_of_scope": [
+      "接入外部代码托管平台 API。",
+      "执行自动 merge。"
+    ],
+    "acceptance_criteria": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ],
+    "implementation_plan": [
+      {
+        "order": 1,
+        "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+        "expected_artifact": "workspace/tasks/workflow-002-feedback-002/code/"
+      },
+      {
+        "order": 2,
+        "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+        "expected_artifact": "workspace/tasks/workflow-002-feedback-002/code/"
+      },
+      {
+        "order": 3,
+        "description": "保留 goal approval 和 merge approval 人工质量门。",
+        "expected_artifact": "workspace/tasks/workflow-002-feedback-002/code/"
+      }
+    ],
+    "verification": {
+      "required_commands": [
+        "python -m pytest -q"
+      ],
+      "acceptance_criteria": [
+        "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+        "调度产物能引用来源 validation_feedback。",
+        "python -m pytest -q 通过。"
+      ]
+    },
+    "safety": {
+      "external_model_api": "not_used",
+      "pr_or_merge": "not_allowed",
+      "destructive_operations": "not_allowed"
+    },
+    "output_artifacts": [
+      "workspace/tasks/workflow-002-feedback-002/code/implementation_plan.json",
+      "workspace/tasks/workflow-002-feedback-002/review/acceptance_check.json",
+      "workspace/tasks/workflow-002-feedback-002/final/implementation_summary.yaml"
+    ]
+  },
+  "dispatches": [
+    {
+      "status": "dispatched",
+      "selected_task": {
+        "id": "workflow-002-feedback-002",
+        "title": "把下一轮优化任务接入调度执行",
+        "priority": "medium",
+        "recommended_agent": "CoderAgent",
+        "risk_level": "medium",
+        "human_gate": {
+          "goal_approval_required": true,
+          "risk_approval_required": false,
+          "merge_approval_required": true
+        },
+        "source_tasks": [
+          "workflow-002"
+        ],
+        "source_feedback_paths": [
+          "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+        ]
+      },
+      "tasks_path": "workspace/tasks/workflow-002/input/dispatch_tasks.yaml",
+      "task_batch": {
+        "source_task": "workflow-002",
+        "source_tasks": [
+          "workflow-002"
+        ],
+        "source_feedback_paths": [
+          "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+        ],
+        "goal": "端到端命令生成的可调度任务队列。"
+      },
+      "source_tasks": [
+        "workflow-002"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+      ],
+      "execution": {
+        "status": "ready",
+        "tasks_path": "workspace/tasks/workflow-002/input/dispatch_tasks.yaml",
+        "task_batch": {
+          "source_task": "workflow-002",
+          "source_tasks": [
+            "workflow-002"
+          ],
+          "source_feedback_paths": [
+            "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+          ],
+          "goal": "端到端命令生成的可调度任务队列。"
+        },
+        "selected_task": {
+          "id": "workflow-002-feedback-002",
+          "title": "把下一轮优化任务接入调度执行",
+          "priority": "medium",
+          "recommended_agent": "CoderAgent",
+          "risk_level": "medium",
+          "human_gate": {
+            "goal_approval_required": true,
+            "risk_approval_required": false,
+            "merge_approval_required": true
+          },
+          "source_tasks": [
+            "workflow-002"
+          ],
+          "source_feedback_paths": [
+            "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+          ]
+        },
+        "execution_allowed": true,
+        "blocking_issues": [],
+        "execution_plan": [
+          {
+            "order": 1,
+            "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+            "recommended_agent": "CoderAgent"
+          },
+          {
+            "order": 2,
+            "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+            "recommended_agent": "CoderAgent"
+          },
+          {
+            "order": 3,
+            "description": "保留 goal approval 和 merge approval 人工质量门。",
+            "recommended_agent": "CoderAgent"
+          }
+        ],
+        "out_of_scope": [
+          "接入外部代码托管平台 API。",
+          "执行自动 merge。"
+        ],
+        "acceptance_criteria": [
+          "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+          "调度产物能引用来源 validation_feedback。",
+          "python -m pytest -q 通过。"
+        ]
+      },
+      "dispatch_result": {
+        "task_id": "workflow-002-feedback-002",
+        "title": "把下一轮优化任务接入调度执行",
+        "priority": "medium",
+        "scope": [
+          "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+          "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+          "保留 goal approval 和 merge approval 人工质量门。"
+        ],
+        "out_of_scope": [
+          "接入外部代码托管平台 API。",
+          "执行自动 merge。"
+        ],
+        "acceptance_criteria": [
+          "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+          "调度产物能引用来源 validation_feedback。",
+          "python -m pytest -q 通过。"
+        ],
+        "implementation_plan": [
+          {
+            "order": 1,
+            "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+            "expected_artifact": "workspace/tasks/workflow-002-feedback-002/code/"
+          },
+          {
+            "order": 2,
+            "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+            "expected_artifact": "workspace/tasks/workflow-002-feedback-002/code/"
+          },
+          {
+            "order": 3,
+            "description": "保留 goal approval 和 merge approval 人工质量门。",
+            "expected_artifact": "workspace/tasks/workflow-002-feedback-002/code/"
+          }
+        ],
+        "verification": {
+          "required_commands": [
+            "python -m pytest -q"
+          ],
+          "acceptance_criteria": [
+            "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+            "调度产物能引用来源 validation_feedback。",
+            "python -m pytest -q 通过。"
+          ]
+        },
+        "safety": {
+          "external_model_api": "not_used",
+          "pr_or_merge": "not_allowed",
+          "destructive_operations": "not_allowed"
+        },
+        "output_artifacts": [
+          "workspace/tasks/workflow-002-feedback-002/code/implementation_plan.json",
+          "workspace/tasks/workflow-002-feedback-002/review/acceptance_check.json",
+          "workspace/tasks/workflow-002-feedback-002/final/implementation_summary.yaml"
+        ]
+      },
+      "written_artifacts": [
+        "workspace/tasks/workflow-002-feedback-002/code/implementation_plan.json",
+        "workspace/tasks/workflow-002-feedback-002/state.json",
+        "workspace/tasks/workflow-002-feedback-002/review/test_validation.json",
+        "workspace/tasks/workflow-002-feedback-002/review/code_review.json",
+        "workspace/tasks/workflow-002-feedback-002/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "dispatched_task_validation": {
+        "status": "passed",
+        "dispatched_task_id": "workflow-002-feedback-002",
+        "artifacts": [
+          "workspace/tasks/workflow-002-feedback-002/review/test_validation.json",
+          "workspace/tasks/workflow-002-feedback-002/review/code_review.json",
+          "workspace/tasks/workflow-002-feedback-002/final/validation_feedback.json"
+        ],
+        "blocking_issues": []
+      }
+    },
+    {
+      "status": "dispatched",
+      "selected_task": {
+        "id": "workflow-002-ui-validation-001",
+        "title": "增加目标效果图的自动检查",
+        "priority": "medium",
+        "recommended_agent": "TestValidatorAgent",
+        "risk_level": "low",
+        "human_gate": {
+          "goal_approval_required": true,
+          "risk_approval_required": false,
+          "merge_approval_required": true
+        },
+        "source_tasks": [
+          "workflow-002"
+        ],
+        "source_feedback_paths": [
+          "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+        ]
+      },
+      "tasks_path": "workspace/tasks/workflow-002/input/dispatch_tasks.yaml",
+      "task_batch": {
+        "source_task": "workflow-002",
+        "source_tasks": [
+          "workflow-002"
+        ],
+        "source_feedback_paths": [
+          "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+        ],
+        "goal": "端到端命令生成的可调度任务队列。"
+      },
+      "source_tasks": [
+        "workflow-002"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+      ],
+      "execution": {
+        "status": "ready",
+        "tasks_path": "workspace/tasks/workflow-002/input/dispatch_tasks.yaml",
+        "task_batch": {
+          "source_task": "workflow-002",
+          "source_tasks": [
+            "workflow-002"
+          ],
+          "source_feedback_paths": [
+            "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+          ],
+          "goal": "端到端命令生成的可调度任务队列。"
+        },
+        "selected_task": {
+          "id": "workflow-002-ui-validation-001",
+          "title": "增加目标效果图的自动检查",
+          "priority": "medium",
+          "recommended_agent": "TestValidatorAgent",
+          "risk_level": "low",
+          "human_gate": {
+            "goal_approval_required": true,
+            "risk_approval_required": false,
+            "merge_approval_required": true
+          },
+          "source_tasks": [
+            "workflow-002"
+          ],
+          "source_feedback_paths": [
+            "workspace/tasks/workflow-002-validation/final/validation_feedback.json"
+          ]
+        },
+        "execution_allowed": true,
+        "blocking_issues": [],
+        "execution_plan": [
+          {
+            "order": 1,
+            "description": "从 docs/demos/ai_dev_pipeline_demo.html 提取可机读页面结构和核心交互验收点。",
+            "recommended_agent": "TestValidatorAgent"
+          },
+          {
+            "order": 2,
+            "description": "让 GoalEffectValidatorAgent 报告目标效果图相关检查结果。",
+            "recommended_agent": "TestValidatorAgent"
+          },
+          {
+            "order": 3,
+            "description": "将目标效果检查结果写入 validation_feedback.json。",
+            "recommended_agent": "TestValidatorAgent"
+          }
+        ],
+        "out_of_scope": [
+          "重做前端 demo。",
+          "引入浏览器云服务。"
+        ],
+        "acceptance_criteria": [
+          "目标效果图检查有结构化产物。",
+          "validation_feedback.json 包含目标效果图检查结论。",
+          "python -m pytest -q 通过。"
+        ]
+      },
+      "dispatch_result": {
+        "status": "passed",
+        "passed": true,
+        "results": [
+          {
+            "command": [
+              "/home/dennis/code/ai-dev-pipeline/.venv/bin/python",
+              "-m",
+              "pytest",
+              "-q"
+            ],
+            "returncode": 0,
+            "passed": true,
+            "stdout": "........................................................................ [ 97%]\n..                                                                       [100%]\n74 passed in 1.88s\n",
+            "stderr": ""
+          }
+        ]
+      },
+      "written_artifacts": [
+        "workspace/tasks/workflow-002-ui-validation-001/review/test_validation.json",
+        "workspace/tasks/workflow-002-ui-validation-001/state.json",
+        "workspace/tasks/workflow-002-ui-validation-001/review/code_review.json",
+        "workspace/tasks/workflow-002-ui-validation-001/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "dispatched_task_validation": {
+        "status": "passed",
+        "dispatched_task_id": "workflow-002-ui-validation-001",
+        "artifacts": [
+          "workspace/tasks/workflow-002-ui-validation-001/review/test_validation.json",
+          "workspace/tasks/workflow-002-ui-validation-001/review/code_review.json",
+          "workspace/tasks/workflow-002-ui-validation-001/final/validation_feedback.json"
+        ],
+        "blocking_issues": []
+      }
+    }
+  ],
+  "written_artifacts": [
+    "workspace/tasks/workflow-002-feedback-002/code/implementation_plan.json",
+    "workspace/tasks/workflow-002-feedback-002/state.json",
+    "workspace/tasks/workflow-002-ui-validation-001/review/test_validation.json",
+    "workspace/tasks/workflow-002-ui-validation-001/state.json",
+    "workspace/tasks/workflow-002-feedback-002/review/test_validation.json",
+    "workspace/tasks/workflow-002-feedback-002/review/code_review.json",
+    "workspace/tasks/workflow-002-feedback-002/final/validation_feedback.json",
+    "workspace/tasks/workflow-002-ui-validation-001/review/code_review.json",
+    "workspace/tasks/workflow-002-ui-validation-001/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "batch": {
+    "requested": "all",
+    "dispatched_count": 2
+  },
+  "dispatched_task_validation": {
+    "status": "passed",
+    "dispatched_tasks": [
+      {
+        "dispatched_task_id": "workflow-002-feedback-002",
+        "status": "passed",
+        "artifacts": [
+          "workspace/tasks/workflow-002-feedback-002/review/test_validation.json",
+          "workspace/tasks/workflow-002-feedback-002/review/code_review.json",
+          "workspace/tasks/workflow-002-feedback-002/final/validation_feedback.json"
+        ],
+        "blocking_issues": []
+      },
+      {
+        "dispatched_task_id": "workflow-002-ui-validation-001",
+        "status": "passed",
+        "artifacts": [
+          "workspace/tasks/workflow-002-ui-validation-001/review/test_validation.json",
+          "workspace/tasks/workflow-002-ui-validation-001/review/code_review.json",
+          "workspace/tasks/workflow-002-ui-validation-001/final/validation_feedback.json"
+        ],
+        "blocking_issues": []
+      }
+    ],
+    "artifacts": [
+      "workspace/tasks/workflow-002-feedback-002/review/test_validation.json",
+      "workspace/tasks/workflow-002-feedback-002/review/code_review.json",
+      "workspace/tasks/workflow-002-feedback-002/final/validation_feedback.json",
+      "workspace/tasks/workflow-002-ui-validation-001/review/test_validation.json",
+      "workspace/tasks/workflow-002-ui-validation-001/review/code_review.json",
+      "workspace/tasks/workflow-002-ui-validation-001/final/validation_feedback.json"
+    ],
+    "blocking_issues": []
+  }
+}

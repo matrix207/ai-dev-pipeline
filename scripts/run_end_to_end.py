@@ -14,12 +14,14 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from agents import OptimizationPlannerAgent
-from artifacts import read_json, read_yaml, write_yaml
+from artifacts import read_json, read_yaml, write_json, write_yaml
 from scripts.run_local_task import run_local_task
-from tasks import TaskState, save_state
+from tasks import TaskState, load_state, save_state
 
 
 DEFAULT_TASK_ID = "workflow-001"
+RERUN_POLICIES = {"new_ids", "skip_completed", "force"}
+SUCCESS_STATUSES = {"waiting_for_human_merge_approval", "completed"}
 SUPPORTED_DISPATCH_AGENTS = {
     "CoderAgent",
     "DesignReviewerAgent",
@@ -29,8 +31,17 @@ SUPPORTED_DISPATCH_AGENTS = {
 }
 
 
-def run_end_to_end(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK_ID) -> dict[str, Any]:
+def run_end_to_end(
+    repo_root: str | Path = ".",
+    *,
+    task_id: str = DEFAULT_TASK_ID,
+    dry_run: bool = False,
+    rerun_policy: str = "new_ids",
+) -> dict[str, Any]:
     """Run a complete local feedback loop and persist a decision summary."""
+    if rerun_policy not in RERUN_POLICIES:
+        raise ValueError(f"Unknown rerun policy: {rerun_policy}")
+
     repo_root = Path(repo_root)
     paths = _workflow_paths(task_id)
 
@@ -38,14 +49,29 @@ def run_end_to_end(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK_I
     dispatch_task_id = f"{task_id}-dispatch"
     review_task_id = f"{task_id}-review"
 
-    validation_state = run_local_task(
+    if dry_run:
+        return _dry_run_summary(
+            repo_root,
+            task_id=task_id,
+            paths=paths,
+            rerun_policy=rerun_policy,
+            validation_task_id=validation_task_id,
+            dispatch_task_id=dispatch_task_id,
+            review_task_id=review_task_id,
+        )
+
+    events: list[dict[str, Any]] = []
+    validation_state = _run_or_skip_workflow(
         repo_root,
-        "ui_validation",
+        workflow_name="ui_validation",
         task_id=validation_task_id,
-        goal_approved=True,
+        rerun_policy=rerun_policy,
+        required_artifacts=[f"workspace/tasks/{validation_task_id}/final/validation_feedback.json"],
+        label="validation",
+        events=events,
     )
     validation_feedback_path = f"workspace/tasks/{validation_task_id}/final/validation_feedback.json"
-    validation_feedback = read_json(repo_root, validation_feedback_path)
+    validation_feedback = _read_feedback_or_placeholder(repo_root, validation_feedback_path, validation_state)
 
     initial_plan = OptimizationPlannerAgent().run(
         {
@@ -55,24 +81,36 @@ def run_end_to_end(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK_I
     ).output
     write_yaml(repo_root, paths["initial_plan"], initial_plan)
 
-    dispatch_tasks = _dispatchable_task_batch(repo_root, task_id, initial_plan, validation_feedback_path)
+    dispatch_tasks = _dispatchable_task_batch(
+        repo_root,
+        task_id,
+        initial_plan,
+        validation_feedback_path,
+        rerun_policy=rerun_policy,
+    )
     write_yaml(repo_root, paths["dispatch_tasks"], dispatch_tasks)
 
     review_tasks = _review_task_batch(task_id)
     write_yaml(repo_root, paths["review_tasks"], review_tasks)
 
-    dispatch_state = run_local_task(
+    dispatch_state = _run_or_skip_workflow(
         repo_root,
-        "end_to_end_dispatch",
+        workflow_name="end_to_end_dispatch",
         task_id=dispatch_task_id,
-        goal_approved=True,
+        rerun_policy=rerun_policy,
+        required_artifacts=[f"workspace/tasks/{dispatch_task_id}/final/validation_feedback.json"],
+        label="dispatch",
+        events=events,
     )
 
-    review_state = run_local_task(
+    review_state = _run_or_skip_workflow(
         repo_root,
-        "end_to_end_review",
+        workflow_name="end_to_end_review",
         task_id=review_task_id,
-        goal_approved=True,
+        rerun_policy=rerun_policy,
+        required_artifacts=[f"workspace/tasks/{review_task_id}/final/validation_feedback.json"],
+        label="review",
+        events=events,
     )
 
     feedback_paths = _existing_feedback_paths(
@@ -91,10 +129,15 @@ def run_end_to_end(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK_I
     ).output
     write_yaml(repo_root, paths["final_plan"], final_plan)
 
-    recommended_task = _recommended_task(repo_root, [final_plan])
+    recommended_task = _recommended_task(repo_root, task_id, [final_plan])
+    execution_summary = _execution_summary(events, recommended_task)
     summary = {
         "task_id": task_id,
         "status": "ready_for_human_decision",
+        "run_strategy": {
+            "dry_run": False,
+            "rerun_policy": rerun_policy,
+        },
         "goal_effect": {
             "target": "一个命令运行目标验证、反馈规划、批量调度、验证评审和下一轮任务规划。",
             "validation_status": validation_feedback.get("status"),
@@ -110,6 +153,8 @@ def run_end_to_end(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK_I
             "final_plan_artifact": paths["final_plan"],
             "feedback_artifacts": feedback_paths,
         },
+        "execution_summary": execution_summary,
+        "retry_plan": _retry_plan(execution_summary),
         "remaining_work": _remaining_work(final_plan),
         "next_recommended_action": {
             "task_id": recommended_task.get("id"),
@@ -134,6 +179,80 @@ def _workflow_paths(task_id: str) -> dict[str, str]:
     }
 
 
+def _task_succeeded(state: TaskState, required_artifacts: list[str], repo_root: Path) -> bool:
+    if state.status not in SUCCESS_STATUSES:
+        return False
+    return all((repo_root / artifact).exists() for artifact in required_artifacts)
+
+
+def _state_event(label: str, state: TaskState, action: str) -> dict[str, Any]:
+    if action == "skipped":
+        category = "skipped"
+    elif state.status in SUCCESS_STATUSES:
+        category = "completed"
+    else:
+        category = "failed"
+    return {
+        "step": label,
+        "task_id": state.task_id,
+        "status": category,
+        "state_status": state.status,
+        "artifacts": state.artifacts,
+        "errors": state.errors,
+    }
+
+
+def _run_or_skip_workflow(
+    repo_root: Path,
+    *,
+    workflow_name: str,
+    task_id: str,
+    rerun_policy: str,
+    required_artifacts: list[str],
+    label: str,
+    events: list[dict[str, Any]],
+) -> TaskState:
+    if rerun_policy == "skip_completed":
+        try:
+            existing_state = load_state(repo_root, task_id)
+        except Exception:
+            existing_state = None
+        if existing_state and _task_succeeded(existing_state, required_artifacts, repo_root):
+            events.append(_state_event(label, existing_state, "skipped"))
+            return existing_state
+
+    state = run_local_task(
+        repo_root,
+        workflow_name,
+        task_id=task_id,
+        goal_approved=True,
+    )
+    events.append(_state_event(label, state, "completed"))
+    return state
+
+
+def _read_feedback_or_placeholder(repo_root: Path, path: str, state: TaskState) -> dict[str, Any]:
+    if (repo_root / path).exists():
+        return read_json(repo_root, path)
+    feedback = {
+        "task_id": state.task_id,
+        "status": "failed",
+        "alignment_score": 0.0,
+        "blocking_issues": [
+            {
+                "id": "missing_validation_feedback",
+                "severity": "high",
+                "description": f"Expected validation feedback was not written: {path}",
+                "recommendation": "修复失败步骤后使用 --rerun-policy skip_completed 或 force 重新运行。",
+            }
+        ],
+    }
+    write_json(repo_root, path, feedback)
+    state.record_artifact(path)
+    save_state(repo_root, state)
+    return feedback
+
+
 def _dispatchable_task_batch(
     repo_root: Path,
     task_id: str,
@@ -141,13 +260,14 @@ def _dispatchable_task_batch(
     source_feedback_path: str,
     *,
     max_tasks: int = 2,
+    rerun_policy: str = "new_ids",
 ) -> dict[str, Any]:
     tasks = []
     for task in plan.get("tasks", []):
         if task.get("recommended_agent") not in SUPPORTED_DISPATCH_AGENTS:
             continue
         cloned = dict(task)
-        cloned["id"] = _unique_task_id(repo_root, f"{task_id}-{task['id']}")
+        cloned["id"] = _dispatch_task_id(repo_root, f"{task_id}-{task['id']}", rerun_policy)
         tasks.append(cloned)
         if len(tasks) >= max_tasks:
             break
@@ -155,7 +275,7 @@ def _dispatchable_task_batch(
     if not tasks:
         tasks.append(
             {
-                "id": _unique_task_id(repo_root, f"{task_id}-fallback"),
+                "id": _dispatch_task_id(repo_root, f"{task_id}-fallback", rerun_policy),
                 "title": "端到端闭环兜底调度任务",
                 "priority": "medium",
                 "recommended_agent": "CoderAgent",
@@ -180,6 +300,12 @@ def _dispatchable_task_batch(
         },
         "tasks": tasks,
     }
+
+
+def _dispatch_task_id(repo_root: Path, base_task_id: str, rerun_policy: str) -> str:
+    if rerun_policy == "new_ids":
+        return _unique_task_id(repo_root, base_task_id)
+    return base_task_id
 
 
 def _unique_task_id(repo_root: Path, base_task_id: str) -> str:
@@ -233,17 +359,192 @@ def _remaining_work(plan: dict[str, Any]) -> list[str]:
     return [f"{task.get('id')}: {task.get('title')}" for task in tasks[:5]]
 
 
-def _recommended_task(repo_root: Path, task_batches: list[dict[str, Any]]) -> dict[str, Any]:
+def _execution_summary(
+    events: list[dict[str, Any]],
+    recommended_task: dict[str, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    summary = {
+        "completed": [],
+        "skipped": [],
+        "failed": [],
+        "next": [
+            {
+                "task_id": recommended_task.get("id"),
+                "title": recommended_task.get("title"),
+                "priority": recommended_task.get("priority"),
+            }
+        ],
+    }
+    for event in events:
+        summary[event["status"]].append(event)
+    return summary
+
+
+def _retry_plan(execution_summary: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    failed = execution_summary.get("failed", [])
+    if not failed:
+        return {
+            "status": "not_required",
+            "reason": "自动化步骤已完成，等待人工质量门决策。",
+            "recommended_command": None,
+        }
+    first_failed = failed[0]
+    reusable = execution_summary.get("completed", []) + execution_summary.get("skipped", [])
+    return {
+        "status": "retry_required",
+        "failed_step": first_failed["step"],
+        "failed_task_id": first_failed["task_id"],
+        "reason": first_failed.get("errors") or first_failed.get("state_status"),
+        "reusable_steps": [
+            {"step": item["step"], "task_id": item["task_id"], "status": item["status"]}
+            for item in reusable
+        ],
+        "recommended_command": "python scripts/run_end_to_end.py --rerun-policy skip_completed",
+    }
+
+
+def _planned_event(
+    repo_root: Path,
+    *,
+    label: str,
+    task_id: str,
+    rerun_policy: str,
+    required_artifacts: list[str],
+) -> dict[str, Any]:
+    try:
+        existing_state = load_state(repo_root, task_id)
+    except Exception:
+        existing_state = None
+    if rerun_policy == "skip_completed" and existing_state and _task_succeeded(
+        existing_state,
+        required_artifacts,
+        repo_root,
+    ):
+        return _state_event(label, existing_state, "skipped")
+    return {
+        "step": label,
+        "task_id": task_id,
+        "status": "next",
+        "state_status": "planned",
+        "artifacts": required_artifacts,
+        "errors": [],
+    }
+
+
+def _dry_run_summary(
+    repo_root: Path,
+    *,
+    task_id: str,
+    paths: dict[str, str],
+    rerun_policy: str,
+    validation_task_id: str,
+    dispatch_task_id: str,
+    review_task_id: str,
+) -> dict[str, Any]:
+    events = [
+        _planned_event(
+            repo_root,
+            label="validation",
+            task_id=validation_task_id,
+            rerun_policy=rerun_policy,
+            required_artifacts=[f"workspace/tasks/{validation_task_id}/final/validation_feedback.json"],
+        ),
+        {
+            "step": "planning",
+            "task_id": task_id,
+            "status": "next",
+            "state_status": "planned",
+            "artifacts": [paths["initial_plan"], paths["dispatch_tasks"], paths["review_tasks"]],
+            "errors": [],
+        },
+        _planned_event(
+            repo_root,
+            label="dispatch",
+            task_id=dispatch_task_id,
+            rerun_policy=rerun_policy,
+            required_artifacts=[f"workspace/tasks/{dispatch_task_id}/final/validation_feedback.json"],
+        ),
+        _planned_event(
+            repo_root,
+            label="review",
+            task_id=review_task_id,
+            rerun_policy=rerun_policy,
+            required_artifacts=[f"workspace/tasks/{review_task_id}/final/validation_feedback.json"],
+        ),
+        {
+            "step": "final_planning",
+            "task_id": task_id,
+            "status": "next",
+            "state_status": "planned",
+            "artifacts": [paths["final_plan"], paths["decision_summary"]],
+            "errors": [],
+        },
+    ]
+    execution_summary = {
+        "completed": [],
+        "skipped": [event for event in events if event["status"] == "skipped"],
+        "failed": [],
+        "next": [event for event in events if event["status"] == "next"],
+    }
+    return {
+        "task_id": task_id,
+        "status": "dry_run",
+        "run_strategy": {
+            "dry_run": True,
+            "rerun_policy": rerun_policy,
+        },
+        "goal_effect": {
+            "target": "一个命令运行目标验证、反馈规划、批量调度、验证评审和下一轮任务规划。",
+            "validation_status": "not_run",
+            "alignment_score": None,
+            "blocking_issues": [],
+        },
+        "current_result": {
+            "validation_state": {"task_id": validation_task_id, "status": "planned"},
+            "dispatch_state": {"task_id": dispatch_task_id, "status": "planned"},
+            "review_state": {"task_id": review_task_id, "status": "planned"},
+            "initial_plan_artifact": paths["initial_plan"],
+            "dispatch_tasks_artifact": paths["dispatch_tasks"],
+            "final_plan_artifact": paths["final_plan"],
+            "feedback_artifacts": [],
+        },
+        "execution_summary": execution_summary,
+        "retry_plan": {
+            "status": "not_required",
+            "reason": "Dry run only; no workflow steps were executed.",
+            "recommended_command": None,
+        },
+        "remaining_work": ["dry-run 未执行实际验证；正式运行后生成剩余任务列表。"],
+        "next_recommended_action": {
+            "task_id": task_id,
+            "title": "执行端到端闭环正式运行",
+            "priority": "medium",
+            "reason": "dry-run 只预览运行计划，不写入产物。",
+        },
+    }
+
+
+def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
+    prefix, separator, suffix = task_id.rpartition("-")
+    if separator and suffix.isdigit():
+        next_task_id = f"{prefix}-{int(suffix) + 1:0{len(suffix)}d}"
+    else:
+        next_task_id = f"{task_id}-next"
+    title = "端到端闭环运行策略产品化" if next_task_id == "workflow-002" else "端到端闭环持续优化"
+    return {
+        "id": next_task_id,
+        "title": title,
+        "priority": "medium",
+    }
+
+
+def _recommended_task(repo_root: Path, task_id: str, task_batches: list[dict[str, Any]]) -> dict[str, Any]:
     tasks = []
     for task_batch in task_batches:
         tasks.extend(task_batch.get("tasks", []))
     tasks = [task for task in tasks if not (repo_root / "workspace/tasks" / task["id"] / "state.json").exists()]
     if not tasks:
-        return {
-            "id": "workflow-002",
-            "title": "端到端闭环运行策略产品化",
-            "priority": "medium",
-        }
+        return _fallback_recommended_task(task_id)
     priority_order = {"high": 0, "medium": 1, "low": 2}
     return sorted(tasks, key=lambda task: priority_order.get(task.get("priority", "low"), 9))[0]
 
@@ -254,13 +555,17 @@ def _save_parent_state(
     paths: dict[str, str],
     summary: dict[str, Any],
 ) -> None:
+    failed_steps = summary.get("execution_summary", {}).get("failed", [])
+    status = "blocked_by_end_to_end_step" if failed_steps else "waiting_for_human_merge_approval"
     state = TaskState(
         task_id=task_id,
-        step="human_merge_gate",
-        status="waiting_for_human_merge_approval",
+        step="retry_plan" if failed_steps else "human_merge_gate",
+        status=status,
         artifacts=[
             "scripts/run_end_to_end.py",
+            "scripts/run_local_task.py",
             "config/pipeline.yaml",
+            "tests/test_run_end_to_end.py",
             paths["initial_plan"],
             paths["dispatch_tasks"],
             paths["review_tasks"],
@@ -281,6 +586,8 @@ def _save_parent_state(
             "human_merge_approved": False,
         },
     )
+    for failed_step in failed_steps:
+        state.record_error(f"{failed_step['step']}: {failed_step['state_status']}")
     save_state(repo_root, state)
 
 
@@ -288,14 +595,22 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
     goal_effect = summary["goal_effect"]
     current = summary["current_result"]
     next_action = summary["next_recommended_action"]
+    execution = summary.get("execution_summary", {})
+    retry = summary.get("retry_plan", {})
     return "\n".join(
         [
             "AI Dev Pipeline End-to-End Summary",
             "",
+            f"Status: {summary['status']}",
+            f"Rerun policy: {summary.get('run_strategy', {}).get('rerun_policy', 'new_ids')}",
             f"Validation: {goal_effect['validation_status']}",
             f"Alignment score: {goal_effect['alignment_score']}",
             f"Dispatch state: {current['dispatch_state']['status']}",
             f"Review state: {current['review_state']['status']}",
+            f"Completed steps: {len(execution.get('completed', []))}",
+            f"Skipped steps: {len(execution.get('skipped', []))}",
+            f"Failed steps: {len(execution.get('failed', []))}",
+            f"Retry plan: {retry.get('status', 'not_required')}",
             "",
             "Artifacts:",
             f"- Initial plan: {current['initial_plan_artifact']}",
@@ -314,17 +629,29 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repo-root", default=".", help="Repository root. Defaults to cwd.")
     parser.add_argument("--task-id", default=DEFAULT_TASK_ID, help="Parent task id for summary artifacts.")
     parser.add_argument("--json", action="store_true", help="Print full JSON summary.")
+    parser.add_argument("--dry-run", action="store_true", help="Preview the run plan without writing artifacts.")
+    parser.add_argument(
+        "--rerun-policy",
+        choices=sorted(RERUN_POLICIES),
+        default="new_ids",
+        help="How to handle existing task state.",
+    )
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    summary = run_end_to_end(args.repo_root, task_id=args.task_id)
+    summary = run_end_to_end(
+        args.repo_root,
+        task_id=args.task_id,
+        dry_run=args.dry_run,
+        rerun_policy=args.rerun_policy,
+    )
     if args.json:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     else:
         print(format_end_to_end_summary(summary))
-    return 0 if not summary["goal_effect"]["blocking_issues"] else 1
+    return 0 if not summary["goal_effect"]["blocking_issues"] and not summary["execution_summary"]["failed"] else 1
 
 
 if __name__ == "__main__":

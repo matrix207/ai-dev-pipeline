@@ -65,6 +65,12 @@ def _step_options(step: str | dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in step.items() if key != "name"}
 
 
+def _parent_task_id(task_id: str, suffix: str) -> str:
+    if task_id.endswith(suffix):
+        return task_id[: -len(suffix)]
+    return task_id
+
+
 def _run_step(
     repo_root: str | Path,
     workflow_name: str,
@@ -89,12 +95,15 @@ def _run_step(
         )
         return f"workspace/tasks/{task_id}/review/test_validation.json", result.output
     if step == "code_review":
+        task_definition_path = step_options.get("task_definition_path")
+        if task_definition_path is None and task_id.endswith("-review"):
+            task_definition_path = f"workspace/tasks/{_parent_task_id(task_id, '-review')}/input/review_tasks.yaml"
         result = CodeReviewerAgent().run(
             {
                 "repo_root": str(repo_root),
                 "task_id": task_id,
                 "validation_path": step_options.get("validation_path"),
-                "task_definition_path": step_options.get("task_definition_path"),
+                "task_definition_path": task_definition_path,
             }
         )
         return f"workspace/tasks/{task_id}/review/code_review.json", result.output
@@ -135,13 +144,13 @@ def _run_step(
         )
         return f"workspace/tasks/{task_id}/code/execution_plan.json", result.output
     if step == "optimization_dispatch":
+        tasks_path = step_options.get("tasks_path")
+        if tasks_path is None and task_id.endswith("-dispatch"):
+            tasks_path = f"workspace/tasks/{_parent_task_id(task_id, '-dispatch')}/input/dispatch_tasks.yaml"
         result = OptimizationDispatcherAgent().run(
             {
                 "repo_root": str(repo_root),
-                "tasks_path": step_options.get(
-                    "tasks_path",
-                    "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
-                ),
+                "tasks_path": tasks_path or "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
                 "risk_approved": step_options.get("risk_approved", False),
                 "dispatch_all": step_options.get("dispatch_all", False),
                 "max_tasks": step_options.get(

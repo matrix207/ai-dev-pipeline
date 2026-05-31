@@ -1,0 +1,27 @@
+task_id: workflow-002
+title: 端到端闭环后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-003
+  title: 端到端闭环持续优化
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 提升端到端闭环的失败诊断、运行可观测性和人工决策体验。
+  acceptance_criteria:
+    - retry_plan 在失败用例中有测试覆盖。
+    - CLI 输出包含更清晰的人类可读 completed/skipped/failed/next 摘要。
+    - workflow 产物能记录每次运行的 run_id 或时间戳。
+    - 人工审批所需 evidence 映射可直接从 decision_summary.yaml 查看。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。

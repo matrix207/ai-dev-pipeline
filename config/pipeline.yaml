@@ -109,7 +109,6 @@ workflows:
     task_id: workflow-001-dispatch
     steps:
       - name: optimization_dispatch
-        tasks_path: workspace/tasks/workflow-001/input/dispatch_tasks.yaml
         dispatch_all: true
       - dispatched_task_validation
       - test_validation
@@ -120,8 +119,7 @@ workflows:
     task_id: workflow-001-review
     steps:
       - test_validation
-      - name: code_review
-        task_definition_path: workspace/tasks/workflow-001/input/review_tasks.yaml
+      - code_review
       - goal_effect_validation
     human_gate_required: true
   optimization_execution:
