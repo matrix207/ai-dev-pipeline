@@ -1,0 +1,30 @@
+task_id: dev-004
+title: 设计评审 Agent 骨架
+status: waiting_for_human_merge_approval
+completed_scope:
+  - 创建 DesignReviewerAgent 骨架。
+  - 读取 analysis、architecture 和 design 产物。
+  - 输出包含 decision、checks、blocking_issues 的结构化 review JSON。
+  - 在本地编排脚本中接入 design_review step。
+  - blocking issue 存在时，编排状态停止在 blocked_by_design_review。
+  - 将目标效果 HTML demo 纳入 docs/demos/。
+changed_files:
+  - agents/__init__.py
+  - agents/design_reviewer_agent.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_design_reviewer_agent.py
+  - tests/test_run_local_task.py
+  - docs/demos/ai_dev_pipeline_demo.html
+  - README.md
+acceptance_status:
+  structured_review_json: passed
+  reads_analysis_architecture_design_artifacts: passed
+  blocking_issue_stops_orchestration: passed
+  pass_and_block_test_coverage: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未实现复杂评分模型。
+  - 未调用外部模型 API。
+  - 未自动执行 PR、merge 或 release。
+next_recommended_task: dev-005

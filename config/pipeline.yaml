@@ -29,6 +29,11 @@ workflows:
       - write_state
       - human_gate
     human_gate_required: true
+  bootstrap_design_review:
+    task_id: bootstrap-001
+    steps:
+      - design_review
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem

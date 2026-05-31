@@ -26,6 +26,26 @@ def write_config(tmp_path: Path, steps: list[str], *, human_gate_required: bool 
     )
 
 
+def write_design_artifacts(tmp_path: Path, task_id: str, *, valid_design: bool = True) -> None:
+    write_yaml(
+        tmp_path,
+        f"workspace/tasks/{task_id}/analysis/project_context.yaml",
+        {"task_id": task_id, "summary": "local MVP"},
+    )
+    (tmp_path / f"workspace/tasks/{task_id}/architecture").mkdir(parents=True, exist_ok=True)
+    (tmp_path / f"workspace/tasks/{task_id}/architecture/mvp_architecture.md").write_text(
+        "# 架构\n\n包含人工质量门。",
+        encoding="utf-8",
+    )
+    design = {
+        "modules": {"agents": {"purpose": "run agents"}},
+        "workflow": {"bootstrap": {"steps": ["design_review"]}},
+    }
+    if not valid_design:
+        design.pop("workflow")
+    write_yaml(tmp_path, f"workspace/tasks/{task_id}/design/mvp_system_design.yaml", design)
+
+
 def test_run_local_task_writes_state_and_step_artifacts(tmp_path: Path) -> None:
     write_config(tmp_path, ["load_config", "write_state"])
 
@@ -90,3 +110,32 @@ def test_run_local_task_cli_outputs_state(tmp_path: Path, capsys) -> None:
     assert exit_code == 0
     assert output["task_id"] == "dev-003"
     assert output["status"] == "waiting_for_human_merge_approval"
+
+
+def test_run_local_task_stops_when_design_review_blocks(tmp_path: Path) -> None:
+    write_config(tmp_path, ["design_review", "write_state"])
+    write_design_artifacts(tmp_path, "dev-003", valid_design=False)
+
+    state = run_local_task(tmp_path, "local_dev", goal_approved=True)
+
+    assert state.step == "design_review"
+    assert state.status == "blocked_by_design_review"
+    assert state.gates["design_review_passed"] is False
+    assert state.artifacts == ["workspace/tasks/dev-003/review/design_review.json"]
+    review = read_json(tmp_path, state.artifacts[0])
+    assert review["blocking_issues"][0]["id"] == "design_workflow"
+
+
+def test_run_local_task_continues_when_design_review_passes(tmp_path: Path) -> None:
+    write_config(tmp_path, ["design_review", "write_state"])
+    write_design_artifacts(tmp_path, "dev-003")
+
+    state = run_local_task(tmp_path, "local_dev", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.gates["design_review_passed"] is True
+    assert state.artifacts == [
+        "workspace/tasks/dev-003/review/design_review.json",
+        "workspace/tasks/dev-003/orchestration/write_state.json",
+    ]

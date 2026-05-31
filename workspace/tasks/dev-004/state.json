@@ -1,0 +1,21 @@
+{
+  "task_id": "dev-004",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "agents/design_reviewer_agent.py",
+    "tests/test_design_reviewer_agent.py",
+    "workspace/tasks/dev-004/review/design_review.json",
+    "workspace/tasks/dev-004/review/acceptance_check.json",
+    "workspace/tasks/dev-004/final/implementation_summary.yaml",
+    "docs/demos/ai_dev_pipeline_demo.html"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": false,
+    "human_merge_approved": false
+  }
+}

@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from agents import BaseAgent
+from agents import BaseAgent, DesignReviewerAgent
 from artifacts import read_yaml, write_json
 from tasks import TaskState, save_state
 
@@ -43,6 +43,26 @@ def _step_artifact_path(task_id: str, step: str) -> str:
     return f"workspace/tasks/{task_id}/orchestration/{step}.json"
 
 
+def _run_step(
+    repo_root: str | Path,
+    workflow_name: str,
+    task_id: str,
+    step: str,
+) -> tuple[str, dict[str, Any]]:
+    if step == "design_review":
+        result = DesignReviewerAgent().run({"repo_root": str(repo_root), "task_id": task_id})
+        return f"workspace/tasks/{task_id}/review/design_review.json", result.output
+
+    result = PlaceholderAgent("placeholder-agent").run(
+        {
+            "task_id": task_id,
+            "workflow": workflow_name,
+            "step": step,
+        }
+    )
+    return _step_artifact_path(task_id, step), result.output
+
+
 def run_local_task(
     repo_root: str | Path,
     workflow_name: str,
@@ -70,22 +90,21 @@ def run_local_task(
     )
     save_state(repo_root, state)
 
-    agent = PlaceholderAgent("placeholder-agent")
     for step in steps:
         try:
             state.update(step=step, status="running")
             save_state(repo_root, state)
 
-            result = agent.run(
-                {
-                    "task_id": task_id,
-                    "workflow": workflow_name,
-                    "step": step,
-                }
-            )
-            artifact_path = _step_artifact_path(task_id, step)
-            write_json(repo_root, artifact_path, result.output)
+            artifact_path, output = _run_step(repo_root, workflow_name, task_id, step)
+            write_json(repo_root, artifact_path, output)
             state.record_artifact(artifact_path)
+            if step == "design_review":
+                if output["blocking_issues"]:
+                    state.set_gate("design_review_passed", False)
+                    state.update(step=step, status="blocked_by_design_review")
+                    save_state(repo_root, state)
+                    return state
+                state.set_gate("design_review_passed", True)
             save_state(repo_root, state)
         except Exception as exc:
             state.record_error(f"{step}: {exc}")

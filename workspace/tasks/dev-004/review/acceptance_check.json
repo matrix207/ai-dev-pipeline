@@ -1,0 +1,41 @@
+{
+  "task_id": "dev-004",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Structured review JSON",
+      "result": "pass",
+      "evidence": "DesignReviewerAgent outputs task_id, status, decision, checks, blocking_issues, non_blocking_issues and reviewed_artifacts."
+    },
+    {
+      "name": "Reads required artifacts",
+      "result": "pass",
+      "evidence": "Agent reads workspace/tasks/{task_id}/analysis/project_context.yaml, architecture/mvp_architecture.md and design/mvp_system_design.yaml by default."
+    },
+    {
+      "name": "Blocking issue stops orchestration",
+      "result": "pass",
+      "evidence": "scripts/run_local_task.py stops with status blocked_by_design_review when design_review output contains blocking_issues."
+    },
+    {
+      "name": "Pass and block tests",
+      "result": "pass",
+      "evidence": "tests/test_design_reviewer_agent.py and tests/test_run_local_task.py cover passing and blocking review paths."
+    },
+    {
+      "name": "Target effect demo tracked",
+      "result": "pass",
+      "evidence": "docs/demos/ai_dev_pipeline_demo.html is included and linked from README.md."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 25 passed."
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_notes": [
+    "dev-005 should add a coder Agent skeleton that reads dev task scope and produces a structured implementation plan."
+  ]
+}
