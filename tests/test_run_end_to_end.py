@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from artifacts import read_yaml, write_yaml
-from scripts.run_end_to_end import format_end_to_end_summary, main, run_end_to_end
+from scripts.run_end_to_end import _fallback_recommended_task, format_end_to_end_summary, main, run_end_to_end
 from tasks import load_state
 
 
@@ -83,10 +83,12 @@ def test_run_end_to_end_writes_decision_summary(tmp_path: Path) -> None:
     write_end_to_end_config(tmp_path)
     write_validation_goal(tmp_path)
 
-    summary = run_end_to_end(tmp_path)
+    summary = run_end_to_end(tmp_path, run_id="test-run-001")
 
     assert summary["task_id"] == "workflow-001"
     assert summary["status"] == "ready_for_human_decision"
+    assert summary["run_metadata"]["run_id"] == "test-run-001"
+    assert summary["run_metadata"]["started_at"].endswith("Z")
     assert summary["current_result"]["validation_state"]["status"] == "waiting_for_human_merge_approval"
     assert summary["current_result"]["dispatch_state"]["status"] == "waiting_for_human_merge_approval"
     assert summary["current_result"]["review_state"]["status"] == "waiting_for_human_merge_approval"
@@ -94,6 +96,14 @@ def test_run_end_to_end_writes_decision_summary(tmp_path: Path) -> None:
     assert summary["execution_summary"]["skipped"] == []
     assert summary["execution_summary"]["failed"] == []
     assert summary["retry_plan"]["status"] == "not_required"
+    assert {item["decision"] for item in summary["evidence_map"]} >= {
+        "goal_effect_aligned",
+        "tests_passed",
+        "dispatch_validated",
+        "code_review_passed",
+        "retry_required",
+        "next_action",
+    }
     assert summary["next_recommended_action"]["reason"] == "来自端到端反馈闭环生成的下一轮优化任务。"
 
     saved = read_yaml(tmp_path, "workspace/tasks/workflow-001/final/decision_summary.yaml")
@@ -124,11 +134,13 @@ def test_run_end_to_end_dry_run_does_not_write_artifacts(tmp_path: Path) -> None
     write_end_to_end_config(tmp_path)
     write_validation_goal(tmp_path)
 
-    summary = run_end_to_end(tmp_path, dry_run=True)
+    summary = run_end_to_end(tmp_path, dry_run=True, run_id="dry-run-001")
 
     assert summary["status"] == "dry_run"
+    assert summary["run_metadata"]["run_id"] == "dry-run-001"
     assert summary["run_strategy"] == {"dry_run": True, "rerun_policy": "new_ids"}
     assert summary["execution_summary"]["next"]
+    assert summary["evidence_map"][0]["decision"] == "dry_run_plan"
     assert not (tmp_path / "workspace/tasks/workflow-001/final/decision_summary.yaml").exists()
     assert not (tmp_path / "workspace/tasks/workflow-001/state.json").exists()
 
@@ -162,11 +174,14 @@ def test_run_end_to_end_outputs_retry_plan_when_a_stage_fails(tmp_path: Path) ->
     assert summary["retry_plan"]["recommended_command"] == (
         "python scripts/run_end_to_end.py --rerun-policy skip_completed"
     )
+    retry_evidence = [item for item in summary["evidence_map"] if item["decision"] == "retry_required"]
+    assert retry_evidence[0]["status"] == "retry_required"
 
 
 def test_format_end_to_end_summary_is_human_readable() -> None:
     summary = {
         "status": "ready_for_human_decision",
+        "run_metadata": {"run_id": "summary-run", "started_at": "2026-05-31T00:00:00Z"},
         "run_strategy": {"rerun_policy": "skip_completed"},
         "goal_effect": {
             "validation_status": "passed",
@@ -192,12 +207,23 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
             "failed": [],
         },
         "retry_plan": {"status": "not_required"},
+        "evidence_map": [
+            {
+                "decision": "goal_effect_aligned",
+                "status": "passed",
+                "evidence": ["workspace/tasks/workflow-001/final/validation_feedback.json"],
+            }
+        ],
     }
 
     output = format_end_to_end_summary(summary)
 
     assert "AI Dev Pipeline End-to-End Summary" in output
+    assert "Run id: summary-run" in output
     assert "Rerun policy: skip_completed" in output
+    assert "- Completed:" in output
+    assert "- Skipped:" in output
+    assert "Evidence:" in output
     assert "Dispatch state: waiting_for_human_merge_approval" in output
     assert "workflow-002: Next workflow task" in output
 
@@ -213,6 +239,8 @@ def test_run_end_to_end_cli_json_output(tmp_path: Path, capsys) -> None:
         str(tmp_path),
         "--rerun-policy",
         "skip_completed",
+        "--run-id",
+        "cli-run",
         "--json",
     ]
     try:
@@ -223,4 +251,13 @@ def test_run_end_to_end_cli_json_output(tmp_path: Path, capsys) -> None:
     assert exit_code == 0
     output = json.loads(capsys.readouterr().out)
     assert output["task_id"] == "workflow-001"
+    assert output["run_metadata"]["run_id"] == "cli-run"
     assert output["run_strategy"]["rerun_policy"] == "skip_completed"
+
+
+def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
+    assert _fallback_recommended_task("workflow-003") == {
+        "id": "workflow-004",
+        "title": "端到端闭环决策产物可追溯化",
+        "priority": "medium",
+    }

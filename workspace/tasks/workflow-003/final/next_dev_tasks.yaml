@@ -1,0 +1,27 @@
+task_id: workflow-003
+title: 端到端闭环后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-004
+  title: 端到端闭环决策产物可追溯化
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 将每次端到端运行的摘要、evidence 和人工决策结果组织成可追溯的运行记录。
+  acceptance_criteria:
+    - 每次正式运行写入独立 run record 文件。
+    - decision_summary.yaml 保持最新摘要，同时引用 run record。
+    - run record 包含 run_id、输入策略、执行分组、evidence_map 和下一步建议。
+    - 支持列出最近运行记录的 CLI 参数或脚本。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。

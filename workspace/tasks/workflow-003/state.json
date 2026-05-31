@@ -1,0 +1,27 @@
+{
+  "task_id": "workflow-003",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "scripts/run_end_to_end.py",
+    "scripts/run_local_task.py",
+    "config/pipeline.yaml",
+    "tests/test_run_end_to_end.py",
+    "workspace/tasks/workflow-003/final/initial_next_optimization_tasks.yaml",
+    "workspace/tasks/workflow-003/input/dispatch_tasks.yaml",
+    "workspace/tasks/workflow-003/input/review_tasks.yaml",
+    "workspace/tasks/workflow-003/final/final_next_optimization_tasks.yaml",
+    "workspace/tasks/workflow-003/final/decision_summary.yaml",
+    "workspace/tasks/workflow-003/review/acceptance_check.json",
+    "workspace/tasks/workflow-003/final/implementation_summary.yaml",
+    "workspace/tasks/workflow-003/final/next_dev_tasks.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

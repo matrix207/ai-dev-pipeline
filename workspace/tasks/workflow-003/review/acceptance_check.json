@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-003",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Run metadata",
+      "result": "pass",
+      "evidence": "decision_summary.yaml includes run_metadata.run_id and run_metadata.started_at."
+    },
+    {
+      "name": "Human-readable CLI summary",
+      "result": "pass",
+      "evidence": "format_end_to_end_summary groups completed, skipped, failed and next sections and includes evidence counts."
+    },
+    {
+      "name": "Evidence mapping",
+      "result": "pass",
+      "evidence": "decision_summary.yaml includes evidence_map entries for goal_effect_aligned, tests_passed, dispatch_validated, code_review_passed, retry_required and next_action."
+    },
+    {
+      "name": "Retry plan coverage",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers retry_required when validation fails."
+    },
+    {
+      "name": "End-to-end run",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-003 --rerun-policy skip_completed --run-id workflow-003-run --json completed with no blocking issues."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 76 passed."
+    }
+  ],
+  "blocking_issues": []
+}

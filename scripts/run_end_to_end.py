@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,7 @@ def run_end_to_end(
     task_id: str = DEFAULT_TASK_ID,
     dry_run: bool = False,
     rerun_policy: str = "new_ids",
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Run a complete local feedback loop and persist a decision summary."""
     if rerun_policy not in RERUN_POLICIES:
@@ -44,6 +46,7 @@ def run_end_to_end(
 
     repo_root = Path(repo_root)
     paths = _workflow_paths(task_id)
+    run_metadata = _run_metadata(run_id)
 
     validation_task_id = f"{task_id}-validation"
     dispatch_task_id = f"{task_id}-dispatch"
@@ -54,6 +57,7 @@ def run_end_to_end(
             repo_root,
             task_id=task_id,
             paths=paths,
+            run_metadata=run_metadata,
             rerun_policy=rerun_policy,
             validation_task_id=validation_task_id,
             dispatch_task_id=dispatch_task_id,
@@ -134,6 +138,7 @@ def run_end_to_end(
     summary = {
         "task_id": task_id,
         "status": "ready_for_human_decision",
+        "run_metadata": run_metadata,
         "run_strategy": {
             "dry_run": False,
             "rerun_policy": rerun_policy,
@@ -163,6 +168,7 @@ def run_end_to_end(
             "reason": "来自端到端反馈闭环生成的下一轮优化任务。",
         },
     }
+    summary["evidence_map"] = _evidence_map(summary)
     write_yaml(repo_root, paths["decision_summary"], summary)
     _save_parent_state(repo_root, task_id, paths, summary)
     return summary
@@ -176,6 +182,14 @@ def _workflow_paths(task_id: str) -> dict[str, str]:
         "review_tasks": f"{base}/input/review_tasks.yaml",
         "final_plan": f"{base}/final/final_next_optimization_tasks.yaml",
         "decision_summary": f"{base}/final/decision_summary.yaml",
+    }
+
+
+def _run_metadata(run_id: str | None) -> dict[str, str]:
+    started_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return {
+        "run_id": run_id or started_at.replace("-", "").replace(":", ""),
+        "started_at": started_at,
     }
 
 
@@ -403,6 +417,73 @@ def _retry_plan(execution_summary: dict[str, list[dict[str, Any]]]) -> dict[str,
     }
 
 
+def _evidence_item(
+    *,
+    decision: str,
+    status: str,
+    evidence: list[str],
+    notes: str,
+) -> dict[str, Any]:
+    return {
+        "decision": decision,
+        "status": status,
+        "evidence": evidence,
+        "notes": notes,
+    }
+
+
+def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    current = summary["current_result"]
+    execution = summary["execution_summary"]
+    retry = summary["retry_plan"]
+    goal = summary["goal_effect"]
+    validation_state = current["validation_state"]
+    dispatch_state = current["dispatch_state"]
+    review_state = current["review_state"]
+    return [
+        _evidence_item(
+            decision="goal_effect_aligned",
+            status=str(goal.get("validation_status")),
+            evidence=list(current.get("feedback_artifacts", [])),
+            notes=f"alignment_score={goal.get('alignment_score')}; blocking_issues={len(goal.get('blocking_issues', []))}",
+        ),
+        _evidence_item(
+            decision="tests_passed",
+            status="passed" if validation_state.get("gates", {}).get("tests_passed") else "not_passed",
+            evidence=list(validation_state.get("artifacts", [])),
+            notes=f"validation_state={validation_state.get('status')}",
+        ),
+        _evidence_item(
+            decision="dispatch_validated",
+            status=dispatch_state.get("status", "unknown"),
+            evidence=list(dispatch_state.get("artifacts", [])),
+            notes=f"completed={len(execution.get('completed', []))}; skipped={len(execution.get('skipped', []))}",
+        ),
+        _evidence_item(
+            decision="code_review_passed",
+            status="passed" if review_state.get("gates", {}).get("code_review_passed") else "not_passed",
+            evidence=list(review_state.get("artifacts", [])),
+            notes=f"review_state={review_state.get('status')}",
+        ),
+        _evidence_item(
+            decision="retry_required",
+            status=retry.get("status", "unknown"),
+            evidence=[
+                item["task_id"]
+                for item in execution.get("failed", [])
+                if item.get("task_id")
+            ],
+            notes=str(retry.get("reason")),
+        ),
+        _evidence_item(
+            decision="next_action",
+            status=summary["next_recommended_action"].get("priority", "unknown"),
+            evidence=[current["final_plan_artifact"]],
+            notes=f"{summary['next_recommended_action'].get('task_id')}: {summary['next_recommended_action'].get('title')}",
+        ),
+    ]
+
+
 def _planned_event(
     repo_root: Path,
     *,
@@ -436,6 +517,7 @@ def _dry_run_summary(
     *,
     task_id: str,
     paths: dict[str, str],
+    run_metadata: dict[str, str],
     rerun_policy: str,
     validation_task_id: str,
     dispatch_task_id: str,
@@ -489,6 +571,7 @@ def _dry_run_summary(
     return {
         "task_id": task_id,
         "status": "dry_run",
+        "run_metadata": run_metadata,
         "run_strategy": {
             "dry_run": True,
             "rerun_policy": rerun_policy,
@@ -521,6 +604,20 @@ def _dry_run_summary(
             "priority": "medium",
             "reason": "dry-run 只预览运行计划，不写入产物。",
         },
+        "evidence_map": [
+            _evidence_item(
+                decision="dry_run_plan",
+                status="planned",
+                evidence=[
+                    paths["initial_plan"],
+                    paths["dispatch_tasks"],
+                    paths["review_tasks"],
+                    paths["final_plan"],
+                    paths["decision_summary"],
+                ],
+                notes="dry-run 仅预览计划，不写入产物。",
+            )
+        ],
     }
 
 
@@ -530,10 +627,14 @@ def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
         next_task_id = f"{prefix}-{int(suffix) + 1:0{len(suffix)}d}"
     else:
         next_task_id = f"{task_id}-next"
-    title = "端到端闭环运行策略产品化" if next_task_id == "workflow-002" else "端到端闭环持续优化"
+    title_by_task_id = {
+        "workflow-002": "端到端闭环运行策略产品化",
+        "workflow-003": "端到端闭环持续优化",
+        "workflow-004": "端到端闭环决策产物可追溯化",
+    }
     return {
         "id": next_task_id,
-        "title": title,
+        "title": title_by_task_id.get(next_task_id, "端到端闭环持续优化"),
         "priority": "medium",
     }
 
@@ -597,20 +698,29 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
     next_action = summary["next_recommended_action"]
     execution = summary.get("execution_summary", {})
     retry = summary.get("retry_plan", {})
+    run_metadata = summary.get("run_metadata", {})
     return "\n".join(
         [
             "AI Dev Pipeline End-to-End Summary",
             "",
             f"Status: {summary['status']}",
+            f"Run id: {run_metadata.get('run_id', 'unknown')}",
+            f"Started at: {run_metadata.get('started_at', 'unknown')}",
             f"Rerun policy: {summary.get('run_strategy', {}).get('rerun_policy', 'new_ids')}",
             f"Validation: {goal_effect['validation_status']}",
             f"Alignment score: {goal_effect['alignment_score']}",
             f"Dispatch state: {current['dispatch_state']['status']}",
             f"Review state: {current['review_state']['status']}",
-            f"Completed steps: {len(execution.get('completed', []))}",
-            f"Skipped steps: {len(execution.get('skipped', []))}",
-            f"Failed steps: {len(execution.get('failed', []))}",
             f"Retry plan: {retry.get('status', 'not_required')}",
+            "",
+            "Execution:",
+            *_format_execution_group("Completed", execution.get("completed", [])),
+            *_format_execution_group("Skipped", execution.get("skipped", [])),
+            *_format_execution_group("Failed", execution.get("failed", [])),
+            *_format_execution_group("Next", execution.get("next", [])),
+            "",
+            "Evidence:",
+            *_format_evidence(summary.get("evidence_map", [])),
             "",
             "Artifacts:",
             f"- Initial plan: {current['initial_plan_artifact']}",
@@ -624,12 +734,34 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
     )
 
 
+def _format_execution_group(label: str, items: list[dict[str, Any]]) -> list[str]:
+    if not items:
+        return [f"- {label}: none"]
+    lines = [f"- {label}:"]
+    for item in items:
+        task_id = item.get("task_id", "")
+        title = item.get("title") or item.get("step", "")
+        status = item.get("state_status") or item.get("status", "")
+        lines.append(f"  - {task_id}: {title} ({status})")
+    return lines
+
+
+def _format_evidence(items: list[dict[str, Any]]) -> list[str]:
+    if not items:
+        return ["- none"]
+    return [
+        f"- {item.get('decision')}: {item.get('status')} -> {len(item.get('evidence', []))} evidence item(s)"
+        for item in items
+    ]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the local end-to-end AI dev pipeline loop.")
     parser.add_argument("--repo-root", default=".", help="Repository root. Defaults to cwd.")
     parser.add_argument("--task-id", default=DEFAULT_TASK_ID, help="Parent task id for summary artifacts.")
     parser.add_argument("--json", action="store_true", help="Print full JSON summary.")
     parser.add_argument("--dry-run", action="store_true", help="Preview the run plan without writing artifacts.")
+    parser.add_argument("--run-id", help="Optional stable id to record for this run.")
     parser.add_argument(
         "--rerun-policy",
         choices=sorted(RERUN_POLICIES),
@@ -646,6 +778,7 @@ def main() -> int:
         task_id=args.task_id,
         dry_run=args.dry_run,
         rerun_policy=args.rerun_policy,
+        run_id=args.run_id,
     )
     if args.json:
         print(json.dumps(summary, ensure_ascii=False, indent=2))

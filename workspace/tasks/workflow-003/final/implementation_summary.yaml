@@ -1,0 +1,30 @@
+task_id: workflow-003
+title: 端到端闭环持续优化
+status: waiting_for_human_merge_approval
+goal: 提升端到端闭环的失败诊断、运行可观测性和人工决策体验。
+completed_scope:
+  - decision_summary.yaml 增加 run_metadata.run_id 和 run_metadata.started_at。
+  - CLI 增加 --run-id，便于将一次运行和外部决策记录关联。
+  - decision_summary.yaml 增加 evidence_map，直接映射人工审批所需证据。
+  - format_end_to_end_summary 输出 completed、skipped、failed、next 分组。
+  - format_end_to_end_summary 输出 evidence 条目计数，便于人工快速判断。
+  - retry_required 失败路径继续由测试覆盖。
+changed_files:
+  - scripts/run_end_to_end.py
+  - tests/test_run_end_to_end.py
+  - workspace/tasks/workflow-003/final/decision_summary.yaml
+validation_result:
+  dry_run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-003 --dry-run --rerun-policy skip_completed --run-id workflow-003-dry-run --json
+  run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-003 --rerun-policy skip_completed --run-id workflow-003-run --json
+  pytest: passed
+  pytest_count: 76
+  validation_status: passed
+  alignment_score: 1.0
+  retry_plan_status: not_required
+  next_recommended_task: workflow-004
+  latest_rerun_id: workflow-003-rerun
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+  - 未删除用户文件。
+next_recommended_task: workflow-004
