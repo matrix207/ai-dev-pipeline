@@ -47,6 +47,12 @@ python scripts/run_local_task.py --workflow optimization_planning --goal-approve
 python scripts/run_validation_loop.py
 ```
 
+如需完整 JSON 输出：
+
+```bash
+python scripts/run_validation_loop.py --json
+```
+
 决策摘要会写入：
 
 - `workspace/tasks/planning-002/final/decision_summary.yaml`

@@ -69,7 +69,7 @@ def run_validation_loop(repo_root: str | Path = ".") -> dict[str, Any]:
 
 def _read_optional_yaml(repo_root: Path, relative_path: str) -> dict[str, Any]:
     try:
-        return read_yaml(repo_root, relative_path)
+        return read_yaml(repo_root, relative_path) or {}
     except Exception:
         return {}
 
@@ -77,6 +77,8 @@ def _read_optional_yaml(repo_root: Path, relative_path: str) -> dict[str, Any]:
 def _recommended_task(repo_root: Path, task_batches: list[dict[str, Any]]) -> dict[str, Any]:
     tasks = []
     for task_batch in task_batches:
+        if not task_batch:
+            continue
         tasks.extend(task_batch.get("tasks", []))
     tasks = [task for task in tasks if not (repo_root / "workspace/tasks" / task["id"] / "state.json").exists()]
     if not tasks:
@@ -85,16 +87,52 @@ def _recommended_task(repo_root: Path, task_batches: list[dict[str, Any]]) -> di
     return sorted(tasks, key=lambda task: priority_order.get(task.get("priority", "low"), 9))[0]
 
 
+def format_decision_summary(summary: dict[str, Any]) -> str:
+    goal_effect = summary["goal_effect"]
+    current_result = summary["current_result"]
+    next_action = summary["next_recommended_action"]
+    blocking_issues = goal_effect.get("blocking_issues", [])
+
+    lines = [
+        "AI Dev Pipeline Decision Summary",
+        "",
+        f"Validation: {goal_effect['validation_status']}",
+        f"Alignment score: {goal_effect['alignment_score']}",
+        f"Blocking issues: {len(blocking_issues)}",
+        f"Validation state: {current_result['validation_state']['status']}",
+        f"Optimization state: {current_result['optimization_state']['status']}",
+        "",
+        "Artifacts:",
+        f"- Feedback: {current_result['feedback_artifact']}",
+        f"- Next tasks: {current_result['optimization_tasks_artifact']}",
+        "",
+        "Next recommended action:",
+        f"- {next_action['task_id']}: {next_action['title']} ({next_action['priority']})",
+        f"- Reason: {next_action['reason']}",
+    ]
+
+    if blocking_issues:
+        lines.extend(["", "Blocking issue details:"])
+        for issue in blocking_issues:
+            lines.append(f"- {issue.get('id')}: {issue.get('description')}")
+
+    return "\n".join(lines)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run validation loop and write decision summary.")
     parser.add_argument("--repo-root", default=".", help="Repository root. Defaults to cwd.")
+    parser.add_argument("--json", action="store_true", help="Print full JSON summary.")
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
     summary = run_validation_loop(args.repo_root)
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if args.json:
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+    else:
+        print(format_decision_summary(summary))
     return 0 if not summary["goal_effect"]["blocking_issues"] else 1
 
 

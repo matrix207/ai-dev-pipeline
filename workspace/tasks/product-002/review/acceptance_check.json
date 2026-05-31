@@ -1,0 +1,28 @@
+{
+  "task_id": "product-002",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Human-readable CLI summary",
+      "result": "pass",
+      "evidence": "python scripts/run_validation_loop.py prints validation status, alignment score, blocking issue count, artifacts and next recommended action."
+    },
+    {
+      "name": "JSON mode",
+      "result": "pass",
+      "evidence": "python scripts/run_validation_loop.py --json prints the full JSON summary."
+    },
+    {
+      "name": "Structured artifacts preserved",
+      "result": "pass",
+      "evidence": "decision_summary.yaml remains written under workspace/tasks/planning-002/final/."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 46 passed."
+    }
+  ],
+  "blocking_issues": []
+}

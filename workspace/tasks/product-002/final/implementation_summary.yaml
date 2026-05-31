@@ -1,0 +1,23 @@
+task_id: product-002
+title: 增强人类可读 CLI 摘要
+status: waiting_for_human_merge_approval
+goal: 让 run_validation_loop.py 默认输出适合人直接决策的简短摘要，同时保留完整 JSON 和结构化 YAML 产物。
+completed_scope:
+  - 默认 CLI 输出简短决策摘要。
+  - 增加 --json 选项输出完整 JSON。
+  - 保持 decision_summary.yaml 作为结构化权威产物。
+  - 处理并发读取空 YAML 时的防御逻辑。
+changed_files:
+  - scripts/run_validation_loop.py
+  - tests/test_run_validation_loop.py
+  - README.md
+acceptance_status:
+  human_readable_cli_summary: passed
+  blocking_issues_alignment_score_and_recommended_task_visible: passed
+  structured_artifacts_preserved: passed
+  json_output_mode_available: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未实现 Web UI。
+  - 未引入外部通知服务。
+next_recommended_task: product-003
