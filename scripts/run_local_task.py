@@ -8,7 +8,14 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from agents import BaseAgent, CoderAgent, DesignReviewerAgent
+from agents import (
+    BaseAgent,
+    CodeReviewerAgent,
+    CoderAgent,
+    DesignReviewerAgent,
+    GoalEffectValidatorAgent,
+    TestValidatorAgent,
+)
 from artifacts import read_yaml, write_json
 from tasks import TaskState, save_state
 
@@ -43,18 +50,56 @@ def _step_artifact_path(task_id: str, step: str) -> str:
     return f"workspace/tasks/{task_id}/orchestration/{step}.json"
 
 
+def _step_name(step: str | dict[str, Any]) -> str:
+    if isinstance(step, str):
+        return step
+    return str(step["name"])
+
+
+def _step_options(step: str | dict[str, Any]) -> dict[str, Any]:
+    if isinstance(step, str):
+        return {}
+    return {key: value for key, value in step.items() if key != "name"}
+
+
 def _run_step(
     repo_root: str | Path,
     workflow_name: str,
     task_id: str,
     step: str,
+    step_options: dict[str, Any] | None = None,
 ) -> tuple[str, dict[str, Any]]:
+    step_options = step_options or {}
     if step == "design_review":
         result = DesignReviewerAgent().run({"repo_root": str(repo_root), "task_id": task_id})
         return f"workspace/tasks/{task_id}/review/design_review.json", result.output
     if step == "coding_plan":
         result = CoderAgent().run({"repo_root": str(repo_root), "task_id": task_id})
         return f"workspace/tasks/{task_id}/code/implementation_plan.json", result.output
+    if step == "test_validation":
+        result = TestValidatorAgent().run(
+            {
+                "repo_root": str(repo_root),
+                "commands": step_options.get("commands"),
+                "timeout_seconds": step_options.get("timeout_seconds", 120),
+            }
+        )
+        return f"workspace/tasks/{task_id}/review/test_validation.json", result.output
+    if step == "code_review":
+        result = CodeReviewerAgent().run({"repo_root": str(repo_root), "task_id": task_id})
+        return f"workspace/tasks/{task_id}/review/code_review.json", result.output
+    if step == "goal_effect_validation":
+        result = GoalEffectValidatorAgent().run(
+            {
+                "repo_root": str(repo_root),
+                "task_id": task_id,
+                "goal_spec_path": step_options.get(
+                    "goal_spec_path",
+                    "workspace/tasks/validation-001/input/validation_goal.yaml",
+                ),
+            }
+        )
+        return f"workspace/tasks/{task_id}/final/validation_feedback.json", result.output
 
     result = PlaceholderAgent("placeholder-agent").run(
         {
@@ -93,12 +138,14 @@ def run_local_task(
     )
     save_state(repo_root, state)
 
-    for step in steps:
+    for raw_step in steps:
+        step = _step_name(raw_step)
+        step_options = _step_options(raw_step)
         try:
             state.update(step=step, status="running")
             save_state(repo_root, state)
 
-            artifact_path, output = _run_step(repo_root, workflow_name, task_id, step)
+            artifact_path, output = _run_step(repo_root, workflow_name, task_id, step, step_options)
             write_json(repo_root, artifact_path, output)
             state.record_artifact(artifact_path)
             if step == "design_review":
@@ -108,6 +155,25 @@ def run_local_task(
                     save_state(repo_root, state)
                     return state
                 state.set_gate("design_review_passed", True)
+            if step == "test_validation":
+                if output["passed"]:
+                    state.set_gate("tests_passed", True)
+                else:
+                    state.set_gate("tests_passed", False)
+                    state.update(step=step, status="blocked_by_test_validation")
+                    save_state(repo_root, state)
+                    return state
+            if step == "code_review":
+                if output["blocking_issues"]:
+                    state.set_gate("code_review_passed", False)
+                    state.update(step=step, status="blocked_by_code_review")
+                    save_state(repo_root, state)
+                    return state
+                state.set_gate("code_review_passed", True)
+            if step == "goal_effect_validation" and output["blocking_issues"]:
+                state.update(step=step, status="blocked_by_goal_effect_validation")
+                save_state(repo_root, state)
+                return state
             save_state(repo_root, state)
         except Exception as exc:
             state.record_error(f"{step}: {exc}")

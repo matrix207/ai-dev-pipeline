@@ -1,0 +1,18 @@
+{
+  "task_id": "validation-001",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "workspace/tasks/validation-001/review/test_validation.json",
+    "workspace/tasks/validation-001/review/code_review.json",
+    "workspace/tasks/validation-001/final/validation_feedback.json"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": false,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

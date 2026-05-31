@@ -1,0 +1,28 @@
+{
+  "task_id": "dev-008",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Automated validation workflow",
+      "result": "pass",
+      "evidence": "python scripts/run_local_task.py --workflow automated_validation --goal-approved completed at human_merge_gate."
+    },
+    {
+      "name": "Goal alignment",
+      "result": "pass",
+      "evidence": "workspace/tasks/validation-001/final/validation_feedback.json reports alignment_score 1.0."
+    },
+    {
+      "name": "Effect validation",
+      "result": "pass",
+      "evidence": "validation_feedback.json reports tests_pass and code_review_passes as pass."
+    },
+    {
+      "name": "Feedback generated",
+      "result": "pass",
+      "evidence": "validation_feedback.json includes feedback for next decision."
+    }
+  ],
+  "blocking_issues": []
+}

@@ -2,7 +2,7 @@
 
 本项目用于搭建一个务实、可演进的多 Agent AI 开发流水线，并用这条流水线逐步分析、设计和开发项目自身。
 
-当前阶段：`dev-005` 已实现，等待人工合并门；下一步是代码评审 Agent 或端到端编排增强。
+当前阶段：自动化验证闭环已实现，等待人工合并门；下一步是基于验证反馈规划优化。
 
 ## 项目目标
 
@@ -15,6 +15,21 @@
 ## 目标效果
 
 - 交互式效果展示：[docs/demos/ai_dev_pipeline_demo.html](docs/demos/ai_dev_pipeline_demo.html)
+
+## 自动化验证
+
+运行本地自动化验证闭环：
+
+```bash
+source .venv/bin/activate
+python scripts/run_local_task.py --workflow automated_validation --goal-approved
+```
+
+验证流程会执行测试验证、代码评审和目标效果验证，并将反馈写入：
+
+- `workspace/tasks/validation-001/review/test_validation.json`
+- `workspace/tasks/validation-001/review/code_review.json`
+- `workspace/tasks/validation-001/final/validation_feedback.json`
 
 ## 第一轮任务
 

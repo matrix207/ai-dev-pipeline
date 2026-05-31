@@ -1,0 +1,23 @@
+{
+  "task_id": "dev-007",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Command result fields",
+      "result": "pass",
+      "evidence": "TestValidatorAgent records command, returncode, passed, stdout and stderr."
+    },
+    {
+      "name": "Failure handling",
+      "result": "pass",
+      "evidence": "tests/test_validation_agents.py covers failed command status."
+    },
+    {
+      "name": "Real validation run",
+      "result": "pass",
+      "evidence": "workspace/tasks/validation-001/review/test_validation.json records pytest success."
+    }
+  ],
+  "blocking_issues": []
+}

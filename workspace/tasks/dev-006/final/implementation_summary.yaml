@@ -1,0 +1,20 @@
+task_id: dev-006
+title: 代码评审 Agent 骨架
+status: waiting_for_human_merge_approval
+completed_scope:
+  - 创建 CodeReviewerAgent。
+  - 读取测试验证产物和任务状态。
+  - 输出包含 decision、checks、blocking_issues 的代码评审 JSON。
+changed_files:
+  - agents/code_reviewer_agent.py
+  - agents/__init__.py
+  - tests/test_validation_agents.py
+acceptance_status:
+  blocks_when_tests_fail: passed
+  passes_when_tests_and_state_exist: passed
+  structured_review_json: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未引入复杂静态分析。
+  - 未调用外部代码托管平台 API。
+next_recommended_task: dev-007

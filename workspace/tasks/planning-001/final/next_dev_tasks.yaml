@@ -1,0 +1,57 @@
+task_batch:
+  source_task: planning-001
+  language: zh-CN
+  status: ready_for_execution
+  goal: 建立自动化验证闭环，让项目能基于目标对齐和效果验证输出优化反馈。
+
+tasks:
+  - id: dev-006
+    title: 代码评审 Agent 骨架
+    priority: high
+    scope:
+      - 创建 CodeReviewerAgent。
+      - 读取测试验证产物和任务状态。
+      - 输出包含 decision、checks、blocking_issues 的代码评审 JSON。
+    out_of_scope:
+      - 复杂静态分析。
+      - 外部代码托管平台 API。
+    acceptance_criteria:
+      - 测试失败时产生 blocking issue。
+      - 测试通过且状态存在时评审通过。
+      - python -m pytest -q 通过。
+
+  - id: dev-007
+    title: 测试验证 Agent 骨架
+    priority: high
+    scope:
+      - 创建 TestValidatorAgent。
+      - 支持运行本地验证命令。
+      - 输出结构化测试结果。
+    out_of_scope:
+      - 远程执行。
+      - 并发测试调度。
+    acceptance_criteria:
+      - 能记录命令、returncode、stdout、stderr 和 passed。
+      - 失败命令能返回 failed 状态。
+      - python -m pytest -q 通过。
+
+  - id: dev-008
+    title: 目标效果验证 Agent 和端到端验证 workflow
+    priority: high
+    scope:
+      - 创建 GoalEffectValidatorAgent。
+      - 定义 validation goal spec。
+      - 新增 automated_validation workflow。
+      - 串联 test_validation、code_review 和 goal_effect_validation。
+    out_of_scope:
+      - 真实模型调用。
+      - 自动修复代码。
+      - 自动 merge。
+    acceptance_criteria:
+      - workflow 能生成 test_validation、code_review 和 validation_feedback 产物。
+      - 目标或效果缺失时能输出 blocking issue。
+      - 通过时停在人工合并门。
+
+human_gate:
+  required_before_pr_or_merge: true
+  role: 人确认目标效果和是否合并；Agent 执行验证并生成优化反馈。

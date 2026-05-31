@@ -1,0 +1,20 @@
+task_id: dev-007
+title: 测试验证 Agent 骨架
+status: waiting_for_human_merge_approval
+completed_scope:
+  - 创建 TestValidatorAgent。
+  - 支持运行本地验证命令。
+  - 输出结构化测试结果。
+changed_files:
+  - agents/test_validator_agent.py
+  - agents/__init__.py
+  - tests/test_validation_agents.py
+acceptance_status:
+  records_command_returncode_stdout_stderr: passed
+  failed_command_returns_failed_status: passed
+  automated_validation_uses_pytest: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未引入远程执行。
+  - 未实现并发测试调度。
+next_recommended_task: dev-008

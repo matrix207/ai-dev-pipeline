@@ -1,0 +1,21 @@
+goal: >
+  项目可以执行本地自动化验证闭环，并基于目标对齐和效果验证输出反馈，
+  为后续优化提供结构化依据。
+required_artifacts:
+  - agents/base_agent.py
+  - agents/code_reviewer_agent.py
+  - agents/coder_agent.py
+  - agents/design_reviewer_agent.py
+  - agents/goal_effect_validator_agent.py
+  - agents/test_validator_agent.py
+  - artifacts/io.py
+  - tasks/state.py
+  - scripts/run_local_task.py
+  - config/pipeline.yaml
+  - docs/demos/ai_dev_pipeline_demo.html
+expected_effects:
+  tests_pass: true
+  code_review_passes: true
+feedback_policy:
+  on_pass: 可以进入人工合并门，并基于反馈规划下一轮优化。
+  on_block: 修复 blocking issue 后重新运行 automated_validation workflow。

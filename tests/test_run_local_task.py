@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from artifacts import read_json, write_yaml
@@ -8,7 +9,7 @@ from scripts.run_local_task import run_local_task
 from tasks import load_state
 
 
-def write_config(tmp_path: Path, steps: list[str], *, human_gate_required: bool = True) -> None:
+def write_config(tmp_path: Path, steps: list, *, human_gate_required: bool = True) -> None:
     write_yaml(
         tmp_path,
         "config/pipeline.yaml",
@@ -61,6 +62,21 @@ def write_task_batch(tmp_path: Path, task_id: str = "dev-005") -> None:
                     "acceptance_criteria": ["输出结构化实现计划。"],
                 }
             ]
+        },
+    )
+
+
+def write_validation_goal(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "自动化验证闭环可运行。",
+            "required_artifacts": ["config/pipeline.yaml"],
+            "expected_effects": {
+                "tests_pass": True,
+                "code_review_passes": True,
+            },
         },
     )
 
@@ -172,3 +188,51 @@ def test_run_local_task_writes_coding_plan_artifact(tmp_path: Path) -> None:
     plan = read_json(tmp_path, state.artifacts[0])
     assert plan["task_id"] == "dev-003"
     assert plan["safety"]["pr_or_merge"] == "not_allowed"
+
+
+def test_run_local_task_runs_automated_validation_workflow(tmp_path: Path) -> None:
+    write_config(
+        tmp_path,
+        [
+            {
+                "name": "test_validation",
+                "commands": [[sys.executable, "-c", "print('ok')"]],
+            },
+            "code_review",
+            "goal_effect_validation",
+        ],
+    )
+    write_validation_goal(tmp_path)
+
+    state = run_local_task(tmp_path, "local_dev", task_id="validation-001", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.gates["tests_passed"] is True
+    assert state.gates["code_review_passed"] is True
+    assert state.artifacts == [
+        "workspace/tasks/validation-001/review/test_validation.json",
+        "workspace/tasks/validation-001/review/code_review.json",
+        "workspace/tasks/validation-001/final/validation_feedback.json",
+    ]
+    feedback = read_json(tmp_path, state.artifacts[-1])
+    assert feedback["status"] == "passed"
+
+
+def test_run_local_task_stops_when_test_validation_fails(tmp_path: Path) -> None:
+    write_config(
+        tmp_path,
+        [
+            {
+                "name": "test_validation",
+                "commands": [[sys.executable, "-c", "raise SystemExit(1)"]],
+            },
+            "code_review",
+        ],
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="validation-001", goal_approved=True)
+
+    assert state.step == "test_validation"
+    assert state.status == "blocked_by_test_validation"
+    assert state.gates["tests_passed"] is False

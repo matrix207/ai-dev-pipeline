@@ -39,6 +39,13 @@ workflows:
     steps:
       - coding_plan
     human_gate_required: true
+  automated_validation:
+    task_id: validation-001
+    steps:
+      - test_validation
+      - code_review
+      - goal_effect_validation
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem

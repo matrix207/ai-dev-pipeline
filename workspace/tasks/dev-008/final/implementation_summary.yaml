@@ -1,0 +1,28 @@
+task_id: dev-008
+title: 目标效果验证 Agent 和端到端验证 workflow
+status: waiting_for_human_merge_approval
+completed_scope:
+  - 创建 GoalEffectValidatorAgent。
+  - 定义 validation goal spec。
+  - 新增 automated_validation workflow。
+  - 串联 test_validation、code_review 和 goal_effect_validation。
+  - 生成 validation_feedback.json，用目标对齐和效果验证给出反馈。
+changed_files:
+  - agents/goal_effect_validator_agent.py
+  - agents/__init__.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_run_local_task.py
+  - tests/test_validation_agents.py
+  - workspace/tasks/validation-001/input/validation_goal.yaml
+acceptance_status:
+  automated_validation_workflow_runs: passed
+  validation_feedback_generated: passed
+  missing_goal_or_effect_blocks: passed
+  stops_at_human_merge_gate_on_pass: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未调用真实模型 API。
+  - 未自动修复代码。
+  - 未自动 merge。
+next_recommended_task: optimization-001
