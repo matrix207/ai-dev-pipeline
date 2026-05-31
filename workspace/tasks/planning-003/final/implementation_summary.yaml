@@ -1,0 +1,26 @@
+task_id: planning-003
+title: 自动执行优化任务能力规划
+status: waiting_for_human_merge_approval
+goal: 建立优化任务执行规划能力，为后续按 recommended_agent 自动调度 Agent 做准备。
+completed_scope:
+  - 创建 OptimizationExecutorAgent。
+  - 新增 optimization_execution workflow。
+  - 支持选择下一个未完成任务。
+  - 支持 high risk 任务风险门阻塞。
+  - 当前真实运行结果为 no_open_tasks，表示现有优化任务已全部收口。
+changed_files:
+  - agents/optimization_executor_agent.py
+  - agents/__init__.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_optimization_executor_agent.py
+  - tests/test_run_local_task.py
+  - README.md
+  - workspace/tasks/planning-003/code/execution_plan.json
+acceptance_status:
+  selects_next_open_task: passed
+  reports_no_open_tasks: passed
+  high_risk_blocks_without_approval: passed
+  workflow_writes_execution_plan: passed
+  pytest: passed
+next_recommended_task: exec-003

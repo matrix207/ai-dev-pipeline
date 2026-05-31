@@ -51,6 +51,11 @@ workflows:
     steps:
       - optimization_planning
     human_gate_required: true
+  optimization_execution:
+    task_id: planning-003
+    steps:
+      - optimization_execution_plan
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem

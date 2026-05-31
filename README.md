@@ -57,6 +57,16 @@ python scripts/run_validation_loop.py --json
 
 - `workspace/tasks/planning-002/final/decision_summary.yaml`
 
+生成下一阶段优化任务执行计划：
+
+```bash
+python scripts/run_local_task.py --workflow optimization_execution --goal-approved
+```
+
+执行计划会写入：
+
+- `workspace/tasks/planning-003/code/execution_plan.json`
+
 ## 第一轮任务
 
 ```bash

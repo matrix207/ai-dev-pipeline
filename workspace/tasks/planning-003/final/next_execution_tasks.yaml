@@ -1,0 +1,69 @@
+task_batch:
+  source_task: planning-003
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 建立下一阶段自动执行优化任务的最小能力，根据 recommended_agent 和 risk_level 生成执行计划。
+
+tasks:
+  - id: exec-001
+    title: 选择下一个未完成优化任务
+    priority: high
+    recommended_agent: OptimizationExecutorAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 从 next_optimization_tasks.yaml 读取任务列表。
+      - 跳过已有 workspace/tasks/{task_id}/state.json 的任务。
+      - 选择最高优先级的未完成任务。
+    out_of_scope:
+      - 自动修改代码。
+      - 自动 merge。
+    acceptance_criteria:
+      - 能返回 selected_task 和 execution_plan。
+      - 无未完成任务时返回 no_open_tasks。
+
+  - id: exec-002
+    title: 风险门控制执行计划
+    priority: high
+    recommended_agent: OptimizationExecutorAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 高风险任务在未获风险审批时停止。
+      - 获得风险审批后才输出执行计划。
+    out_of_scope:
+      - 自动审批风险。
+    acceptance_criteria:
+      - high risk 且未批准时返回 risk_gate_required blocking issue。
+      - risk_approved=true 时允许输出执行计划。
+
+  - id: exec-003
+    title: 自动执行优化任务的真实 Agent 调度
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 根据 selected_task.recommended_agent 调用对应 Agent。
+      - 将执行结果写入 workspace/tasks/{task_id}/。
+      - 执行后自动运行 automated_validation。
+    out_of_scope:
+      - 自动 PR 或 merge。
+      - 外部任务系统同步。
+    acceptance_criteria:
+      - 能调度至少一个本地 Agent。
+      - 执行后产生任务状态和验证反馈。
+
+human_gate:
+  required_before_starting_execution_tasks: true
+  required_before_pr_or_merge: true
+  role: 人确认是否允许 Agent 执行优化任务；高风险任务必须先过风险门。

@@ -258,3 +258,37 @@ def test_run_local_task_generates_optimization_tasks(tmp_path: Path) -> None:
     assert state.artifacts == ["workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"]
     generated = read_yaml(tmp_path, state.artifacts[0])
     assert generated["task_batch"]["planning_mode"] == "enhancement"
+
+
+def test_run_local_task_writes_optimization_execution_plan(tmp_path: Path) -> None:
+    write_config(tmp_path, ["optimization_execution_plan"])
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": "next-task",
+                    "title": "Next",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["do next"],
+                    "acceptance_criteria": ["next done"],
+                }
+            ]
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="planning-003", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == ["workspace/tasks/planning-003/code/execution_plan.json"]
+    plan = read_json(tmp_path, state.artifacts[0])
+    assert plan["selected_task"]["id"] == "next-task"
