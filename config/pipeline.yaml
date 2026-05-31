@@ -59,6 +59,16 @@ workflows:
           - workspace/tasks/dispatch-001/final/validation_feedback.json
           - workspace/tasks/dispatch-validation-demo/final/validation_feedback.json
     human_gate_required: true
+  feedback_dispatch:
+    task_id: feedback-dispatch-001
+    steps:
+      - name: optimization_dispatch
+        tasks_path: workspace/tasks/feedback-001/final/next_optimization_tasks.yaml
+      - dispatched_task_validation
+      - test_validation
+      - code_review
+      - goal_effect_validation
+    human_gate_required: true
   optimization_execution:
     task_id: planning-003
     steps:

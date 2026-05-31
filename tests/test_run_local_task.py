@@ -379,6 +379,62 @@ def test_run_local_task_dispatches_optimization_task(tmp_path: Path) -> None:
     assert dispatched_state["status"] == "waiting_for_validation"
 
 
+def test_run_local_task_dispatches_feedback_generated_tasks(tmp_path: Path) -> None:
+    write_config(
+        tmp_path,
+        [
+            {
+                "name": "optimization_dispatch",
+                "tasks_path": "workspace/tasks/feedback-001/final/next_optimization_tasks.yaml",
+            }
+        ],
+    )
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/feedback-001/final/next_optimization_tasks.yaml",
+        {
+            "task_batch": {
+                "source_tasks": ["dispatch-001", "dispatch-validation-demo"],
+                "source_feedback_paths": [
+                    "workspace/tasks/dispatch-001/final/validation_feedback.json",
+                    "workspace/tasks/dispatch-validation-demo/final/validation_feedback.json",
+                ],
+            },
+            "tasks": [
+                {
+                    "id": "feedback-002",
+                    "title": "把下一轮优化任务接入调度执行",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["调度反馈生成的任务。"],
+                    "out_of_scope": ["自动 merge。"],
+                    "acceptance_criteria": ["调度产物能引用来源 validation_feedback。"],
+                }
+            ],
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="feedback-dispatch-001", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == ["workspace/tasks/feedback-dispatch-001/code/dispatch_result.json"]
+    dispatch_result = read_json(tmp_path, state.artifacts[0])
+    assert dispatch_result["selected_task"]["id"] == "feedback-002"
+    assert dispatch_result["source_feedback_paths"] == [
+        "workspace/tasks/dispatch-001/final/validation_feedback.json",
+        "workspace/tasks/dispatch-validation-demo/final/validation_feedback.json",
+    ]
+    dispatched_state = read_json(tmp_path, "workspace/tasks/feedback-002/state.json")
+    assert dispatched_state["status"] == "waiting_for_validation"
+
+
 def test_run_local_task_validates_dispatched_task(tmp_path: Path) -> None:
     write_config(
         tmp_path,

@@ -1,0 +1,26 @@
+task_id: feedback-dispatch-001
+title: 反馈队列调度后的下一步任务
+status: proposed
+recommended_next_task:
+  id: dispatch-002
+  title: 支持更多本地 Agent 调度
+  recommended_agent: ArchitectAgent
+  priority: medium
+  risk_level: medium
+  goal: 将 DesignReviewerAgent、TestValidatorAgent、CodeReviewerAgent、GoalEffectValidatorAgent 纳入 dispatcher 的安全调度表。
+  acceptance_criteria:
+    - dispatcher 对支持的 Agent 有测试覆盖。
+    - unsupported_agent 路径仍有测试覆盖。
+    - 受支持 Agent 的调度产物写入对应任务目录。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: ui-validation-001
+    title: 增加目标效果图的自动检查
+    recommended_agent: TestValidatorAgent
+    priority: medium
+    risk_level: low
+    goal: 对 docs/demos/ai_dev_pipeline_demo.html 提取可机读检查项，并让目标效果验证报告页面目标达成度。

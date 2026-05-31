@@ -11,6 +11,12 @@ def write_tasks(tmp_path: Path, *, risk_level: str = "medium", agent: str = "Cod
         tmp_path,
         "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
         {
+            "task_batch": {
+                "source_tasks": ["source-parent"],
+                "source_feedback_paths": [
+                    "workspace/tasks/source-parent/final/validation_feedback.json"
+                ],
+            },
             "tasks": [
                 {
                     "id": "dispatch-task",
@@ -40,6 +46,10 @@ def test_optimization_dispatcher_dispatches_coder_agent(tmp_path: Path) -> None:
     assert result.output["status"] == "dispatched"
     assert result.output["selected_task"]["id"] == "dispatch-task"
     assert result.output["tasks_path"] == "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"
+    assert result.output["source_tasks"] == ["source-parent"]
+    assert result.output["source_feedback_paths"] == [
+        "workspace/tasks/source-parent/final/validation_feedback.json"
+    ]
     assert result.output["dispatch_result"]["task_id"] == "dispatch-task"
     assert result.output["dispatch_result"]["safety"]["pr_or_merge"] == "not_allowed"
     assert result.output["written_artifacts"] == [

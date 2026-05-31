@@ -1,0 +1,18 @@
+{
+  "task_id": "feedback-dispatch-001",
+  "status": "passed",
+  "dispatched_task_id": "feedback-002",
+  "artifacts": [
+    "workspace/tasks/feedback-002/review/test_validation.json",
+    "workspace/tasks/feedback-002/review/code_review.json",
+    "workspace/tasks/feedback-002/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

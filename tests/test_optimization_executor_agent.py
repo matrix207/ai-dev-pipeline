@@ -11,6 +11,13 @@ def write_optimization_tasks(tmp_path: Path, *, risk_level: str = "medium") -> N
         tmp_path,
         "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
         {
+            "task_batch": {
+                "source_tasks": ["source-parent", "source-child"],
+                "source_feedback_paths": [
+                    "workspace/tasks/source-parent/final/validation_feedback.json",
+                    "workspace/tasks/source-child/final/validation_feedback.json",
+                ],
+            },
             "tasks": [
                 {
                     "id": "done-task",
@@ -52,8 +59,14 @@ def test_optimization_executor_selects_next_open_task(tmp_path: Path) -> None:
     result = OptimizationExecutorAgent().run({"repo_root": str(tmp_path)})
 
     assert result.output["status"] == "ready"
+    assert result.output["tasks_path"] == "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"
+    assert result.output["task_batch"]["source_tasks"] == ["source-parent", "source-child"]
     assert result.output["selected_task"]["id"] == "next-task"
     assert result.output["selected_task"]["recommended_agent"] == "CoderAgent"
+    assert result.output["selected_task"]["source_feedback_paths"] == [
+        "workspace/tasks/source-parent/final/validation_feedback.json",
+        "workspace/tasks/source-child/final/validation_feedback.json",
+    ]
     assert result.output["execution_allowed"] is True
     assert result.output["execution_plan"] == [
         {"order": 1, "description": "do next", "recommended_agent": "CoderAgent"}

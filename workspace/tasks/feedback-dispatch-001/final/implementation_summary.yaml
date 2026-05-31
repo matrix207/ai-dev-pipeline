@@ -1,0 +1,35 @@
+task_id: feedback-dispatch-001
+title: 将反馈生成的任务队列接入调度执行
+status: waiting_for_human_merge_approval
+goal: 让 optimization_dispatch 可以直接读取 feedback_planning 生成的 next_optimization_tasks.yaml，并把来源验证反馈带入调度产物。
+completed_scope:
+  - OptimizationExecutorAgent 读取 task_batch 元数据。
+  - OptimizationExecutorAgent 将 source_tasks 和 source_feedback_paths 写入 selected_task。
+  - OptimizationDispatcherAgent 将 source_tasks 和 source_feedback_paths 写入 dispatch_result。
+  - 新增 feedback_dispatch workflow，读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。
+  - feedback_dispatch 真实调度 feedback-002 并完成子任务验证闭环。
+  - 父任务和子任务继续保留人工 merge gate。
+changed_files:
+  - agents/optimization_executor_agent.py
+  - agents/optimization_dispatcher_agent.py
+  - config/pipeline.yaml
+  - tests/test_optimization_executor_agent.py
+  - tests/test_optimization_dispatcher_agent.py
+  - tests/test_run_local_task.py
+  - workspace/tasks/feedback-dispatch-001/code/dispatch_result.json
+  - workspace/tasks/feedback-dispatch-001/review/dispatched_task_validation.json
+  - workspace/tasks/feedback-002/state.json
+validation_result:
+  pytest: passed
+  pytest_count: 60
+  workflow: feedback_dispatch
+  parent_task: feedback-dispatch-001
+  dispatched_task: feedback-002
+  source_feedbacks:
+    - workspace/tasks/dispatch-001/final/validation_feedback.json
+    - workspace/tasks/dispatch-validation-demo/final/validation_feedback.json
+  child_validation: passed
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+next_recommended_task: dispatch-002

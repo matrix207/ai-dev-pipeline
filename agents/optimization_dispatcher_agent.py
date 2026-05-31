@@ -33,6 +33,8 @@ class OptimizationDispatcherAgent(BaseAgent):
             return {
                 "status": execution["status"],
                 "selected_task": execution.get("selected_task"),
+                "tasks_path": tasks_path,
+                "task_batch": execution.get("task_batch", {}),
                 "execution": execution,
                 "dispatch_result": None,
                 "blocking_issues": execution.get("blocking_issues", []),
@@ -87,6 +89,9 @@ class OptimizationDispatcherAgent(BaseAgent):
             "status": "dispatched",
             "selected_task": selected_task,
             "tasks_path": tasks_path,
+            "task_batch": execution.get("task_batch", {}),
+            "source_tasks": selected_task.get("source_tasks", []),
+            "source_feedback_paths": selected_task.get("source_feedback_paths", []),
             "execution": execution,
             "dispatch_result": dispatch_result,
             "written_artifacts": [

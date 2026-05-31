@@ -24,11 +24,14 @@ class OptimizationExecutorAgent(BaseAgent):
         risk_approved = bool(payload.get("risk_approved", False))
 
         task_batch = read_yaml(repo_root, tasks_path)
+        task_batch_metadata = dict(task_batch.get("task_batch", {}))
         task = self._next_open_task(repo_root, task_batch.get("tasks", []))
         if task is None:
             return {
                 "status": "no_open_tasks",
                 "selected_task": None,
+                "tasks_path": tasks_path,
+                "task_batch": task_batch_metadata,
                 "execution_allowed": False,
                 "blocking_issues": [],
                 "execution_plan": [],
@@ -50,6 +53,8 @@ class OptimizationExecutorAgent(BaseAgent):
         execution_allowed = not blocking_issues
         return {
             "status": "ready" if execution_allowed else "blocked",
+            "tasks_path": tasks_path,
+            "task_batch": task_batch_metadata,
             "selected_task": {
                 "id": task["id"],
                 "title": task["title"],
@@ -57,6 +62,8 @@ class OptimizationExecutorAgent(BaseAgent):
                 "recommended_agent": task.get("recommended_agent"),
                 "risk_level": task.get("risk_level"),
                 "human_gate": human_gate,
+                "source_tasks": task_batch_metadata.get("source_tasks", []),
+                "source_feedback_paths": task_batch_metadata.get("source_feedback_paths", []),
             },
             "execution_allowed": execution_allowed,
             "blocking_issues": blocking_issues,

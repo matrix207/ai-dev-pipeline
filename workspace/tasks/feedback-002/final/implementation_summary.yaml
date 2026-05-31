@@ -1,0 +1,16 @@
+task_id: feedback-002
+title: 把下一轮优化任务接入调度执行
+status: waiting_for_human_merge_approval
+goal: 让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。
+completed_scope:
+  - feedback_dispatch workflow 读取 feedback-001 生成的任务队列。
+  - feedback_dispatch 调度 feedback-002。
+  - 调度产物记录 source_tasks 和 source_feedback_paths。
+  - 子任务验证闭环已生成测试验证、代码评审和目标效果验证产物。
+validation_result:
+  tests_passed: true
+  code_review_passed: true
+  goal_effect_validation: passed
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+next_recommended_task: dispatch-002
