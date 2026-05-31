@@ -12,6 +12,28 @@ runtime:
   artifact_backend: local_filesystem
   state_backend: local_json
 
+responsibility_model:
+  human:
+    purpose: 定义目标、理想效果、范围边界和关键风险决策。
+    responsibilities:
+      - 审批任务目标和验收标准。
+      - 判断本轮范围是否符合 MVP 和项目方向。
+      - 审批高风险架构、安全、secret、外部依赖和数据破坏决策。
+      - 审批 commit、PR、merge 或 release 等主线变更。
+    non_goals:
+      - 不要求人工逐行检查每个 Agent 产物。
+      - 不要求人工手动执行日常设计、编码、测试和评审步骤。
+  agents:
+    purpose: 端到端执行设计、开发、测试验证和自动评审。
+    responsibilities:
+      - 生成结构化分析、设计、实现计划和代码变更。
+      - 运行单元测试和本地验收验证。
+      - 由独立评审 Agent 评审设计和代码。
+      - 将执行过程、测试结果和评审结果写入任务目录。
+    non_goals:
+      - 不自动绕过人工目标门、风险门或合并门。
+      - 不自动执行 PR、merge 或 release。
+
 modules:
   agents:
     purpose: 定义 Agent 的通用接口和后续 Agent 骨架。
@@ -41,6 +63,7 @@ modules:
       - tasks/state.py
     responsibilities:
       - 记录 task id、step、status、artifacts 和 errors。
+      - 记录目标、设计评审、测试、代码评审和人工合并质量门状态。
       - 支持状态文件的加载和保存。
       - 为编排器提供最小恢复能力。
   orchestration:
@@ -52,13 +75,71 @@ modules:
       - 按步骤调用 Agent 或占位实现。
       - 在人工质量门停止并输出下一步提示。
   review:
-    purpose: 提供设计评审 Agent 骨架。
+    purpose: 提供设计评审和代码评审 Agent 骨架。
     initial_files:
       - agents/design_reviewer_agent.py
+      - agents/code_reviewer_agent.py
     responsibilities:
       - 读取分析、架构和设计产物。
+      - 读取代码变更、测试结果和验收标准。
       - 输出结构化 review JSON。
       - 标记 blocking issues 和建议。
+
+human_gates:
+  goal_gate:
+    owner: human
+    required_before:
+      - design_or_implementation
+    records:
+      - goal_approved
+      - acceptance_criteria_approved
+      - scope_approved
+  risk_gate:
+    owner: human
+    required_when:
+      - introduces_external_service
+      - changes_secret_or_auth_handling
+      - destructive_file_or_data_operation
+      - major_architecture_boundary_change
+    records:
+      - risk_approved
+      - risk_notes
+  merge_gate:
+    owner: human
+    required_before:
+      - commit
+      - pr
+      - merge
+      - release
+    records:
+      - human_merge_approved
+      - approval_notes
+
+agent_reviews:
+  design_review:
+    owner: design_reviewer_agent
+    required_before:
+      - implementation
+    records:
+      - design_review_passed
+      - blocking_issues
+      - non_blocking_issues
+  test_validation:
+    owner: test_or_validation_agent
+    required_before:
+      - code_review
+    records:
+      - tests_passed
+      - test_command
+      - test_output_summary
+  code_review:
+    owner: code_reviewer_agent
+    required_before:
+      - human_merge_gate
+    records:
+      - code_review_passed
+      - blocking_issues
+      - recommendations
 
 artifact_contracts:
   task_root_pattern: workspace/tasks/{task_id}
@@ -93,6 +174,26 @@ workflow:
       - agents/base_agent.py
       - artifacts/io.py
       - tests/
+    gates:
+      goal_approved: true
+      tests_required: true
+      human_merge_approval_required: true
+  dev_002:
+    goal: 实现任务状态管理器。
+    expected_scope:
+      - tasks/state.py
+      - tests/
+    required_state_fields:
+      - task_id
+      - step
+      - status
+      - artifacts
+      - errors
+      - gates.goal_approved
+      - gates.design_review_passed
+      - gates.tests_passed
+      - gates.code_review_passed
+      - gates.human_merge_approved
 
 quality_rules:
   - 开发任务保持小型、可测试、可评审。
@@ -100,6 +201,8 @@ quality_rules:
   - 所有路径相对仓库根目录。
   - 不硬编码 API key 或 secret。
   - 不自动执行 PR 或 merge 操作。
+  - 人工质量门聚焦目标、范围、风险和主线变更审批。
+  - Agent 应负责日常设计、开发、测试验证和自动评审。
 
 testing:
   required_commands:

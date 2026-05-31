@@ -29,12 +29,15 @@ tasks:
       - 定义任务状态结构。
       - 实现本地 JSON 状态读写。
       - 记录 task id、step、status、artifact paths 和 errors。
+      - 记录质量门状态，包括 goal_approved、design_review_passed、tests_passed、code_review_passed 和 human_merge_approved。
     out_of_scope:
       - 数据库持久化。
       - 远程状态同步。
+      - 自动审批人工质量门。
     acceptance_criteria:
       - 可以创建、保存、加载和更新任务状态。
       - 状态文件保存在 workspace/tasks/{task_id}/ 下。
+      - 状态能区分人工目标门、Agent 自动评审/测试门和人工合并门。
       - 单元测试覆盖正常路径和错误路径。
 
   - id: dev-003
@@ -86,4 +89,5 @@ tasks:
 human_gate:
   required_before_starting_dev: true
   required_before_pr_or_merge: true
+  role: 人负责目标、效果、范围、关键风险和主线变更审批；Agent 负责设计、开发、测试验证和自动评审。
   suggested_next_command: ./scripts/run_codex_dev_001.sh

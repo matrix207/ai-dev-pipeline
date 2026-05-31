@@ -1,0 +1,25 @@
+task_id: dev-001
+title: 基础 Agent 抽象和产物 I/O
+status: ready_for_human_review
+completed_scope:
+  - 创建最小化的 agents/base_agent.py。
+  - 创建 artifacts/io.py，支持 YAML、JSON 和文本产物读写。
+  - 添加 pytest 单元测试覆盖基础 Agent 行为和产物 I/O。
+changed_files:
+  - agents/__init__.py
+  - agents/base_agent.py
+  - artifacts/__init__.py
+  - artifacts/io.py
+  - tests/test_base_agent.py
+  - tests/test_artifacts_io.py
+  - pyproject.toml
+acceptance_status:
+  base_agent_structured_input_output: passed
+  artifact_yaml_json_text_io: passed
+  repository_relative_paths: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未调用外部模型 API。
+  - 未实现完整 Agent 编排。
+  - 未执行 PR、merge 或 commit。
+next_recommended_task: dev-002

@@ -13,5 +13,8 @@ dependencies = [
 testpaths = ["tests"]
 pythonpath = ["."]
 
+[tool.setuptools.packages.find]
+include = ["agents*", "artifacts*"]
+
 [tool.ruff]
 line-length = 100
