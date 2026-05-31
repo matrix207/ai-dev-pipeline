@@ -55,22 +55,42 @@ class OptimizationExecutorAgent(BaseAgent):
             "status": "ready" if execution_allowed else "blocked",
             "tasks_path": tasks_path,
             "task_batch": task_batch_metadata,
-            "selected_task": {
-                "id": task["id"],
-                "title": task["title"],
-                "priority": task.get("priority"),
-                "recommended_agent": task.get("recommended_agent"),
-                "risk_level": task.get("risk_level"),
-                "human_gate": human_gate,
-                "source_tasks": task_batch_metadata.get("source_tasks", []),
-                "source_feedback_paths": task_batch_metadata.get("source_feedback_paths", []),
-            },
+            "selected_task": self._selected_task(task, human_gate, task_batch_metadata),
             "execution_allowed": execution_allowed,
             "blocking_issues": blocking_issues,
             "execution_plan": self._execution_plan(task) if execution_allowed else [],
             "out_of_scope": task.get("out_of_scope", []),
             "acceptance_criteria": task.get("acceptance_criteria", []),
         }
+
+    def _selected_task(
+        self,
+        task: dict[str, Any],
+        human_gate: dict[str, Any],
+        task_batch_metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        selected = {
+            "id": task["id"],
+            "title": task["title"],
+            "priority": task.get("priority"),
+            "recommended_agent": task.get("recommended_agent"),
+            "risk_level": task.get("risk_level"),
+            "human_gate": human_gate,
+            "source_tasks": task_batch_metadata.get("source_tasks", []),
+            "source_feedback_paths": task_batch_metadata.get("source_feedback_paths", []),
+        }
+        for field in [
+            "target_task_id",
+            "artifact_paths",
+            "commands",
+            "timeout_seconds",
+            "validation_path",
+            "task_definition_path",
+            "goal_spec_path",
+        ]:
+            if field in task:
+                selected[field] = task[field]
+        return selected
 
     def _next_open_task(self, repo_root: Path, tasks: list[dict[str, Any]]) -> dict[str, Any] | None:
         priority_order = {"high": 0, "medium": 1, "low": 2}

@@ -1,0 +1,18 @@
+{
+  "task_id": "dispatch-002",
+  "status": "passed",
+  "dispatched_task_id": "dispatch-002-design-review",
+  "artifacts": [
+    "workspace/tasks/dispatch-002-design-review/review/test_validation.json",
+    "workspace/tasks/dispatch-002-design-review/review/code_review.json",
+    "workspace/tasks/dispatch-002-design-review/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

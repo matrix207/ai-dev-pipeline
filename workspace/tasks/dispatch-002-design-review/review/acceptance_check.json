@@ -1,0 +1,28 @@
+{
+  "task_id": "dispatch-002-design-review",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Design review dispatched",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-002-design-review/review/design_review.json reports passed."
+    },
+    {
+      "name": "Target task reviewed",
+      "result": "pass",
+      "evidence": "DesignReviewerAgent reviewed bootstrap-001 analysis, architecture and design artifacts."
+    },
+    {
+      "name": "Child validation",
+      "result": "pass",
+      "evidence": "dispatch-002-design-review has test_validation, code_review and validation_feedback artifacts."
+    },
+    {
+      "name": "Human gate",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-002-design-review/state.json keeps human_merge_approved false."
+    }
+  ],
+  "blocking_issues": []
+}

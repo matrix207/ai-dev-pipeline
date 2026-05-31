@@ -1,0 +1,177 @@
+{
+  "status": "dispatched",
+  "selected_task": {
+    "id": "dispatch-002-design-review",
+    "title": "调度 DesignReviewerAgent 检查 bootstrap 设计产物",
+    "priority": "high",
+    "recommended_agent": "DesignReviewerAgent",
+    "risk_level": "medium",
+    "human_gate": {
+      "goal_approval_required": true,
+      "risk_approval_required": false,
+      "merge_approval_required": true
+    },
+    "source_tasks": [
+      "feedback-dispatch-001",
+      "feedback-002"
+    ],
+    "source_feedback_paths": [
+      "workspace/tasks/feedback-dispatch-001/final/validation_feedback.json",
+      "workspace/tasks/feedback-002/final/validation_feedback.json"
+    ],
+    "target_task_id": "bootstrap-001"
+  },
+  "tasks_path": "workspace/tasks/dispatch-002/input/dispatch_tasks.yaml",
+  "task_batch": {
+    "source_task": "feedback-dispatch-001",
+    "source_tasks": [
+      "feedback-dispatch-001",
+      "feedback-002"
+    ],
+    "source_feedback_paths": [
+      "workspace/tasks/feedback-dispatch-001/final/validation_feedback.json",
+      "workspace/tasks/feedback-002/final/validation_feedback.json"
+    ],
+    "goal": "验证 dispatcher 可以安全调度更多本地 Agent。"
+  },
+  "source_tasks": [
+    "feedback-dispatch-001",
+    "feedback-002"
+  ],
+  "source_feedback_paths": [
+    "workspace/tasks/feedback-dispatch-001/final/validation_feedback.json",
+    "workspace/tasks/feedback-002/final/validation_feedback.json"
+  ],
+  "execution": {
+    "status": "ready",
+    "tasks_path": "workspace/tasks/dispatch-002/input/dispatch_tasks.yaml",
+    "task_batch": {
+      "source_task": "feedback-dispatch-001",
+      "source_tasks": [
+        "feedback-dispatch-001",
+        "feedback-002"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/feedback-dispatch-001/final/validation_feedback.json",
+        "workspace/tasks/feedback-002/final/validation_feedback.json"
+      ],
+      "goal": "验证 dispatcher 可以安全调度更多本地 Agent。"
+    },
+    "selected_task": {
+      "id": "dispatch-002-design-review",
+      "title": "调度 DesignReviewerAgent 检查 bootstrap 设计产物",
+      "priority": "high",
+      "recommended_agent": "DesignReviewerAgent",
+      "risk_level": "medium",
+      "human_gate": {
+        "goal_approval_required": true,
+        "risk_approval_required": false,
+        "merge_approval_required": true
+      },
+      "source_tasks": [
+        "feedback-dispatch-001",
+        "feedback-002"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/feedback-dispatch-001/final/validation_feedback.json",
+        "workspace/tasks/feedback-002/final/validation_feedback.json"
+      ],
+      "target_task_id": "bootstrap-001"
+    },
+    "execution_allowed": true,
+    "blocking_issues": [],
+    "execution_plan": [
+      {
+        "order": 1,
+        "description": "使用安全调度表调用 DesignReviewerAgent。",
+        "recommended_agent": "DesignReviewerAgent"
+      },
+      {
+        "order": 2,
+        "description": "评审 bootstrap-001 的 analysis、architecture 和 design 产物。",
+        "recommended_agent": "DesignReviewerAgent"
+      },
+      {
+        "order": 3,
+        "description": "将评审产物写入被调度任务目录。",
+        "recommended_agent": "DesignReviewerAgent"
+      }
+    ],
+    "out_of_scope": [
+      "自动 PR。",
+      "自动 merge。",
+      "调用外部 Agent 服务。"
+    ],
+    "acceptance_criteria": [
+      "dispatcher 支持 DesignReviewerAgent。",
+      "调度产物写入 workspace/tasks/dispatch-002-design-review/review/design_review.json。",
+      "dispatch_result 记录来源 feedback。",
+      "python -m pytest -q 通过。"
+    ]
+  },
+  "dispatch_result": {
+    "task_id": "bootstrap-001",
+    "status": "passed",
+    "decision": {
+      "approved_for_implementation": true,
+      "requires_human_review": false
+    },
+    "checks": [
+      {
+        "name": "analysis_artifact",
+        "result": "pass",
+        "notes": "已读取 workspace/tasks/bootstrap-001/analysis/project_context.yaml。"
+      },
+      {
+        "name": "architecture_artifact",
+        "result": "pass",
+        "notes": "已读取 workspace/tasks/bootstrap-001/architecture/mvp_architecture.md。"
+      },
+      {
+        "name": "design_artifact",
+        "result": "pass",
+        "notes": "已读取 workspace/tasks/bootstrap-001/design/mvp_system_design.yaml。"
+      },
+      {
+        "name": "design_modules",
+        "result": "pass",
+        "notes": "系统设计包含 modules 定义。"
+      },
+      {
+        "name": "design_workflow",
+        "result": "pass",
+        "notes": "系统设计包含 workflow 定义。"
+      },
+      {
+        "name": "human_gate_design",
+        "result": "pass",
+        "notes": "架构文档描述了人工质量门。"
+      }
+    ],
+    "blocking_issues": [],
+    "non_blocking_issues": [],
+    "reviewed_artifacts": {
+      "analysis": "workspace/tasks/bootstrap-001/analysis/project_context.yaml",
+      "architecture": "workspace/tasks/bootstrap-001/architecture/mvp_architecture.md",
+      "design": "workspace/tasks/bootstrap-001/design/mvp_system_design.yaml"
+    }
+  },
+  "written_artifacts": [
+    "workspace/tasks/dispatch-002-design-review/review/design_review.json",
+    "workspace/tasks/dispatch-002-design-review/state.json",
+    "workspace/tasks/dispatch-002-design-review/review/test_validation.json",
+    "workspace/tasks/dispatch-002-design-review/review/code_review.json",
+    "workspace/tasks/dispatch-002-design-review/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "dispatched_task_validation": {
+    "status": "passed",
+    "dispatched_task_id": "dispatch-002-design-review",
+    "artifacts": [
+      "workspace/tasks/dispatch-002-design-review/review/test_validation.json",
+      "workspace/tasks/dispatch-002-design-review/review/code_review.json",
+      "workspace/tasks/dispatch-002-design-review/final/validation_feedback.json"
+    ],
+    "blocking_issues": []
+  }
+}

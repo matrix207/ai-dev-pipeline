@@ -1,0 +1,47 @@
+{
+  "task_id": "bootstrap-001",
+  "status": "passed",
+  "decision": {
+    "approved_for_implementation": true,
+    "requires_human_review": false
+  },
+  "checks": [
+    {
+      "name": "analysis_artifact",
+      "result": "pass",
+      "notes": "已读取 workspace/tasks/bootstrap-001/analysis/project_context.yaml。"
+    },
+    {
+      "name": "architecture_artifact",
+      "result": "pass",
+      "notes": "已读取 workspace/tasks/bootstrap-001/architecture/mvp_architecture.md。"
+    },
+    {
+      "name": "design_artifact",
+      "result": "pass",
+      "notes": "已读取 workspace/tasks/bootstrap-001/design/mvp_system_design.yaml。"
+    },
+    {
+      "name": "design_modules",
+      "result": "pass",
+      "notes": "系统设计包含 modules 定义。"
+    },
+    {
+      "name": "design_workflow",
+      "result": "pass",
+      "notes": "系统设计包含 workflow 定义。"
+    },
+    {
+      "name": "human_gate_design",
+      "result": "pass",
+      "notes": "架构文档描述了人工质量门。"
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_issues": [],
+  "reviewed_artifacts": {
+    "analysis": "workspace/tasks/bootstrap-001/analysis/project_context.yaml",
+    "architecture": "workspace/tasks/bootstrap-001/architecture/mvp_architecture.md",
+    "design": "workspace/tasks/bootstrap-001/design/mvp_system_design.yaml"
+  }
+}

@@ -1,0 +1,92 @@
+task_batch:
+  source_task: feedback-dispatch-001
+  source_tasks:
+    - feedback-dispatch-001
+    - feedback-002
+  source_feedback_paths:
+    - workspace/tasks/feedback-dispatch-001/final/validation_feedback.json
+    - workspace/tasks/feedback-002/final/validation_feedback.json
+  goal: 验证 dispatcher 可以安全调度更多本地 Agent。
+tasks:
+  - id: dispatch-002-design-review
+    title: 调度 DesignReviewerAgent 检查 bootstrap 设计产物
+    priority: high
+    recommended_agent: DesignReviewerAgent
+    target_task_id: bootstrap-001
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 使用安全调度表调用 DesignReviewerAgent。
+      - 评审 bootstrap-001 的 analysis、architecture 和 design 产物。
+      - 将评审产物写入被调度任务目录。
+    out_of_scope:
+      - 自动 PR。
+      - 自动 merge。
+      - 调用外部 Agent 服务。
+    acceptance_criteria:
+      - dispatcher 支持 DesignReviewerAgent。
+      - 调度产物写入 workspace/tasks/dispatch-002-design-review/review/design_review.json。
+      - dispatch_result 记录来源 feedback。
+      - python -m pytest -q 通过。
+  - id: dispatch-002-test-validation
+    title: 调度 TestValidatorAgent 执行测试验证
+    priority: medium
+    recommended_agent: TestValidatorAgent
+    risk_level: medium
+    commands:
+      - ["python", "-m", "pytest", "-q"]
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 使用安全调度表调用 TestValidatorAgent。
+      - 将测试验证产物写入被调度任务目录。
+    out_of_scope:
+      - 自动修复失败测试。
+      - 自动 merge。
+    acceptance_criteria:
+      - dispatcher 支持 TestValidatorAgent。
+      - 调度产物写入 review/test_validation.json。
+  - id: dispatch-002-code-review
+    title: 调度 CodeReviewerAgent 执行代码评审
+    priority: medium
+    recommended_agent: CodeReviewerAgent
+    target_task_id: feedback-002
+    validation_path: workspace/tasks/feedback-002/review/test_validation.json
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 使用安全调度表调用 CodeReviewerAgent。
+      - 将代码评审产物写入被调度任务目录。
+    out_of_scope:
+      - 自动修改代码。
+      - 自动 merge。
+    acceptance_criteria:
+      - dispatcher 支持 CodeReviewerAgent。
+      - 调度产物写入 review/code_review.json。
+  - id: dispatch-002-goal-effect
+    title: 调度 GoalEffectValidatorAgent 执行目标效果验证
+    priority: medium
+    recommended_agent: GoalEffectValidatorAgent
+    target_task_id: feedback-002
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 使用安全调度表调用 GoalEffectValidatorAgent。
+      - 将目标效果验证产物写入被调度任务目录。
+    out_of_scope:
+      - 修改目标 spec。
+      - 自动 merge。
+    acceptance_criteria:
+      - dispatcher 支持 GoalEffectValidatorAgent。
+      - 调度产物写入 final/validation_feedback.json。

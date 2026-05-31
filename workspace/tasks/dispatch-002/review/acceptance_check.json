@@ -1,0 +1,38 @@
+{
+  "task_id": "dispatch-002",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Safe dispatch table",
+      "result": "pass",
+      "evidence": "OptimizationDispatcherAgent supports DesignReviewerAgent, TestValidatorAgent, CodeReviewerAgent and GoalEffectValidatorAgent through explicit branches."
+    },
+    {
+      "name": "Unsupported agent stays blocked",
+      "result": "pass",
+      "evidence": "tests/test_optimization_dispatcher_agent.py still covers unsupported_agent."
+    },
+    {
+      "name": "DesignReviewer dispatch",
+      "result": "pass",
+      "evidence": "agent_dispatch produced workspace/tasks/dispatch-002-design-review/review/design_review.json."
+    },
+    {
+      "name": "Source feedback traceability",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-002/code/dispatch_result.json contains source_feedback_paths."
+    },
+    {
+      "name": "Validation loop",
+      "result": "pass",
+      "evidence": "dispatch-002 and dispatch-002-design-review both have validation feedback artifacts."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 64 passed."
+    }
+  ],
+  "blocking_issues": []
+}

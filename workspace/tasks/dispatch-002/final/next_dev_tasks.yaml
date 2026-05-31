@@ -1,0 +1,25 @@
+task_id: dispatch-002
+title: 多 Agent 调度后的下一步任务
+status: proposed
+recommended_next_task:
+  id: ui-validation-001
+  title: 增加目标效果图的自动检查
+  recommended_agent: TestValidatorAgent
+  priority: medium
+  risk_level: low
+  goal: 对 docs/demos/ai_dev_pipeline_demo.html 提取可机读检查项，并让目标效果验证报告页面目标达成度。
+  acceptance_criteria:
+    - 目标效果图检查有结构化产物。
+    - validation_feedback.json 包含目标效果图检查结论。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: dispatch-003
+    title: 连续调度同一任务队列中的多个 open tasks
+    recommended_agent: SystemDesignAgent
+    priority: medium
+    risk_level: medium
+    goal: 让 dispatcher 可在一次 workflow 中处理多个 open tasks，并分别生成子任务状态和验证反馈。

@@ -1,0 +1,17 @@
+task_id: dispatch-002-design-review
+title: 调度 DesignReviewerAgent 检查 bootstrap 设计产物
+status: waiting_for_human_merge_approval
+goal: 使用安全调度表调用 DesignReviewerAgent 并将评审产物写入被调度任务目录。
+completed_scope:
+  - 调度 DesignReviewerAgent。
+  - 评审 bootstrap-001 的结构化设计产物。
+  - 写入 review/design_review.json。
+  - 完成测试验证、代码评审和目标效果验证闭环。
+validation_result:
+  design_review: passed
+  tests_passed: true
+  code_review_passed: true
+  goal_effect_validation: passed
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+next_recommended_task: ui-validation-001
