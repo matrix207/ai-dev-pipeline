@@ -1,0 +1,33 @@
+{
+  "task_id": "opt-003",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Workflow reads validation feedback",
+      "result": "pass",
+      "evidence": "OptimizationPlannerAgent reads workspace/tasks/validation-001/final/validation_feedback.json."
+    },
+    {
+      "name": "Workflow generates optimization tasks",
+      "result": "pass",
+      "evidence": "optimization_planning workflow generated workspace/tasks/optimization-001/final/next_optimization_tasks.yaml."
+    },
+    {
+      "name": "Pass and blocked feedback paths",
+      "result": "pass",
+      "evidence": "tests/test_optimization_planner_agent.py covers enhancement and repair planning modes."
+    },
+    {
+      "name": "README documents commands",
+      "result": "pass",
+      "evidence": "README.md includes automated_validation and optimization_planning commands."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 43 passed."
+    }
+  ],
+  "blocking_issues": []
+}

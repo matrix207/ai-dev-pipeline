@@ -1,0 +1,36 @@
+task_id: opt-003
+title: 把验证反馈转换为可执行任务的端到端 workflow
+status: waiting_for_human_merge_approval
+goal: 让项目可以从 validation_feedback.json 自动生成下一轮可评审优化任务。
+completed_scope:
+  - 新增 OptimizationPlannerAgent。
+  - 新增 optimization_planning workflow。
+  - 运行后生成 workspace/tasks/optimization-001/final/next_optimization_tasks.yaml。
+  - README 记录从自动化验证到优化任务规划的命令。
+  - 测试覆盖验证通过生成 enhancement 任务和验证失败生成 repair 任务。
+changed_files:
+  - agents/optimization_planner_agent.py
+  - agents/__init__.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_optimization_planner_agent.py
+  - tests/test_run_local_task.py
+  - README.md
+  - workspace/tasks/optimization-001/final/next_optimization_tasks.yaml
+acceptance_status:
+  workflow_reads_validation_feedback: passed
+  workflow_generates_next_optimization_tasks: passed
+  pass_and_block_feedback_paths_tested: passed
+  readme_documents_feedback_to_optimization_loop: passed
+  pytest: passed
+validation_result:
+  automated_validation: passed
+  optimization_planning: passed
+  generated_tasks:
+    - opt-001
+    - opt-002
+    - opt-003
+out_of_scope_confirmed:
+  - 未自动执行生成的优化任务。
+  - 未自动提交或合并。
+next_recommended_task: planning-002
