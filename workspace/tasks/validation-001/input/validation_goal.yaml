@@ -16,6 +16,99 @@ required_artifacts:
 expected_effects:
   tests_pass: true
   code_review_passes: true
+target_effect_mappings:
+  - id: multi_agent_collaboration
+    demo_effect: 多Agent协作流，生成职责和检视职责分离。
+    implemented_by:
+      - BaseAgent
+      - DesignReviewerAgent
+      - CoderAgent
+      - CodeReviewerAgent
+      - TestValidatorAgent
+      - GoalEffectValidatorAgent
+      - OptimizationPlannerAgent
+    required_demo_terms:
+      - 多Agent协作流
+      - 生成模型 ≠ 检视模型
+    required_artifacts:
+      - agents/base_agent.py
+      - agents/design_reviewer_agent.py
+      - agents/coder_agent.py
+      - agents/code_reviewer_agent.py
+      - agents/test_validator_agent.py
+      - agents/goal_effect_validator_agent.py
+      - agents/optimization_planner_agent.py
+    required_workflows:
+      - bootstrap_design_review
+      - coding_plan
+      - automated_validation
+      - optimization_planning
+  - id: standard_artifacts
+    demo_effect: 标准产物持续写入任务目录，供 Agent 交接和评审。
+    implemented_by:
+      - artifacts/io.py
+      - workspace/tasks/{task_id}/
+      - TaskState.artifacts
+    required_demo_terms:
+      - 标准产物
+      - Artifacts
+    required_artifacts:
+      - artifacts/io.py
+      - tasks/state.py
+      - workspace/tasks/validation-001/review/test_validation.json
+      - workspace/tasks/validation-001/review/code_review.json
+      - workspace/tasks/validation-001/final/validation_feedback.json
+    required_workflows:
+      - automated_validation
+  - id: review_and_test_feedback_loop
+    demo_effect: 设计检视、代码检视和测试执行形成反馈闭环。
+    implemented_by:
+      - DesignReviewerAgent
+      - CodeReviewerAgent
+      - TestValidatorAgent
+    required_demo_terms:
+      - 设计检视
+      - 代码检视
+      - 测试执行
+    required_artifacts:
+      - agents/design_reviewer_agent.py
+      - agents/code_reviewer_agent.py
+      - agents/test_validator_agent.py
+      - workspace/tasks/validation-001/review/code_review.json
+      - workspace/tasks/validation-001/review/test_validation.json
+    required_workflows:
+      - automated_validation
+  - id: human_merge_gate
+    demo_effect: 关键节点由人确认，最终等待人工合并，AI 不自动合并。
+    implemented_by:
+      - TaskState.gates.human_merge_approved
+      - run_local_task human_merge_gate
+    required_demo_terms:
+      - 人工质量门
+      - 等待人工合并
+      - AI不自动合并
+    required_artifacts:
+      - tasks/state.py
+      - scripts/run_local_task.py
+      - workspace/tasks/validation-001/state.json
+    required_workflows:
+      - automated_validation
+  - id: feedback_to_optimization_tasks
+    demo_effect: 基于目标对齐和效果验证反馈，生成下一轮优化任务。
+    implemented_by:
+      - GoalEffectValidatorAgent
+      - OptimizationPlannerAgent
+      - optimization_planning workflow
+    required_demo_terms:
+      - 设计与代码都支持反馈-修正闭环
+      - 检视轮次
+    required_artifacts:
+      - agents/goal_effect_validator_agent.py
+      - agents/optimization_planner_agent.py
+      - workspace/tasks/optimization-001/final/next_optimization_tasks.yaml
+    required_workflows:
+      - automated_validation
+      - optimization_planning
 feedback_policy:
   on_pass: 可以进入人工合并门，并基于反馈规划下一轮优化。
   on_block: 修复 blocking issue 后重新运行 automated_validation workflow。

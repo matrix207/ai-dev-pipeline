@@ -1,0 +1,33 @@
+task_id: opt-002
+title: 将目标效果 demo 映射到真实 workflow 能力
+status: waiting_for_human_merge_approval
+goal: 让 validation_goal.yaml 明确表达目标效果 demo 的关键效果，并让 validation_feedback.json 报告这些效果是否被真实能力支撑。
+completed_scope:
+  - 从 docs/demos/ai_dev_pipeline_demo.html 提取关键用户效果。
+  - 在 validation_goal.yaml 中新增 target_effect_mappings。
+  - 扩展 GoalEffectValidatorAgent 检查 workflow、demo 文案信号和支撑产物。
+  - 让 validation_feedback.json 输出 target_effect_mappings 逐项结果。
+changed_files:
+  - agents/goal_effect_validator_agent.py
+  - tests/test_validation_agents.py
+  - workspace/tasks/validation-001/input/validation_goal.yaml
+  - workspace/tasks/validation-001/final/validation_feedback.json
+acceptance_status:
+  validation_goal_contains_target_effect_mappings: passed
+  validation_feedback_reports_mapping_pass_or_missing: passed
+  demo_terms_checked: passed
+  workflow_and_artifact_support_checked: passed
+  pytest: passed
+validation_result:
+  automated_validation: passed
+  alignment_score: 1.0
+  target_effect_mappings:
+    - multi_agent_collaboration
+    - standard_artifacts
+    - review_and_test_feedback_loop
+    - human_merge_gate
+    - feedback_to_optimization_tasks
+out_of_scope_confirmed:
+  - 未重做前端 demo。
+  - 未引入 Web 服务。
+next_recommended_task: opt-003

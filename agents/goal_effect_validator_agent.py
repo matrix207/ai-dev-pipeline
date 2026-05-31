@@ -42,6 +42,8 @@ class GoalEffectValidatorAgent(BaseAgent):
                     }
                 )
 
+        mapping_results = self._check_target_effect_mappings(repo_root, goal_spec, checks, blocking_issues)
+
         validation = self._read_optional_json(
             repo_root,
             f"workspace/tasks/{task_id}/review/test_validation.json",
@@ -81,6 +83,7 @@ class GoalEffectValidatorAgent(BaseAgent):
             "goal": goal_spec.get("goal", ""),
             "alignment_score": score,
             "checks": checks,
+            "target_effect_mappings": mapping_results,
             "blocking_issues": blocking_issues,
             "feedback": feedback,
         }
@@ -109,6 +112,74 @@ class GoalEffectValidatorAgent(BaseAgent):
                     "recommendation": "根据验证反馈修复后重新运行自动化验证。",
                 }
             )
+
+    def _check_target_effect_mappings(
+        self,
+        repo_root: Path,
+        goal_spec: dict[str, Any],
+        checks: list[dict[str, Any]],
+        blocking_issues: list[dict[str, str]],
+    ) -> list[dict[str, Any]]:
+        workflows = self._configured_workflows(repo_root)
+        mapping_results = []
+
+        for mapping in goal_spec.get("target_effect_mappings", []):
+            missing_artifacts = [
+                path for path in mapping.get("required_artifacts", []) if not (repo_root / path).exists()
+            ]
+            missing_workflows = [
+                name for name in mapping.get("required_workflows", []) if name not in workflows
+            ]
+            missing_terms = [
+                term
+                for term in mapping.get("required_demo_terms", [])
+                if not self._demo_contains(repo_root, term)
+            ]
+            missing = {
+                "artifacts": missing_artifacts,
+                "workflows": missing_workflows,
+                "demo_terms": missing_terms,
+            }
+            passed = not any(missing.values())
+            result = {
+                "id": mapping["id"],
+                "demo_effect": mapping.get("demo_effect", ""),
+                "implemented_by": mapping.get("implemented_by", []),
+                "result": "pass" if passed else "fail",
+                "missing": missing,
+            }
+            mapping_results.append(result)
+            checks.append(
+                {
+                    "name": mapping["id"],
+                    "type": "target_effect_mapping",
+                    "result": result["result"],
+                }
+            )
+            if not passed:
+                blocking_issues.append(
+                    {
+                        "id": f"target_effect_mapping:{mapping['id']}",
+                        "severity": "high",
+                        "description": f"目标效果映射未被真实能力完整支撑：{mapping['id']}",
+                        "recommendation": "补齐缺失 workflow、Agent、产物或 demo 信号后重新验证。",
+                    }
+                )
+
+        return mapping_results
+
+    def _configured_workflows(self, repo_root: Path) -> set[str]:
+        try:
+            config = read_yaml(repo_root, "config/pipeline.yaml")
+        except Exception:
+            return set()
+        return set(config.get("workflows", {}).keys())
+
+    def _demo_contains(self, repo_root: Path, term: str) -> bool:
+        demo_path = repo_root / "docs/demos/ai_dev_pipeline_demo.html"
+        if not demo_path.exists():
+            return False
+        return term in demo_path.read_text(encoding="utf-8")
 
     def _score(self, checks: list[dict[str, Any]]) -> float:
         if not checks:
