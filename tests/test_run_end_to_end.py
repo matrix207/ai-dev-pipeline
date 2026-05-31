@@ -7,6 +7,7 @@ from pathlib import Path
 from artifacts import read_yaml, write_yaml
 from scripts.run_end_to_end import (
     _fallback_recommended_task,
+    _post_approval_action,
     _quality_gate,
     _quality_gate_config,
     approve_run_record,
@@ -138,6 +139,8 @@ def test_run_end_to_end_writes_run_record(tmp_path: Path) -> None:
     assert run_record["evidence_map"] == summary["evidence_map"]
     assert run_record["quality_gate"] == summary["quality_gate"]
     assert run_record["quality_gate"]["human_approval"]["merge_approved"] is False
+    assert run_record["post_approval_action"]["status"] == "approval_required"
+    assert run_record["post_approval_action"]["can_continue"] is False
     latest_summary = read_yaml(tmp_path, "workspace/tasks/workflow-004/final/decision_summary.yaml")
     assert latest_summary["run_record_artifact"] == summary["run_record_artifact"]
 
@@ -206,6 +209,48 @@ def test_quality_gate_config_reads_pipeline_yaml(tmp_path: Path) -> None:
         "failed_evidence": "blocking",
         "human_approval_required": False,
     }
+
+
+def test_post_approval_action_controls_continue_permission() -> None:
+    pending = {
+        "task_id": "workflow-008",
+        "quality_gate": {
+            "status": "waiting_for_human_approval",
+            "can_continue": False,
+        },
+    }
+    approved = {
+        "task_id": "workflow-008",
+        "quality_gate": {
+            "status": "approved",
+            "can_continue": True,
+        },
+        "approval_record": {"decision": "approved", "comment": "同意继续。"},
+    }
+    rejected = {
+        "task_id": "workflow-008",
+        "quality_gate": {
+            "status": "rejected",
+            "can_continue": False,
+        },
+        "approval_record": {"decision": "rejected", "comment": "证据不足。"},
+    }
+
+    assert _post_approval_action(pending) == {
+        "status": "approval_required",
+        "can_continue": False,
+        "allowed_actions": ["view_run_record", "approve_run"],
+        "blocked_actions": ["continue_next_stage"],
+        "recommended_action": "补充人工审批记录后再决定是否继续。",
+        "reason": "当前运行尚未获得人工审批。",
+    }
+    assert _post_approval_action(approved)["status"] == "allowed"
+    assert _post_approval_action(approved)["can_continue"] is True
+    rejected_action = _post_approval_action(rejected)
+    assert rejected_action["status"] == "blocked"
+    assert rejected_action["can_continue"] is False
+    assert rejected_action["blocked_actions"] == ["continue_next_stage"]
+    assert "证据不足" in rejected_action["reason"]
 
 
 def test_run_end_to_end_uses_unique_dispatch_task_ids_on_rerun(tmp_path: Path) -> None:
@@ -299,6 +344,11 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
         },
         "retry_plan": {"status": "not_required"},
         "quality_gate": {"status": "waiting_for_human_approval", "warnings": [{"id": "warning"}]},
+        "post_approval_action": {
+            "status": "approval_required",
+            "can_continue": False,
+            "recommended_action": "补充人工审批记录后再决定是否继续。",
+        },
         "evidence_map": [
             {
                 "decision": "goal_effect_aligned",
@@ -318,6 +368,8 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
     assert "Evidence:" in output
     assert "Quality gate: waiting_for_human_approval" in output
     assert "Quality warnings: 1" in output
+    assert "Post approval action: approval_required" in output
+    assert "Can continue: False" in output
     assert "Dispatch state: waiting_for_human_merge_approval" in output
     assert "workflow-002: Next workflow task" in output
 
@@ -400,8 +452,15 @@ def test_approve_run_record_updates_run_and_latest_summary(tmp_path: Path) -> No
     assert updated["quality_gate"]["status"] == "approved"
     assert updated["quality_gate"]["can_continue"] is True
     assert updated["quality_gate"]["human_approval"]["merge_approved"] is True
+    assert updated["post_approval_action"]["status"] == "allowed"
+    assert updated["post_approval_action"]["can_continue"] is True
     latest = read_yaml(tmp_path, "workspace/tasks/workflow-007/final/decision_summary.yaml")
     assert latest["approval_record"] == approval
+    assert latest["post_approval_action"] == updated["post_approval_action"]
+    state = load_state(tmp_path, "workflow-007")
+    assert state.status == "completed"
+    assert state.step == "post_approval_action"
+    assert state.gates["human_merge_approved"] is True
 
 
 def test_run_end_to_end_cli_approves_run_record(tmp_path: Path, capsys) -> None:
@@ -438,6 +497,11 @@ def test_run_end_to_end_cli_approves_run_record(tmp_path: Path, capsys) -> None:
     assert output["approval_record"]["decision"] == "rejected"
     assert output["quality_gate"]["status"] == "rejected"
     assert output["quality_gate"]["can_continue"] is False
+    assert output["post_approval_action"]["status"] == "blocked"
+    assert output["post_approval_action"]["can_continue"] is False
+    state = load_state(tmp_path, "workflow-007")
+    assert state.status == "blocked_by_human_approval"
+    assert state.gates["human_merge_approved"] is False
 
 
 def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
@@ -464,5 +528,10 @@ def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
     assert _fallback_recommended_task("workflow-007") == {
         "id": "workflow-008",
         "title": "端到端闭环审批后动作控制",
+        "priority": "medium",
+    }
+    assert _fallback_recommended_task("workflow-008") == {
+        "id": "workflow-009",
+        "title": "端到端闭环任务推进命令",
         "priority": "medium",
     }

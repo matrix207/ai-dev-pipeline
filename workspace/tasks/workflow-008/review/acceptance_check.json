@@ -1,0 +1,55 @@
+{
+  "task_id": "workflow-008",
+  "title": "端到端闭环审批后动作控制",
+  "status": "passed",
+  "checked_at": "2026-06-01T00:00:00+08:00",
+  "acceptance_criteria": [
+    {
+      "criterion": "approved 状态允许继续下一阶段。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_post_approval_action_controls_continue_permission",
+        "workspace/tasks/workflow-008/final/decision_summary.yaml",
+        "workspace/tasks/workflow-008/state.json"
+      ],
+      "notes": "审批通过后 post_approval_action.status=allowed，can_continue=true，父任务状态同步为 completed。"
+    },
+    {
+      "criterion": "rejected 状态阻止继续并输出修正建议。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_post_approval_action_controls_continue_permission",
+        "tests/test_run_end_to_end.py::test_run_end_to_end_cli_approves_run_record"
+      ],
+      "notes": "审批拒绝后 blocked_actions 包含 continue_next_stage，recommended_action 指向修正后重新运行。"
+    },
+    {
+      "criterion": "未审批状态只能查看和补充审批记录。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_run_end_to_end_writes_run_record"
+      ],
+      "notes": "未审批状态 post_approval_action.status=approval_required，只允许 view_run_record 和 approve_run。"
+    },
+    {
+      "criterion": "CLI 摘要明确显示下一步允许动作。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_format_end_to_end_summary_is_human_readable",
+        "scripts/run_end_to_end.py"
+      ],
+      "notes": "文本摘要输出 Post approval action、Can continue 和 Allowed next action。"
+    },
+    {
+      "criterion": "python -m pytest -q 通过。",
+      "status": "passed",
+      "evidence": [
+        "84 passed in 3.24s"
+      ],
+      "notes": "已在本地虚拟环境执行全量测试。"
+    }
+  ],
+  "residual_risks": [
+    "当前只控制本地 CLI 和状态文件中的后续动作，尚未提供独立的 continue 命令自动读取该控制结果。"
+  ]
+}

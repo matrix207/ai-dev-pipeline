@@ -188,6 +188,7 @@ def run_end_to_end(
     summary["run_record_artifact"] = _run_record_path(task_id, run_metadata["run_id"])
     summary["evidence_map"] = _evidence_map(summary)
     summary["quality_gate"] = _quality_gate(summary, _quality_gate_config(repo_root))
+    summary["post_approval_action"] = _post_approval_action(summary)
     # run record 是不可覆盖的单次运行记录；decision_summary.yaml 保留“最新摘要”入口。
     write_yaml(repo_root, summary["run_record_artifact"], summary)
     write_yaml(repo_root, paths["decision_summary"], summary)
@@ -616,6 +617,66 @@ def _quality_gate(summary: dict[str, Any], config: dict[str, Any] | None = None)
     }
 
 
+def _post_approval_action(summary: dict[str, Any]) -> dict[str, Any]:
+    """把审批状态转换成机器可读的后续动作控制结论。"""
+    quality_gate = summary.get("quality_gate") or {}
+    gate_status = quality_gate.get("status")
+    approval_record = summary.get("approval_record") or {}
+    approval_comment = str(approval_record.get("comment") or "").strip()
+
+    if gate_status == "approved" and quality_gate.get("can_continue") is True:
+        return {
+            "status": "allowed",
+            "can_continue": True,
+            "allowed_actions": ["continue_next_stage", "view_run_record"],
+            "blocked_actions": [],
+            "recommended_action": "继续执行下一阶段任务。",
+            "reason": "人工审批已通过。",
+        }
+
+    if gate_status == "rejected":
+        reason = "人工审批未通过，需修正后重新运行。"
+        if approval_comment:
+            reason = f"{reason} 审批意见：{approval_comment}"
+        return {
+            "status": "blocked",
+            "can_continue": False,
+            "allowed_actions": ["view_run_record", "rerun_after_fix"],
+            "blocked_actions": ["continue_next_stage"],
+            "recommended_action": "根据审批意见修正后重新运行端到端闭环。",
+            "reason": reason,
+        }
+
+    if gate_status == "blocked":
+        return {
+            "status": "blocked",
+            "can_continue": False,
+            "allowed_actions": ["view_run_record", "rerun_after_fix"],
+            "blocked_actions": ["approve_run", "continue_next_stage"],
+            "recommended_action": "先修复质量门阻塞问题，再重新运行端到端闭环。",
+            "reason": "当前运行存在质量门阻塞问题。",
+        }
+
+    if gate_status == "dry_run":
+        return {
+            "status": "not_applicable",
+            "can_continue": False,
+            "allowed_actions": ["run_end_to_end"],
+            "blocked_actions": ["approve_run", "continue_next_stage"],
+            "recommended_action": "正式运行端到端闭环后再进入人工审批。",
+            "reason": "dry-run 只预览计划，不产生可审批运行记录。",
+        }
+
+    return {
+        "status": "approval_required",
+        "can_continue": False,
+        "allowed_actions": ["view_run_record", "approve_run"],
+        "blocked_actions": ["continue_next_stage"],
+        "recommended_action": "补充人工审批记录后再决定是否继续。",
+        "reason": "当前运行尚未获得人工审批。",
+    }
+
+
 def _planned_event(
     repo_root: Path,
     *,
@@ -700,7 +761,7 @@ def _dry_run_summary(
         "failed": [],
         "next": [event for event in events if event["status"] == "next"],
     }
-    return {
+    summary = {
         "task_id": task_id,
         "status": "dry_run",
         "run_metadata": run_metadata,
@@ -762,6 +823,8 @@ def _dry_run_summary(
             "next_allowed_action": "正式运行端到端闭环后再进入人工审批。",
         },
     }
+    summary["post_approval_action"] = _post_approval_action(summary)
+    return summary
 
 
 def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
@@ -778,6 +841,7 @@ def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
         "workflow-006": "端到端闭环质量门配置化",
         "workflow-007": "端到端闭环人工审批记录",
         "workflow-008": "端到端闭环审批后动作控制",
+        "workflow-009": "端到端闭环任务推进命令",
     }
     return {
         "id": next_task_id,
@@ -866,6 +930,9 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"Quality gate: {quality_gate.get('status', 'unknown')}",
             f"Quality blocking issues: {len(quality_gate.get('blocking_issues', []))}",
             f"Quality warnings: {len(quality_gate.get('warnings', []))}",
+            f"Post approval action: {summary.get('post_approval_action', {}).get('status', 'unknown')}",
+            f"Can continue: {summary.get('post_approval_action', {}).get('can_continue', False)}",
+            f"Allowed next action: {summary.get('post_approval_action', {}).get('recommended_action', 'unknown')}",
             "",
             "Execution:",
             *_format_execution_group("Completed", execution.get("completed", [])),
@@ -928,6 +995,7 @@ def list_run_records(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK
                 "started_at": metadata.get("started_at"),
                 "status": data.get("status"),
                 "quality_gate_status": (data.get("quality_gate") or {}).get("status"),
+                "post_approval_action_status": (data.get("post_approval_action") or {}).get("status"),
                 "artifact": relative_path,
                 "next_recommended_action": data.get("next_recommended_action"),
             }
@@ -977,6 +1045,7 @@ def approve_run_record(
         else "人工审批未通过，需根据审批意见修正后重新运行。"
     )
     record["quality_gate"] = quality_gate
+    record["post_approval_action"] = _post_approval_action(record)
     write_yaml(repo_root, record_path, record)
 
     latest_summary_path = _workflow_paths(task_id)["decision_summary"]
@@ -986,8 +1055,28 @@ def approve_run_record(
         if latest_summary.get("run_record_artifact") == record_path:
             latest_summary["approval_record"] = approval_record
             latest_summary["quality_gate"] = quality_gate
+            latest_summary["post_approval_action"] = record["post_approval_action"]
             write_yaml(repo_root, latest_summary_path, latest_summary)
+    _sync_approval_state(repo_root, task_id, decision)
     return record
+
+
+def _sync_approval_state(repo_root: Path, task_id: str, decision: str) -> None:
+    """审批结果同步到父任务状态，后续编排可直接判断是否能推进。"""
+    try:
+        state = load_state(repo_root, task_id)
+    except Exception:
+        return
+    state.step = "post_approval_action"
+    state.gates["human_merge_approved"] = decision == "approved"
+    if decision == "approved":
+        state.status = "completed"
+    else:
+        state.record_error(
+            "人工审批未通过，需按审批意见修正后重新运行。",
+            status="blocked_by_human_approval",
+        )
+    save_state(repo_root, state)
 
 
 def format_run_records(records: list[dict[str, Any]]) -> str:

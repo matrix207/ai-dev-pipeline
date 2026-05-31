@@ -1,0 +1,40 @@
+task_id: workflow-008
+title: 端到端闭环审批后动作控制
+status: completed
+completed_at: "2026-06-01T00:00:00+08:00"
+goal_effect:
+  target: 根据人工审批结果控制后续动作，避免未审批或拒绝状态继续执行。
+  achieved:
+    - 新增 post_approval_action 结构化字段，把审批状态转换为 allowed、blocked、approval_required 或 not_applicable。
+    - approved 状态允许 continue_next_stage，can_continue=true。
+    - rejected 状态阻止 continue_next_stage，并保留审批意见和修正建议。
+    - 未审批状态只允许 view_run_record 和 approve_run。
+    - dry-run 状态标记为 not_applicable，提示先执行正式闭环。
+    - CLI 文本摘要显示 Post approval action、Can continue 和 Allowed next action。
+    - 审批结果同步到父任务 state.json，approved 变 completed，rejected 变 blocked_by_human_approval。
+current_result:
+  run_id: workflow-008-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  can_continue: true
+  human_merge_approved: true
+  run_record_artifact: workspace/tasks/workflow-008/runs/workflow-008-run.yaml
+  decision_summary_artifact: workspace/tasks/workflow-008/final/decision_summary.yaml
+verification:
+  - command: source .venv/bin/activate && python -m pytest tests/test_run_end_to_end.py -q
+    result: 16 passed
+  - command: source .venv/bin/activate && python -m pytest -q
+    result: 84 passed
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-008 --rerun-policy skip_completed --run-id workflow-008-run --json
+    result: ready_for_human_decision
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-008 --approve-run workflow-008-run --approver dennis --decision approved --comment '同意 workflow-008 端到端闭环结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: post_approval_action.status=allowed
+remaining_work:
+  - 为 workflow-009 增加任务推进命令，直接读取 post_approval_action 并在 allowed 时进入下一阶段。
+  - 继续完善目标效果图自动验证，减少人工检查目标效果差异。
+  - 扩展本地 Agent 调度范围，提升自动执行覆盖率。
+next_recommended_task:
+  id: workflow-009
+  title: 端到端闭环任务推进命令
+  priority: medium
+  reason: workflow-008 已能判断是否允许继续，下一步应提供可执行的推进入口。
