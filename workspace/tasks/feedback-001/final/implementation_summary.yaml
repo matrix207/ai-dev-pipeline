@@ -1,0 +1,32 @@
+task_id: feedback-001
+title: 将验证反馈自动转为下一轮优化任务
+status: waiting_for_human_merge_approval
+goal: 将父任务和被调度任务的 validation_feedback 输入 OptimizationPlannerAgent，自动生成下一轮可执行优化任务队列。
+completed_scope:
+  - OptimizationPlannerAgent 支持 feedback_paths 多反馈输入。
+  - 多反馈输入会记录 source_tasks 和 source_feedback_paths。
+  - repair 模式会把 blocking issue 的来源任务和来源反馈写入修复任务 scope。
+  - feedback_planning workflow 生成 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。
+  - enhancement 模式生成当前阶段可执行的 feedback-002、dispatch-002 和 ui-validation-001。
+changed_files:
+  - agents/optimization_planner_agent.py
+  - scripts/run_local_task.py
+  - config/pipeline.yaml
+  - tests/test_optimization_planner_agent.py
+  - tests/test_run_local_task.py
+  - workspace/tasks/feedback-001/final/next_optimization_tasks.yaml
+validation_result:
+  pytest: passed
+  pytest_count: 59
+  workflow: feedback_planning
+  source_feedbacks:
+    - workspace/tasks/dispatch-001/final/validation_feedback.json
+    - workspace/tasks/dispatch-validation-demo/final/validation_feedback.json
+  generated_tasks:
+    - feedback-002
+    - dispatch-002
+    - ui-validation-001
+out_of_scope_confirmed:
+  - 未自动执行生成的下一轮任务。
+  - 未自动 PR 或 merge。
+next_recommended_task: feedback-002

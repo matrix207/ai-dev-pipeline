@@ -111,6 +111,7 @@ def _run_step(
                     "feedback_path",
                     "workspace/tasks/validation-001/final/validation_feedback.json",
                 ),
+                "feedback_paths": step_options.get("feedback_paths"),
             }
         )
         return f"workspace/tasks/{task_id}/final/next_optimization_tasks.yaml", result.output

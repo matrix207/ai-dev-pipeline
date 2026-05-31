@@ -260,6 +260,53 @@ def test_run_local_task_generates_optimization_tasks(tmp_path: Path) -> None:
     assert generated["task_batch"]["planning_mode"] == "enhancement"
 
 
+def test_run_local_task_generates_optimization_tasks_from_multiple_feedbacks(
+    tmp_path: Path,
+) -> None:
+    write_config(
+        tmp_path,
+        [
+            {
+                "name": "optimization_planning",
+                "feedback_paths": [
+                    "workspace/tasks/parent/final/validation_feedback.json",
+                    "workspace/tasks/child/final/validation_feedback.json",
+                ],
+            }
+        ],
+    )
+    write_json(
+        tmp_path,
+        "workspace/tasks/parent/final/validation_feedback.json",
+        {
+            "task_id": "parent",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+        },
+    )
+    write_json(
+        tmp_path,
+        "workspace/tasks/child/final/validation_feedback.json",
+        {
+            "task_id": "child",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="feedback-001", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == ["workspace/tasks/feedback-001/final/next_optimization_tasks.yaml"]
+    generated = read_yaml(tmp_path, state.artifacts[0])
+    assert generated["task_batch"]["source_tasks"] == ["parent", "child"]
+    assert generated["task_batch"]["source_feedback_paths"] == [
+        "workspace/tasks/parent/final/validation_feedback.json",
+        "workspace/tasks/child/final/validation_feedback.json",
+    ]
+
+
 def test_run_local_task_writes_optimization_execution_plan(tmp_path: Path) -> None:
     write_config(tmp_path, ["optimization_execution_plan"])
     write_yaml(

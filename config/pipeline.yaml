@@ -51,6 +51,14 @@ workflows:
     steps:
       - optimization_planning
     human_gate_required: true
+  feedback_planning:
+    task_id: feedback-001
+    steps:
+      - name: optimization_planning
+        feedback_paths:
+          - workspace/tasks/dispatch-001/final/validation_feedback.json
+          - workspace/tasks/dispatch-validation-demo/final/validation_feedback.json
+    human_gate_required: true
   optimization_execution:
     task_id: planning-003
     steps:

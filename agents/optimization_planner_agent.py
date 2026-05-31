@@ -20,11 +20,17 @@ class OptimizationPlannerAgent(BaseAgent):
 
     def handle(self, payload: dict[str, Any]) -> Mapping[str, Any]:
         repo_root = Path(payload.get("repo_root", "."))
-        feedback_path = payload.get("feedback_path", DEFAULT_FEEDBACK_PATH)
-        source_feedback = read_json(repo_root, feedback_path)
+        feedback_paths = self._feedback_paths(payload)
+        source_feedbacks = [
+            {
+                "path": feedback_path,
+                "feedback": read_json(repo_root, feedback_path),
+            }
+            for feedback_path in feedback_paths
+        ]
 
-        blocking_issues = list(source_feedback.get("blocking_issues", []))
-        alignment_score = float(source_feedback.get("alignment_score", 0.0))
+        blocking_issues = self._blocking_issues(source_feedbacks)
+        alignment_score = self._alignment_score(source_feedbacks)
         if blocking_issues:
             tasks = self._repair_tasks(blocking_issues)
             planning_mode = "repair"
@@ -32,14 +38,20 @@ class OptimizationPlannerAgent(BaseAgent):
             tasks = self._enhancement_tasks(alignment_score)
             planning_mode = "enhancement"
 
+        source_tasks = [
+            str(item["feedback"].get("task_id", "validation-001")) for item in source_feedbacks
+        ]
         return {
             "task_batch": {
-                "source_task": source_feedback.get("task_id", "validation-001"),
+                "source_task": source_tasks[0],
+                "source_tasks": source_tasks,
+                "source_feedback_paths": feedback_paths,
                 "language": "zh-CN",
                 "status": "ready_for_human_review",
                 "goal": "基于自动化验证反馈生成下一轮优化任务。",
                 "planning_mode": planning_mode,
                 "alignment_score": alignment_score,
+                "blocking_issue_count": len(blocking_issues),
             },
             "tasks": tasks,
             "human_gate": {
@@ -48,6 +60,36 @@ class OptimizationPlannerAgent(BaseAgent):
                 "role": "人确认优化方向；Agent 执行设计、开发、验证和评审。",
             },
         }
+
+    def _feedback_paths(self, payload: dict[str, Any]) -> list[str]:
+        feedback_paths = payload.get("feedback_paths")
+        if feedback_paths:
+            if not isinstance(feedback_paths, list) or not all(
+                isinstance(path, str) for path in feedback_paths
+            ):
+                raise TypeError("feedback_paths must be a list of strings.")
+            return feedback_paths
+        return [payload.get("feedback_path", DEFAULT_FEEDBACK_PATH)]
+
+    def _blocking_issues(self, source_feedbacks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        issues: list[dict[str, Any]] = []
+        for item in source_feedbacks:
+            feedback = item["feedback"]
+            source_path = item["path"]
+            source_task = feedback.get("task_id", "validation-001")
+            for issue in feedback.get("blocking_issues", []):
+                enriched_issue = dict(issue)
+                enriched_issue["source_task"] = source_task
+                enriched_issue["source_feedback_path"] = source_path
+                issues.append(enriched_issue)
+        return issues
+
+    def _alignment_score(self, source_feedbacks: list[dict[str, Any]]) -> float:
+        scores = [
+            float(item["feedback"].get("alignment_score", 0.0))
+            for item in source_feedbacks
+        ]
+        return min(scores) if scores else 0.0
 
     def _repair_tasks(self, blocking_issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
         tasks = []
@@ -66,6 +108,8 @@ class OptimizationPlannerAgent(BaseAgent):
                         "merge_approval_required": True,
                     },
                     "scope": [
+                        f"来源任务：{issue.get('source_task', 'validation-001')}。",
+                        f"来源反馈：{issue.get('source_feedback_path', DEFAULT_FEEDBACK_PATH)}。",
                         issue.get("description", "分析并修复验证阻塞问题。"),
                         issue.get("recommendation", "修复后重新运行 automated_validation workflow。"),
                     ],
@@ -85,8 +129,8 @@ class OptimizationPlannerAgent(BaseAgent):
         priority = "high" if alignment_score < 0.9 else "medium"
         return [
             {
-                "id": "opt-001",
-                "title": "增强代码评审 Agent 的检查深度",
+                "id": "feedback-002",
+                "title": "把下一轮优化任务接入调度执行",
                 "priority": priority,
                 "recommended_agent": "CoderAgent",
                 "risk_level": "medium",
@@ -96,25 +140,25 @@ class OptimizationPlannerAgent(BaseAgent):
                     "merge_approval_required": True,
                 },
                 "scope": [
-                    "扩展 CodeReviewerAgent，检查任务验收标准是否都有对应 evidence。",
-                    "检查测试结果、任务状态和产物路径是否一致。",
-                    "输出更具体的 non_blocking_issues 和 recommendations。",
+                    "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+                    "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+                    "保留 goal approval 和 merge approval 人工质量门。",
                 ],
                 "out_of_scope": [
                     "接入外部代码托管平台 API。",
                     "执行自动 merge。",
                 ],
                 "acceptance_criteria": [
-                    "代码评审报告包含验收标准覆盖情况。",
-                    "缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。",
+                    "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+                    "调度产物能引用来源 validation_feedback。",
                     "python -m pytest -q 通过。",
                 ],
             },
             {
-                "id": "opt-002",
-                "title": "将目标效果 demo 映射到真实 workflow 能力",
+                "id": "dispatch-002",
+                "title": "支持更多本地 Agent 调度",
                 "priority": "medium",
-                "recommended_agent": "DesignReviewerAgent",
+                "recommended_agent": "ArchitectAgent",
                 "risk_level": "medium",
                 "human_gate": {
                     "goal_approval_required": True,
@@ -122,42 +166,44 @@ class OptimizationPlannerAgent(BaseAgent):
                     "merge_approval_required": True,
                 },
                 "scope": [
-                    "从 docs/demos/ai_dev_pipeline_demo.html 提取关键用户效果。",
-                    "将关键效果映射到现有 workflow、Agent 和产物。",
-                    "更新 validation_goal.yaml，使目标效果验证覆盖这些映射。",
+                    "为 dispatcher 增加安全的本地 Agent 调度表。",
+                    "支持 DesignReviewerAgent、TestValidatorAgent、CodeReviewerAgent、GoalEffectValidatorAgent 的最小调度适配。",
+                    "不支持的 Agent 继续返回结构化 blocking issue。",
                 ],
                 "out_of_scope": [
-                    "重做前端 demo。",
-                    "引入 Web 服务。",
+                    "调用外部 Agent 服务。",
+                    "自动 PR 或 merge。",
                 ],
                 "acceptance_criteria": [
-                    "validation_goal.yaml 包含目标效果映射项。",
-                    "validation_feedback.json 能报告目标效果映射通过或缺失。",
+                    "dispatcher 对支持的 Agent 有测试覆盖。",
+                    "unsupported_agent 路径仍有测试覆盖。",
+                    "python -m pytest -q 通过。",
                 ],
             },
             {
-                "id": "opt-003",
-                "title": "把验证反馈转换为可执行任务的端到端 workflow",
+                "id": "ui-validation-001",
+                "title": "增加目标效果图的自动检查",
                 "priority": "medium",
-                "recommended_agent": "CoderAgent",
-                "risk_level": "medium",
+                "recommended_agent": "TestValidatorAgent",
+                "risk_level": "low",
                 "human_gate": {
                     "goal_approval_required": True,
                     "risk_approval_required": False,
                     "merge_approval_required": True,
                 },
                 "scope": [
-                    "新增 optimization_planning workflow。",
-                    "运行后生成 workspace/tasks/optimization-001/final/next_optimization_tasks.yaml。",
-                    "在 README 中说明从验证到优化任务的闭环命令。",
+                    "从 docs/demos/ai_dev_pipeline_demo.html 提取可机读页面结构和核心交互验收点。",
+                    "让 GoalEffectValidatorAgent 报告目标效果图相关检查结果。",
+                    "将目标效果检查结果写入 validation_feedback.json。",
                 ],
                 "out_of_scope": [
-                    "自动执行生成的优化任务。",
-                    "自动提交或合并。",
+                    "重做前端 demo。",
+                    "引入浏览器云服务。",
                 ],
                 "acceptance_criteria": [
-                    "workflow 能读取 validation_feedback.json 并生成优化任务。",
-                    "验证通过和验证失败两种反馈都有测试覆盖。",
+                    "目标效果图检查有结构化产物。",
+                    "validation_feedback.json 包含目标效果图检查结论。",
+                    "python -m pytest -q 通过。",
                 ],
             },
         ]
