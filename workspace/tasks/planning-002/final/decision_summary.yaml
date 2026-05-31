@@ -1,0 +1,47 @@
+task_id: planning-002
+status: ready_for_human_decision
+goal_effect:
+  target: 一个命令运行验证、目标效果检查和优化任务规划，并给出下一步决策摘要。
+  validation_status: passed
+  alignment_score: 1.0
+  blocking_issues: []
+current_result:
+  validation_state:
+    task_id: validation-001
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/validation-001/review/test_validation.json
+    - workspace/tasks/validation-001/review/code_review.json
+    - workspace/tasks/validation-001/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  optimization_state:
+    task_id: optimization-001
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/optimization-001/final/next_optimization_tasks.yaml
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: false
+      code_review_passed: false
+      human_merge_approved: false
+  feedback_artifact: workspace/tasks/validation-001/final/validation_feedback.json
+  optimization_tasks_artifact: workspace/tasks/optimization-001/final/next_optimization_tasks.yaml
+remaining_work:
+- 进一步产品化 CLI 输出和错误提示。
+- 增强优化任务优先级、owner/agent 建议和风险说明。
+- 让失败反馈可直接生成修复任务并进入下一轮执行。
+next_recommended_action:
+  task_id: product-002
+  title: 增强人类可读 CLI 摘要
+  priority: medium
+  reason: 来自 optimization_planning 生成的下一轮优化任务。

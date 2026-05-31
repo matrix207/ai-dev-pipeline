@@ -1,0 +1,20 @@
+task_id: planning-002
+title: 下一轮产品化任务规划
+status: waiting_for_human_merge_approval
+goal: 规划并实现最小产品化入口，让用户一个命令获得验证结果和下一步建议。
+completed_scope:
+  - 规划 product-001 到 product-003。
+  - 实现 product-001 的最小总入口脚本。
+  - 生成 decision_summary.yaml。
+changed_files:
+  - README.md
+  - scripts/run_validation_loop.py
+  - tests/test_run_validation_loop.py
+  - workspace/tasks/planning-002/final/next_product_tasks.yaml
+  - workspace/tasks/planning-002/final/decision_summary.yaml
+acceptance_status:
+  next_product_tasks_generated: passed
+  one_command_entry_available: passed
+  decision_summary_generated: passed
+  pytest: passed
+next_recommended_task: product-002

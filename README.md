@@ -41,6 +41,16 @@ python scripts/run_local_task.py --workflow optimization_planning --goal-approve
 
 - `workspace/tasks/optimization-001/final/next_optimization_tasks.yaml`
 
+一个命令运行完整验证闭环并输出决策摘要：
+
+```bash
+python scripts/run_validation_loop.py
+```
+
+决策摘要会写入：
+
+- `workspace/tasks/planning-002/final/decision_summary.yaml`
+
 ## 第一轮任务
 
 ```bash

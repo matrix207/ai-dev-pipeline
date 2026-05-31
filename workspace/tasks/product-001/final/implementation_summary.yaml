@@ -1,0 +1,23 @@
+task_id: product-001
+title: 一个命令运行完整验证闭环
+status: waiting_for_human_merge_approval
+goal: 用一个命令完成自动化验证、优化任务规划和决策摘要输出。
+completed_scope:
+  - 新增 scripts/run_validation_loop.py。
+  - 串联 automated_validation 和 optimization_planning workflow。
+  - 输出 workspace/tasks/planning-002/final/decision_summary.yaml。
+  - README 增加总入口命令。
+changed_files:
+  - scripts/run_validation_loop.py
+  - tests/test_run_validation_loop.py
+  - README.md
+  - workspace/tasks/planning-002/final/decision_summary.yaml
+  - workspace/tasks/planning-002/final/next_product_tasks.yaml
+acceptance_status:
+  one_command_runs_validation_and_optimization: passed
+  decision_summary_contains_goal_current_remaining_next: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未自动执行生成的优化任务。
+  - 未自动提交或合并。
+next_recommended_task: product-002

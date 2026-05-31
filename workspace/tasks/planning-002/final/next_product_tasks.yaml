@@ -1,0 +1,53 @@
+task_batch:
+  source_task: planning-002
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 将自动化验证闭环产品化，让用户用一个命令获得验证结果、目标对齐反馈和下一步建议。
+
+tasks:
+  - id: product-001
+    title: 一个命令运行完整验证闭环
+    priority: high
+    scope:
+      - 提供 scripts/run_validation_loop.py。
+      - 串联 automated_validation 和 optimization_planning workflow。
+      - 输出 workspace/tasks/planning-002/final/decision_summary.yaml。
+    out_of_scope:
+      - 自动执行生成的优化任务。
+      - 自动提交或合并。
+    acceptance_criteria:
+      - 一个命令能完成验证和优化规划。
+      - 决策摘要包含目标效果、当前结果、剩余工作和下一步建议。
+      - python -m pytest -q 通过。
+
+  - id: product-002
+    title: 增强人类可读 CLI 摘要
+    priority: medium
+    scope:
+      - 将 validation_feedback 和 next_optimization_tasks 渲染为更短的终端摘要。
+      - 明确显示 blocking issues、alignment score 和推荐任务。
+      - 保持结构化产物为权威来源。
+    out_of_scope:
+      - Web UI。
+      - 外部通知服务。
+    acceptance_criteria:
+      - CLI 输出适合人直接决策下一步。
+      - 结构化产物仍完整保留。
+
+  - id: product-003
+    title: 优化任务增加 owner/agent 和风险字段
+    priority: medium
+    scope:
+      - 为生成的优化任务补充 recommended_agent、risk_level 和 human_gate。
+      - 让下一轮执行前的人类审批更清楚。
+    out_of_scope:
+      - 自动分配真实人员。
+      - 远程任务系统同步。
+    acceptance_criteria:
+      - next_optimization_tasks.yaml 包含 agent 和风险建议。
+      - 高风险任务默认需要人工确认。
+
+human_gate:
+  required_before_starting_product_tasks: true
+  required_before_pr_or_merge: true
+  role: 人确认产品化方向；Agent 继续实现、验证和评审。
