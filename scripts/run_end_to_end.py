@@ -168,7 +168,9 @@ def run_end_to_end(
             "reason": "来自端到端反馈闭环生成的下一轮优化任务。",
         },
     }
+    summary["run_record_artifact"] = _run_record_path(task_id, run_metadata["run_id"])
     summary["evidence_map"] = _evidence_map(summary)
+    write_yaml(repo_root, summary["run_record_artifact"], summary)
     write_yaml(repo_root, paths["decision_summary"], summary)
     _save_parent_state(repo_root, task_id, paths, summary)
     return summary
@@ -191,6 +193,14 @@ def _run_metadata(run_id: str | None) -> dict[str, str]:
         "run_id": run_id or started_at.replace("-", "").replace(":", ""),
         "started_at": started_at,
     }
+
+
+def _safe_run_id(run_id: str) -> str:
+    return "".join(char if char.isalnum() or char in "._-" else "_" for char in run_id)
+
+
+def _run_record_path(task_id: str, run_id: str) -> str:
+    return f"workspace/tasks/{task_id}/runs/{_safe_run_id(run_id)}.yaml"
 
 
 def _task_succeeded(state: TaskState, required_artifacts: list[str], repo_root: Path) -> bool:
@@ -631,6 +641,7 @@ def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
         "workflow-002": "端到端闭环运行策略产品化",
         "workflow-003": "端到端闭环持续优化",
         "workflow-004": "端到端闭环决策产物可追溯化",
+        "workflow-005": "端到端闭环运行记录质量门",
     }
     return {
         "id": next_task_id,
@@ -658,21 +669,24 @@ def _save_parent_state(
 ) -> None:
     failed_steps = summary.get("execution_summary", {}).get("failed", [])
     status = "blocked_by_end_to_end_step" if failed_steps else "waiting_for_human_merge_approval"
+    artifacts = [
+        "scripts/run_end_to_end.py",
+        "scripts/run_local_task.py",
+        "config/pipeline.yaml",
+        "tests/test_run_end_to_end.py",
+        paths["initial_plan"],
+        paths["dispatch_tasks"],
+        paths["review_tasks"],
+        paths["final_plan"],
+        paths["decision_summary"],
+    ]
+    if summary.get("run_record_artifact"):
+        artifacts.append(summary["run_record_artifact"])
     state = TaskState(
         task_id=task_id,
         step="retry_plan" if failed_steps else "human_merge_gate",
         status=status,
-        artifacts=[
-            "scripts/run_end_to_end.py",
-            "scripts/run_local_task.py",
-            "config/pipeline.yaml",
-            "tests/test_run_end_to_end.py",
-            paths["initial_plan"],
-            paths["dispatch_tasks"],
-            paths["review_tasks"],
-            paths["final_plan"],
-            paths["decision_summary"],
-        ],
+        artifacts=artifacts,
         gates={
             "goal_approved": True,
             "design_review_passed": True,
@@ -755,12 +769,53 @@ def _format_evidence(items: list[dict[str, Any]]) -> list[str]:
     ]
 
 
+def list_run_records(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK_ID) -> list[dict[str, Any]]:
+    """列出指定任务的端到端运行记录，供人工追溯和决策复盘使用。"""
+    repo_root = Path(repo_root)
+    runs_dir = repo_root / "workspace/tasks" / task_id / "runs"
+    if not runs_dir.exists():
+        return []
+
+    records = []
+    for path in sorted(runs_dir.glob("*.yaml")):
+        relative_path = path.relative_to(repo_root).as_posix()
+        data = read_yaml(repo_root, relative_path)
+        metadata = data.get("run_metadata", {})
+        records.append(
+            {
+                "run_id": metadata.get("run_id", path.stem),
+                "started_at": metadata.get("started_at"),
+                "status": data.get("status"),
+                "artifact": relative_path,
+                "next_recommended_action": data.get("next_recommended_action"),
+            }
+        )
+    return sorted(records, key=lambda item: item.get("started_at") or "", reverse=True)
+
+
+def format_run_records(records: list[dict[str, Any]]) -> str:
+    if not records:
+        return "No run records found."
+    lines = ["AI Dev Pipeline Run Records", ""]
+    for record in records:
+        next_action = record.get("next_recommended_action") or {}
+        lines.append(
+            f"- {record['run_id']} ({record.get('status')}): {record['artifact']}"
+        )
+        if next_action:
+            lines.append(
+                f"  next: {next_action.get('task_id')}: {next_action.get('title')}"
+            )
+    return "\n".join(lines)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the local end-to-end AI dev pipeline loop.")
     parser.add_argument("--repo-root", default=".", help="Repository root. Defaults to cwd.")
     parser.add_argument("--task-id", default=DEFAULT_TASK_ID, help="Parent task id for summary artifacts.")
     parser.add_argument("--json", action="store_true", help="Print full JSON summary.")
     parser.add_argument("--dry-run", action="store_true", help="Preview the run plan without writing artifacts.")
+    parser.add_argument("--list-runs", action="store_true", help="List persisted run records for the task.")
     parser.add_argument("--run-id", help="Optional stable id to record for this run.")
     parser.add_argument(
         "--rerun-policy",
@@ -773,6 +828,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    if args.list_runs:
+        records = list_run_records(args.repo_root, task_id=args.task_id)
+        if args.json:
+            print(json.dumps(records, ensure_ascii=False, indent=2))
+        else:
+            print(format_run_records(records))
+        return 0
+
     summary = run_end_to_end(
         args.repo_root,
         task_id=args.task_id,

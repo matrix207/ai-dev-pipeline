@@ -1,0 +1,27 @@
+task_id: workflow-004
+title: 端到端闭环后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-005
+  title: 端到端闭环运行记录质量门
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 将 run record、evidence_map 和人工审批状态纳入明确质量门，提升决策可信度。
+  acceptance_criteria:
+    - run record 中包含人工审批状态字段。
+    - evidence_map 缺失关键证据时可被标记为 blocking。
+    - CLI 摘要能显示质量门是否可继续。
+    - 相关用例先行并覆盖通过、缺失证据、失败恢复场景。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。

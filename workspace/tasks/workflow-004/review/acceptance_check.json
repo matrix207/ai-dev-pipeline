@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-004",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Project coding rules",
+      "result": "pass",
+      "evidence": "AGENTS.md includes 9 coding rules covering TDD, Chinese explanations, structured artifacts and diagnostics."
+    },
+    {
+      "name": "Architecture and usage docs",
+      "result": "pass",
+      "evidence": "README.md includes 项目架构预览 and 使用说明 sections."
+    },
+    {
+      "name": "Run record persistence",
+      "result": "pass",
+      "evidence": "workspace/tasks/workflow-004/runs/workflow-004-run.yaml was written and referenced by decision_summary.yaml."
+    },
+    {
+      "name": "Run record listing",
+      "result": "pass",
+      "evidence": "python scripts/run_end_to_end.py --task-id workflow-004 --list-runs --json returned workflow-004-run."
+    },
+    {
+      "name": "Test-first coverage",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers run record persistence and list-runs CLI behavior."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 78 passed."
+    }
+  ],
+  "blocking_issues": []
+}

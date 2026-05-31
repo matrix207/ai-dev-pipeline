@@ -117,6 +117,21 @@ def test_run_end_to_end_writes_decision_summary(tmp_path: Path) -> None:
     assert all(task["id"].startswith("workflow-001-") for task in dispatch_tasks["tasks"])
 
 
+def test_run_end_to_end_writes_run_record(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+
+    summary = run_end_to_end(tmp_path, task_id="workflow-004", run_id="run-record-001")
+
+    assert summary["run_record_artifact"] == "workspace/tasks/workflow-004/runs/run-record-001.yaml"
+    run_record = read_yaml(tmp_path, summary["run_record_artifact"])
+    assert run_record["run_metadata"]["run_id"] == "run-record-001"
+    assert run_record["execution_summary"] == summary["execution_summary"]
+    assert run_record["evidence_map"] == summary["evidence_map"]
+    latest_summary = read_yaml(tmp_path, "workspace/tasks/workflow-004/final/decision_summary.yaml")
+    assert latest_summary["run_record_artifact"] == summary["run_record_artifact"]
+
+
 def test_run_end_to_end_uses_unique_dispatch_task_ids_on_rerun(tmp_path: Path) -> None:
     write_end_to_end_config(tmp_path)
     write_validation_goal(tmp_path)
@@ -255,9 +270,40 @@ def test_run_end_to_end_cli_json_output(tmp_path: Path, capsys) -> None:
     assert output["run_strategy"]["rerun_policy"] == "skip_completed"
 
 
+def test_run_end_to_end_cli_lists_run_records(tmp_path: Path, capsys) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    run_end_to_end(tmp_path, task_id="workflow-004", run_id="list-run-001")
+
+    old_argv = sys.argv
+    sys.argv = [
+        "run_end_to_end.py",
+        "--repo-root",
+        str(tmp_path),
+        "--task-id",
+        "workflow-004",
+        "--list-runs",
+        "--json",
+    ]
+    try:
+        exit_code = main()
+    finally:
+        sys.argv = old_argv
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output[0]["run_id"] == "list-run-001"
+    assert output[0]["artifact"] == "workspace/tasks/workflow-004/runs/list-run-001.yaml"
+
+
 def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
     assert _fallback_recommended_task("workflow-003") == {
         "id": "workflow-004",
         "title": "端到端闭环决策产物可追溯化",
+        "priority": "medium",
+    }
+    assert _fallback_recommended_task("workflow-004") == {
+        "id": "workflow-005",
+        "title": "端到端闭环运行记录质量门",
         "priority": "medium",
     }

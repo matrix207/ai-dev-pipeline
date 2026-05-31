@@ -1,0 +1,34 @@
+task_id: workflow-004
+title: 端到端闭环决策产物可追溯化
+status: waiting_for_human_merge_approval
+goal: 将每次端到端运行的摘要、evidence 和人工决策结果组织成可追溯的运行记录。
+completed_scope:
+  - AGENTS.md 增加 9 条项目编码规范，包含用例先行、中文说明和失败可诊断要求。
+  - README.md 增加项目架构预览。
+  - README.md 增加使用说明章节。
+  - 正式端到端运行会写入 workspace/tasks/{task_id}/runs/{run_id}.yaml。
+  - decision_summary.yaml 会引用 run_record_artifact，保留最新摘要和独立运行记录之间的关系。
+  - CLI 增加 --list-runs，可列出指定 task_id 的历史运行记录。
+  - tests/test_run_end_to_end.py 增加 run record 和 list-runs 用例。
+changed_files:
+  - AGENTS.md
+  - README.md
+  - scripts/run_end_to_end.py
+  - tests/test_run_end_to_end.py
+  - workspace/tasks/workflow-004/final/decision_summary.yaml
+  - workspace/tasks/workflow-004/runs/workflow-004-run.yaml
+validation_result:
+  dry_run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-004 --dry-run --rerun-policy skip_completed --run-id workflow-004-dry-run --json
+  run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-004 --rerun-policy skip_completed --run-id workflow-004-run --json
+  list_runs_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-004 --list-runs --json
+  pytest: passed
+  pytest_count: 78
+  validation_status: passed
+  alignment_score: 1.0
+  retry_plan_status: not_required
+  next_recommended_task: workflow-005
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+  - 未删除用户文件。
+next_recommended_task: workflow-005

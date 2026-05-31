@@ -16,6 +16,30 @@
 
 - 交互式效果展示：[docs/demos/ai_dev_pipeline_demo.html](docs/demos/ai_dev_pipeline_demo.html)
 
+## 项目架构预览
+
+```text
+config/pipeline.yaml          # 本地 workflow 编排配置
+agents/                       # 各类 Agent 的最小本地实现
+scripts/run_local_task.py     # 执行单个配置化 workflow
+scripts/run_end_to_end.py     # 执行端到端验证、调度、评审和反馈闭环
+artifacts/                    # 仓库相对路径的结构化产物读写工具
+tasks/                        # 任务状态模型和持久化工具
+workspace/tasks/{task_id}/    # 每个任务的输入、实现、评审、最终产物
+tests/                        # 用例验证，新增功能要求用例先行
+```
+
+核心流向：
+
+```text
+目标/任务定义
+  -> Agent 生成结构化产物
+  -> 测试验证和代码评审
+  -> 目标效果验证
+  -> 反馈规划下一轮任务
+  -> 人工审批质量门
+```
+
 ## 自动化验证
 
 运行本地自动化验证闭环：
@@ -56,6 +80,40 @@ python scripts/run_validation_loop.py --json
 决策摘要会写入：
 
 - `workspace/tasks/planning-002/final/decision_summary.yaml`
+
+## 使用说明
+
+准备环境：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+运行全量用例：
+
+```bash
+python -m pytest -q
+```
+
+预览端到端闭环，不写入任务产物：
+
+```bash
+python scripts/run_end_to_end.py --task-id workflow-004 --dry-run --rerun-policy skip_completed
+```
+
+正式运行端到端闭环，并记录运行 ID：
+
+```bash
+python scripts/run_end_to_end.py --task-id workflow-004 --rerun-policy skip_completed --run-id workflow-004-run
+```
+
+查看完整 JSON 摘要：
+
+```bash
+python scripts/run_end_to_end.py --task-id workflow-004 --rerun-policy skip_completed --run-id workflow-004-run --json
+```
 
 生成下一阶段优化任务执行计划：
 
