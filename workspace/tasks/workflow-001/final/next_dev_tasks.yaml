@@ -1,0 +1,27 @@
+task_id: workflow-001
+title: 端到端闭环后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-002
+  title: 端到端闭环运行策略产品化
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 将端到端命令的重复运行、跳过已完成任务、失败恢复和输出摘要策略产品化。
+  acceptance_criteria:
+    - CLI 支持 dry-run。
+    - CLI 支持跳过或重跑已完成子任务。
+    - CLI 对部分失败输出结构化 retry plan。
+    - decision_summary.yaml 明确区分 completed、skipped、failed 和 next。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。

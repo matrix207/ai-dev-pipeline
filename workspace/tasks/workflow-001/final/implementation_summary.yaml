@@ -1,0 +1,30 @@
+task_id: workflow-001
+title: 一键运行规划、调度、验证和反馈生成
+status: waiting_for_human_merge_approval
+goal: 将目标验证、反馈规划、批量调度、验证评审和下一轮任务规划汇总成一个端到端命令。
+completed_scope:
+  - 新增 scripts/run_end_to_end.py。
+  - 端到端命令运行 ui_validation，生成目标效果验证反馈。
+  - 端到端命令调用 OptimizationPlannerAgent 生成初始优化任务。
+  - 端到端命令生成可调度任务队列。
+  - 端到端命令运行 end_to_end_dispatch，完成批量调度和子任务验证。
+  - 端到端命令运行 end_to_end_review，生成 evidence 映射评审。
+  - 端到端命令汇总最终反馈并生成 final_next_optimization_tasks.yaml。
+  - 端到端命令写入 decision_summary.yaml，包含目标效果、当前达成、剩余任务和下一步建议。
+  - 端到端命令支持重复运行时生成不冲突的子任务 ID。
+changed_files:
+  - scripts/run_end_to_end.py
+  - config/pipeline.yaml
+  - tests/test_run_end_to_end.py
+  - workspace/tasks/workflow-001/final/decision_summary.yaml
+validation_result:
+  pytest: passed
+  pytest_count: 72
+  command: source .venv/bin/activate && python scripts/run_end_to_end.py --json
+  validation_status: passed
+  dispatch_status: waiting_for_human_merge_approval
+  review_status: waiting_for_human_merge_approval
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+next_recommended_task: workflow-002

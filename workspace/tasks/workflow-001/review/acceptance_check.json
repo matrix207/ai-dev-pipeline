@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-001",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "End-to-end CLI",
+      "result": "pass",
+      "evidence": "scripts/run_end_to_end.py runs validation, planning, dispatch, review and final planning."
+    },
+    {
+      "name": "Decision summary",
+      "result": "pass",
+      "evidence": "workspace/tasks/workflow-001/final/decision_summary.yaml contains goal_effect, current_result, remaining_work and next_recommended_action."
+    },
+    {
+      "name": "Dispatch and validation",
+      "result": "pass",
+      "evidence": "workflow-001-dispatch completed with child validation artifacts."
+    },
+    {
+      "name": "Rerun behavior",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers unique dispatch task ids on rerun."
+    },
+    {
+      "name": "Failure traceability",
+      "result": "pass",
+      "evidence": "workflow-001 state and summary preserve each sub-workflow state and artifact paths."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 72 passed."
+    }
+  ],
+  "blocking_issues": []
+}

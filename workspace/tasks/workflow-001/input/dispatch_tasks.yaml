@@ -1,0 +1,49 @@
+task_batch:
+  source_task: workflow-001
+  source_tasks:
+  - workflow-001
+  source_feedback_paths:
+  - workspace/tasks/workflow-001-validation/final/validation_feedback.json
+  goal: 端到端命令生成的可调度任务队列。
+tasks:
+- id: workflow-001-feedback-002-2
+  title: 把下一轮优化任务接入调度执行
+  priority: medium
+  recommended_agent: CoderAgent
+  risk_level: medium
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+  scope:
+  - 让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch
+    的 tasks_path。
+  - 运行调度后，父任务能记录来源反馈和被调度任务验证状态。
+  - 保留 goal approval 和 merge approval 人工质量门。
+  out_of_scope:
+  - 接入外部代码托管平台 API。
+  - 执行自动 merge。
+  acceptance_criteria:
+  - optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。
+  - 调度产物能引用来源 validation_feedback。
+  - python -m pytest -q 通过。
+- id: workflow-001-ui-validation-001-2
+  title: 增加目标效果图的自动检查
+  priority: medium
+  recommended_agent: TestValidatorAgent
+  risk_level: low
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+  scope:
+  - 从 docs/demos/ai_dev_pipeline_demo.html 提取可机读页面结构和核心交互验收点。
+  - 让 GoalEffectValidatorAgent 报告目标效果图相关检查结果。
+  - 将目标效果检查结果写入 validation_feedback.json。
+  out_of_scope:
+  - 重做前端 demo。
+  - 引入浏览器云服务。
+  acceptance_criteria:
+  - 目标效果图检查有结构化产物。
+  - validation_feedback.json 包含目标效果图检查结论。
+  - python -m pytest -q 通过。

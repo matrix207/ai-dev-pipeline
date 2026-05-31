@@ -1,0 +1,53 @@
+{
+  "task_id": "workflow-001-dispatch",
+  "status": "passed",
+  "dispatched_task_id": "workflow-001-feedback-002-2",
+  "dispatched_tasks": [
+    {
+      "task_id": "workflow-001-dispatch",
+      "status": "passed",
+      "dispatched_task_id": "workflow-001-feedback-002-2",
+      "artifacts": [
+        "workspace/tasks/workflow-001-feedback-002-2/review/test_validation.json",
+        "workspace/tasks/workflow-001-feedback-002-2/review/code_review.json",
+        "workspace/tasks/workflow-001-feedback-002-2/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "gates": {
+        "goal_approved": true,
+        "design_review_passed": true,
+        "tests_passed": true,
+        "code_review_passed": true,
+        "human_merge_approved": false
+      }
+    },
+    {
+      "task_id": "workflow-001-dispatch",
+      "status": "passed",
+      "dispatched_task_id": "workflow-001-ui-validation-001-2",
+      "artifacts": [
+        "workspace/tasks/workflow-001-ui-validation-001-2/review/test_validation.json",
+        "workspace/tasks/workflow-001-ui-validation-001-2/review/code_review.json",
+        "workspace/tasks/workflow-001-ui-validation-001-2/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "gates": {
+        "goal_approved": true,
+        "design_review_passed": true,
+        "tests_passed": true,
+        "code_review_passed": true,
+        "human_merge_approved": false
+      }
+    }
+  ],
+  "artifacts": [
+    "workspace/tasks/workflow-001-feedback-002-2/review/test_validation.json",
+    "workspace/tasks/workflow-001-feedback-002-2/review/code_review.json",
+    "workspace/tasks/workflow-001-feedback-002-2/final/validation_feedback.json",
+    "workspace/tasks/workflow-001-ui-validation-001-2/review/test_validation.json",
+    "workspace/tasks/workflow-001-ui-validation-001-2/review/code_review.json",
+    "workspace/tasks/workflow-001-ui-validation-001-2/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "gates": {}
+}
