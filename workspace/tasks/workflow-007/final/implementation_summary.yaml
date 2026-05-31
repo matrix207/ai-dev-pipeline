@@ -1,0 +1,34 @@
+task_id: workflow-007
+title: 端到端闭环人工审批记录
+status: waiting_for_human_merge_approval
+goal: 将人工审批意见、审批人、审批时间和审批结论写入 run record，形成完整闭环决策记录。
+completed_scope:
+  - 新增 approve_run_record，用于写入或更新人工审批记录。
+  - CLI 增加 --approve-run、--approver、--decision、--comment 和 --decided-at。
+  - approval_record 包含 approver、decision、comment、decided_at。
+  - 审批记录会同步写入 run record 和最新 decision_summary.yaml。
+  - approved 会将 quality_gate.status 更新为 approved，can_continue 更新为 true。
+  - rejected 会将 quality_gate.status 更新为 rejected，can_continue 保持 false。
+  - 用例先行覆盖函数调用和 CLI 审批更新。
+changed_files:
+  - scripts/run_end_to_end.py
+  - tests/test_run_end_to_end.py
+  - workspace/tasks/workflow-007/final/decision_summary.yaml
+  - workspace/tasks/workflow-007/runs/workflow-007-run.yaml
+validation_result:
+  dry_run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-007 --dry-run --rerun-policy skip_completed --run-id workflow-007-dry-run --json
+  run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-007 --rerun-policy skip_completed --run-id workflow-007-run --json
+  approve_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-007 --approve-run workflow-007-run --approver dennis --decision approved --comment ... --decided-at 2026-06-01T00:00:00Z --json
+  pytest: passed
+  pytest_count: 83
+  validation_status: passed
+  alignment_score: 1.0
+  approval_decision: approved
+  quality_gate_status: approved
+  can_continue: true
+  next_recommended_task: workflow-008
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+  - 未删除用户文件。
+next_recommended_task: workflow-008

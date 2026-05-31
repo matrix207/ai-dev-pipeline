@@ -9,6 +9,7 @@ from scripts.run_end_to_end import (
     _fallback_recommended_task,
     _quality_gate,
     _quality_gate_config,
+    approve_run_record,
     format_end_to_end_summary,
     main,
     run_end_to_end,
@@ -374,6 +375,71 @@ def test_run_end_to_end_cli_lists_run_records(tmp_path: Path, capsys) -> None:
     assert output[0]["artifact"] == "workspace/tasks/workflow-004/runs/list-run-001.yaml"
 
 
+def test_approve_run_record_updates_run_and_latest_summary(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    run_end_to_end(tmp_path, task_id="workflow-007", run_id="approval-run-001")
+
+    updated = approve_run_record(
+        tmp_path,
+        task_id="workflow-007",
+        run_id="approval-run-001",
+        approver="dennis",
+        decision="approved",
+        comment="同意继续。",
+        decided_at="2026-06-01T00:00:00Z",
+    )
+
+    approval = updated["approval_record"]
+    assert approval == {
+        "approver": "dennis",
+        "decision": "approved",
+        "comment": "同意继续。",
+        "decided_at": "2026-06-01T00:00:00Z",
+    }
+    assert updated["quality_gate"]["status"] == "approved"
+    assert updated["quality_gate"]["can_continue"] is True
+    assert updated["quality_gate"]["human_approval"]["merge_approved"] is True
+    latest = read_yaml(tmp_path, "workspace/tasks/workflow-007/final/decision_summary.yaml")
+    assert latest["approval_record"] == approval
+
+
+def test_run_end_to_end_cli_approves_run_record(tmp_path: Path, capsys) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    run_end_to_end(tmp_path, task_id="workflow-007", run_id="cli-approval-run")
+
+    old_argv = sys.argv
+    sys.argv = [
+        "run_end_to_end.py",
+        "--repo-root",
+        str(tmp_path),
+        "--task-id",
+        "workflow-007",
+        "--approve-run",
+        "cli-approval-run",
+        "--approver",
+        "dennis",
+        "--decision",
+        "rejected",
+        "--comment",
+        "证据不足。",
+        "--decided-at",
+        "2026-06-01T00:00:00Z",
+        "--json",
+    ]
+    try:
+        exit_code = main()
+    finally:
+        sys.argv = old_argv
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["approval_record"]["decision"] == "rejected"
+    assert output["quality_gate"]["status"] == "rejected"
+    assert output["quality_gate"]["can_continue"] is False
+
+
 def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
     assert _fallback_recommended_task("workflow-003") == {
         "id": "workflow-004",
@@ -393,5 +459,10 @@ def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
     assert _fallback_recommended_task("workflow-006") == {
         "id": "workflow-007",
         "title": "端到端闭环人工审批记录",
+        "priority": "medium",
+    }
+    assert _fallback_recommended_task("workflow-007") == {
+        "id": "workflow-008",
+        "title": "端到端闭环审批后动作控制",
         "priority": "medium",
     }

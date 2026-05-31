@@ -777,6 +777,7 @@ def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
         "workflow-005": "端到端闭环运行记录质量门",
         "workflow-006": "端到端闭环质量门配置化",
         "workflow-007": "端到端闭环人工审批记录",
+        "workflow-008": "端到端闭环审批后动作控制",
     }
     return {
         "id": next_task_id,
@@ -934,6 +935,61 @@ def list_run_records(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK
     return sorted(records, key=lambda item: item.get("started_at") or "", reverse=True)
 
 
+def approve_run_record(
+    repo_root: str | Path = ".",
+    *,
+    task_id: str = DEFAULT_TASK_ID,
+    run_id: str,
+    approver: str,
+    decision: str,
+    comment: str,
+    decided_at: str | None = None,
+) -> dict[str, Any]:
+    """写入人工审批记录，并同步更新 run record 与最新决策摘要。"""
+    if decision not in {"approved", "rejected"}:
+        raise ValueError("decision must be approved or rejected.")
+    repo_root = Path(repo_root)
+    record_path = _run_record_path(task_id, run_id)
+    record = read_yaml(repo_root, record_path)
+    decided_at = decided_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    approval_record = {
+        "approver": approver,
+        "decision": decision,
+        "comment": comment,
+        "decided_at": decided_at,
+    }
+    record["approval_record"] = approval_record
+    quality_gate = dict(record.get("quality_gate", {}))
+    human_approval = dict(quality_gate.get("human_approval", {}))
+    human_approval.update(
+        {
+            "required": True,
+            "merge_approved": decision == "approved",
+            "status": decision,
+        }
+    )
+    quality_gate["human_approval"] = human_approval
+    quality_gate["status"] = decision
+    quality_gate["can_continue"] = decision == "approved"
+    quality_gate["next_allowed_action"] = (
+        "人工审批已通过，可以继续后续动作。"
+        if decision == "approved"
+        else "人工审批未通过，需根据审批意见修正后重新运行。"
+    )
+    record["quality_gate"] = quality_gate
+    write_yaml(repo_root, record_path, record)
+
+    latest_summary_path = _workflow_paths(task_id)["decision_summary"]
+    latest_summary_file = repo_root / latest_summary_path
+    if latest_summary_file.exists():
+        latest_summary = read_yaml(repo_root, latest_summary_path)
+        if latest_summary.get("run_record_artifact") == record_path:
+            latest_summary["approval_record"] = approval_record
+            latest_summary["quality_gate"] = quality_gate
+            write_yaml(repo_root, latest_summary_path, latest_summary)
+    return record
+
+
 def format_run_records(records: list[dict[str, Any]]) -> str:
     if not records:
         return "No run records found."
@@ -957,6 +1013,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--json", action="store_true", help="Print full JSON summary.")
     parser.add_argument("--dry-run", action="store_true", help="Preview the run plan without writing artifacts.")
     parser.add_argument("--list-runs", action="store_true", help="List persisted run records for the task.")
+    parser.add_argument("--approve-run", help="Run id to approve or reject.")
+    parser.add_argument("--approver", help="Human approver name for --approve-run.")
+    parser.add_argument("--decision", choices=["approved", "rejected"], help="Approval decision for --approve-run.")
+    parser.add_argument("--comment", default="", help="Approval comment for --approve-run.")
+    parser.add_argument("--decided-at", help="Approval timestamp for --approve-run.")
     parser.add_argument("--run-id", help="Optional stable id to record for this run.")
     parser.add_argument(
         "--rerun-policy",
@@ -969,6 +1030,24 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    if args.approve_run:
+        if not args.approver or not args.decision:
+            raise SystemExit("--approve-run requires --approver and --decision.")
+        updated = approve_run_record(
+            args.repo_root,
+            task_id=args.task_id,
+            run_id=args.approve_run,
+            approver=args.approver,
+            decision=args.decision,
+            comment=args.comment,
+            decided_at=args.decided_at,
+        )
+        if args.json:
+            print(json.dumps(updated, ensure_ascii=False, indent=2))
+        else:
+            print(format_end_to_end_summary(updated))
+        return 0
+
     if args.list_runs:
         records = list_run_records(args.repo_root, task_id=args.task_id)
         if args.json:

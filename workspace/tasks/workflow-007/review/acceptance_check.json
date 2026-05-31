@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-007",
+  "status": "passed",
+  "checked_at": "2026-06-01",
+  "checks": [
+    {
+      "name": "Approval record persistence",
+      "result": "pass",
+      "evidence": "workspace/tasks/workflow-007/runs/workflow-007-run.yaml includes approval_record with approver, decision, comment and decided_at."
+    },
+    {
+      "name": "CLI approval update",
+      "result": "pass",
+      "evidence": "python scripts/run_end_to_end.py --task-id workflow-007 --approve-run workflow-007-run --approver dennis --decision approved --comment ... updated the run record."
+    },
+    {
+      "name": "Latest summary sync",
+      "result": "pass",
+      "evidence": "workspace/tasks/workflow-007/final/decision_summary.yaml includes the same approval_record as the run record."
+    },
+    {
+      "name": "Quality gate transition",
+      "result": "pass",
+      "evidence": "quality_gate.status is approved and quality_gate.can_continue is true after approval."
+    },
+    {
+      "name": "Test-first coverage",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers approve_run_record and CLI approval update."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 83 passed."
+    }
+  ],
+  "blocking_issues": []
+}
