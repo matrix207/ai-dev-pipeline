@@ -1,0 +1,26 @@
+task_id: review-001
+title: Evidence 映射后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-001
+  title: 一键运行规划、调度、验证和反馈生成
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 将 feedback_planning、dispatch_batch、验证和下一轮反馈汇总成一个端到端命令。
+  acceptance_criteria:
+    - 提供一个本地 CLI 命令运行端到端闭环。
+    - 输出决策摘要，包含目标效果、当前达成、剩余任务和下一步建议。
+    - 失败时保留结构化错误和已完成产物。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。

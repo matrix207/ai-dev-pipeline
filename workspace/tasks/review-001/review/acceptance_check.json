@@ -1,0 +1,33 @@
+{
+  "task_id": "review-001",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Structured evidence map",
+      "result": "pass",
+      "evidence": "workspace/tasks/review-001/review/code_review.json contains acceptance_coverage.acceptance_evidence_map."
+    },
+    {
+      "name": "Criterion-level mapping",
+      "result": "pass",
+      "evidence": "Each acceptance criterion has status, matched_evidence, missing_evidence and recommendation fields."
+    },
+    {
+      "name": "Missing evidence recommendation",
+      "result": "pass",
+      "evidence": "tests/test_validation_agents.py covers missing evidence with an explicit recommendation."
+    },
+    {
+      "name": "Backward compatibility",
+      "result": "pass",
+      "evidence": "acceptance_coverage still includes criteria, covered and missing_evidence."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 68 passed."
+    }
+  ],
+  "blocking_issues": []
+}

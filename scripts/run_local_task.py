@@ -89,7 +89,14 @@ def _run_step(
         )
         return f"workspace/tasks/{task_id}/review/test_validation.json", result.output
     if step == "code_review":
-        result = CodeReviewerAgent().run({"repo_root": str(repo_root), "task_id": task_id})
+        result = CodeReviewerAgent().run(
+            {
+                "repo_root": str(repo_root),
+                "task_id": task_id,
+                "validation_path": step_options.get("validation_path"),
+                "task_definition_path": step_options.get("task_definition_path"),
+            }
+        )
         return f"workspace/tasks/{task_id}/review/code_review.json", result.output
     if step == "goal_effect_validation":
         result = GoalEffectValidatorAgent().run(

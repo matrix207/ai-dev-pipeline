@@ -1,0 +1,28 @@
+task_id: review-001
+title: 加强验收标准 evidence 映射
+status: waiting_for_human_merge_approval
+goal: 将 acceptance_criteria 到 evidence 的映射做成结构化报告，而不是只作为文本启发式检查。
+completed_scope:
+  - CodeReviewerAgent 输出 acceptance_coverage.acceptance_evidence_map。
+  - 每条验收标准输出 criterion、status、matched_evidence、missing_evidence 和 recommendation。
+  - matched_evidence 记录命中的仓库相对路径和匹配原因。
+  - 缺失 evidence 时输出明确 recommendation。
+  - 保留 criteria、covered、missing_evidence 旧字段兼容。
+  - run_local_task 的 code_review step 支持传入 task_definition_path。
+  - 新增 evidence_review workflow。
+changed_files:
+  - agents/code_reviewer_agent.py
+  - scripts/run_local_task.py
+  - config/pipeline.yaml
+  - tests/test_validation_agents.py
+  - workspace/tasks/review-001/input/review_tasks.yaml
+validation_result:
+  pytest: passed
+  pytest_count: 68
+  workflow: evidence_review
+  code_review_status: passed
+  evidence_map_status: generated
+out_of_scope_confirmed:
+  - 未把 non-blocking evidence 缺口升级为 blocking。
+  - 未自动 PR 或 merge。
+next_recommended_task: workflow-001

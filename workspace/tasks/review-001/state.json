@@ -1,0 +1,26 @@
+{
+  "task_id": "review-001",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "agents/code_reviewer_agent.py",
+    "scripts/run_local_task.py",
+    "config/pipeline.yaml",
+    "tests/test_validation_agents.py",
+    "workspace/tasks/review-001/input/review_tasks.yaml",
+    "workspace/tasks/review-001/review/test_validation.json",
+    "workspace/tasks/review-001/review/code_review.json",
+    "workspace/tasks/review-001/final/validation_feedback.json",
+    "workspace/tasks/review-001/review/acceptance_check.json",
+    "workspace/tasks/review-001/final/implementation_summary.yaml",
+    "workspace/tasks/review-001/final/next_dev_tasks.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

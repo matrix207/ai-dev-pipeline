@@ -121,6 +121,29 @@ def test_code_reviewer_agent_reports_acceptance_coverage(tmp_path: Path) -> None
     assert result.output["acceptance_coverage"]["missing_evidence"] == [
         "缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。"
     ]
+    assert result.output["acceptance_coverage"]["acceptance_evidence_map"] == [
+        {
+            "criterion": "代码评审报告包含验收标准覆盖情况。",
+            "status": "matched",
+            "matched_evidence": [
+                {
+                    "path": "workspace/tasks/opt-001/review/acceptance_check.json",
+                    "match": "exact_text",
+                }
+            ],
+            "missing_evidence": [],
+            "recommendation": "",
+        },
+        {
+            "criterion": "缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。",
+            "status": "missing",
+            "matched_evidence": [],
+            "missing_evidence": [
+                "缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。"
+            ],
+            "recommendation": "在 acceptance_check.json、implementation_summary.yaml 或相关产物中补充该验收标准的明确 evidence。",
+        },
+    ]
     assert result.output["non_blocking_issues"][0]["id"] == "acceptance_criteria_evidence"
 
 

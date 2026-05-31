@@ -97,6 +97,14 @@ workflows:
       - code_review
       - goal_effect_validation
     human_gate_required: true
+  evidence_review:
+    task_id: review-001
+    steps:
+      - test_validation
+      - name: code_review
+        task_definition_path: workspace/tasks/review-001/input/review_tasks.yaml
+      - goal_effect_validation
+    human_gate_required: true
   optimization_execution:
     task_id: planning-003
     steps:

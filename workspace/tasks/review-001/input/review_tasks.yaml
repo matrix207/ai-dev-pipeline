@@ -1,0 +1,23 @@
+tasks:
+  - id: review-001
+    title: 加强验收标准 evidence 映射
+    priority: medium
+    recommended_agent: CodeReviewerAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - CodeReviewerAgent 输出 acceptance_evidence_map。
+      - 每条 acceptance criterion 都有 matched_evidence 或 missing_evidence。
+      - 缺失 evidence 时输出明确 recommendation。
+      - python -m pytest -q 通过。
+    out_of_scope:
+      - 自动 PR。
+      - 自动 merge。
+    acceptance_criteria:
+      - CodeReviewerAgent 输出 acceptance_evidence_map。
+      - 每条 acceptance criterion 都有 matched_evidence 或 missing_evidence。
+      - 缺失 evidence 时输出明确 recommendation。
+      - python -m pytest -q 通过。

@@ -18,13 +18,11 @@ class CodeReviewerAgent(BaseAgent):
     def handle(self, payload: dict[str, Any]) -> Mapping[str, Any]:
         repo_root = Path(payload.get("repo_root", "."))
         task_id = payload["task_id"]
-        validation_path = payload.get(
-            "validation_path",
-            f"workspace/tasks/{task_id}/review/test_validation.json",
+        validation_path = payload.get("validation_path") or (
+            f"workspace/tasks/{task_id}/review/test_validation.json"
         )
-        task_definition_path = payload.get(
-            "task_definition_path",
-            "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        task_definition_path = payload.get("task_definition_path") or (
+            "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"
         )
 
         checks: list[dict[str, str]] = []
@@ -197,14 +195,34 @@ class CodeReviewerAgent(BaseAgent):
             recommendations.append("为任务定义 acceptance_criteria，以便代码评审检查 evidence 覆盖。")
             return {"criteria": [], "covered": [], "missing_evidence": []}
 
-        evidence_text = self._collect_evidence_text(repo_root, task_id)
-        covered = []
-        missing = []
+        evidence_sources = self._collect_evidence_sources(repo_root, task_id)
+        evidence_text = "\n".join(source["text"] for source in evidence_sources)
+        evidence_map = []
         for criterion in criteria:
-            if self._criterion_has_evidence(criterion, evidence_text):
-                covered.append(criterion)
+            matched_evidence = self._matched_evidence(criterion, evidence_sources)
+            if matched_evidence:
+                evidence_map.append(
+                    {
+                        "criterion": criterion,
+                        "status": "matched",
+                        "matched_evidence": matched_evidence,
+                        "missing_evidence": [],
+                        "recommendation": "",
+                    }
+                )
             else:
-                missing.append(criterion)
+                evidence_map.append(
+                    {
+                        "criterion": criterion,
+                        "status": "missing",
+                        "matched_evidence": [],
+                        "missing_evidence": [criterion],
+                        "recommendation": "在 acceptance_check.json、implementation_summary.yaml 或相关产物中补充该验收标准的明确 evidence。",
+                    }
+                )
+
+        covered = [item["criterion"] for item in evidence_map if item["status"] == "matched"]
+        missing = [item["criterion"] for item in evidence_map if item["status"] == "missing"]
 
         if missing:
             checks.append(
@@ -236,6 +254,7 @@ class CodeReviewerAgent(BaseAgent):
             "criteria": criteria,
             "covered": covered,
             "missing_evidence": missing,
+            "acceptance_evidence_map": evidence_map,
         }
 
     def _load_task_definition(
@@ -253,19 +272,51 @@ class CodeReviewerAgent(BaseAgent):
                 return dict(task)
         return None
 
-    def _collect_evidence_text(self, repo_root: Path, task_id: str) -> str:
+    def _collect_evidence_sources(self, repo_root: Path, task_id: str) -> list[dict[str, str]]:
         task_root = repo_root / "workspace" / "tasks" / task_id
         if not task_root.exists():
-            return ""
-        text_parts: list[str] = []
+            return []
+        evidence_sources: list[dict[str, str]] = []
         for path in task_root.rglob("*"):
             if path.suffix not in {".json", ".yaml", ".yml", ".md", ".txt"}:
                 continue
             try:
-                text_parts.append(path.read_text(encoding="utf-8"))
+                evidence_sources.append(
+                    {
+                        "path": str(path.relative_to(repo_root)),
+                        "text": path.read_text(encoding="utf-8"),
+                    }
+                )
             except UnicodeDecodeError:
                 continue
-        return "\n".join(text_parts)
+        return evidence_sources
+
+    def _collect_evidence_text(self, repo_root: Path, task_id: str) -> str:
+        return "\n".join(
+            source["text"] for source in self._collect_evidence_sources(repo_root, task_id)
+        )
+
+    def _matched_evidence(
+        self,
+        criterion: str,
+        evidence_sources: list[dict[str, str]],
+    ) -> list[dict[str, str]]:
+        matches = []
+        for source in evidence_sources:
+            if self._criterion_has_evidence(criterion, source["text"]):
+                matches.append(
+                    {
+                        "path": source["path"],
+                        "match": self._evidence_match_reason(criterion, source["text"]),
+                    }
+                )
+        return matches
+
+    def _evidence_match_reason(self, criterion: str, evidence_text: str) -> str:
+        normalized = criterion.strip().rstrip("。.")
+        if normalized and normalized in evidence_text:
+            return "exact_text"
+        return "keyword_coverage"
 
     def _criterion_has_evidence(self, criterion: str, evidence_text: str) -> bool:
         normalized = criterion.strip().rstrip("。.")
