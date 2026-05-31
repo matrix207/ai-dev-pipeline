@@ -9,6 +9,12 @@ tasks:
 - id: opt-001
   title: 增强代码评审 Agent 的检查深度
   priority: medium
+  recommended_agent: CoderAgent
+  risk_level: medium
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
   scope:
   - 扩展 CodeReviewerAgent，检查任务验收标准是否都有对应 evidence。
   - 检查测试结果、任务状态和产物路径是否一致。
@@ -23,6 +29,12 @@ tasks:
 - id: opt-002
   title: 将目标效果 demo 映射到真实 workflow 能力
   priority: medium
+  recommended_agent: DesignReviewerAgent
+  risk_level: medium
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
   scope:
   - 从 docs/demos/ai_dev_pipeline_demo.html 提取关键用户效果。
   - 将关键效果映射到现有 workflow、Agent 和产物。
@@ -36,6 +48,12 @@ tasks:
 - id: opt-003
   title: 把验证反馈转换为可执行任务的端到端 workflow
   priority: medium
+  recommended_agent: CoderAgent
+  risk_level: medium
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
   scope:
   - 新增 optimization_planning workflow。
   - 运行后生成 workspace/tasks/optimization-001/final/next_optimization_tasks.yaml。

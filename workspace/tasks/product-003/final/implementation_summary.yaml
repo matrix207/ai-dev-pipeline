@@ -1,0 +1,23 @@
+task_id: product-003
+title: 优化任务增加 owner/agent 和风险字段
+status: waiting_for_human_merge_approval
+goal: 让生成的优化任务包含 recommended_agent、risk_level 和 human_gate，便于人审批和后续自动化编排。
+completed_scope:
+  - 为 enhancement 任务补充 recommended_agent、risk_level 和 human_gate。
+  - 为 repair 任务补充高风险标记和风险审批门。
+  - 更新测试覆盖新字段。
+  - 刷新 next_optimization_tasks.yaml。
+changed_files:
+  - agents/optimization_planner_agent.py
+  - tests/test_optimization_planner_agent.py
+  - workspace/tasks/optimization-001/final/next_optimization_tasks.yaml
+acceptance_status:
+  generated_tasks_include_recommended_agent: passed
+  generated_tasks_include_risk_level: passed
+  generated_tasks_include_human_gate: passed
+  high_risk_repair_requires_risk_approval: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未自动分配真实人员。
+  - 未同步远程任务系统。
+next_recommended_task: planning-003

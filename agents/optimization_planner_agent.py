@@ -58,6 +58,13 @@ class OptimizationPlannerAgent(BaseAgent):
                     "id": f"fix-{index:03d}",
                     "title": f"修复验证阻塞问题：{issue_id}",
                     "priority": "high",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "high",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": True,
+                        "merge_approval_required": True,
+                    },
                     "scope": [
                         issue.get("description", "分析并修复验证阻塞问题。"),
                         issue.get("recommendation", "修复后重新运行 automated_validation workflow。"),
@@ -81,6 +88,13 @@ class OptimizationPlannerAgent(BaseAgent):
                 "id": "opt-001",
                 "title": "增强代码评审 Agent 的检查深度",
                 "priority": priority,
+                "recommended_agent": "CoderAgent",
+                "risk_level": "medium",
+                "human_gate": {
+                    "goal_approval_required": True,
+                    "risk_approval_required": False,
+                    "merge_approval_required": True,
+                },
                 "scope": [
                     "扩展 CodeReviewerAgent，检查任务验收标准是否都有对应 evidence。",
                     "检查测试结果、任务状态和产物路径是否一致。",
@@ -100,6 +114,13 @@ class OptimizationPlannerAgent(BaseAgent):
                 "id": "opt-002",
                 "title": "将目标效果 demo 映射到真实 workflow 能力",
                 "priority": "medium",
+                "recommended_agent": "DesignReviewerAgent",
+                "risk_level": "medium",
+                "human_gate": {
+                    "goal_approval_required": True,
+                    "risk_approval_required": False,
+                    "merge_approval_required": True,
+                },
                 "scope": [
                     "从 docs/demos/ai_dev_pipeline_demo.html 提取关键用户效果。",
                     "将关键效果映射到现有 workflow、Agent 和产物。",
@@ -118,6 +139,13 @@ class OptimizationPlannerAgent(BaseAgent):
                 "id": "opt-003",
                 "title": "把验证反馈转换为可执行任务的端到端 workflow",
                 "priority": "medium",
+                "recommended_agent": "CoderAgent",
+                "risk_level": "medium",
+                "human_gate": {
+                    "goal_approval_required": True,
+                    "risk_approval_required": False,
+                    "merge_approval_required": True,
+                },
                 "scope": [
                     "新增 optimization_planning workflow。",
                     "运行后生成 workspace/tasks/optimization-001/final/next_optimization_tasks.yaml。",

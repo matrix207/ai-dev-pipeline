@@ -41,7 +41,7 @@ remaining_work:
 - 增强优化任务优先级、owner/agent 建议和风险说明。
 - 让失败反馈可直接生成修复任务并进入下一轮执行。
 next_recommended_action:
-  task_id: product-003
-  title: 优化任务增加 owner/agent 和风险字段
-  priority: medium
+  task_id: null
+  title: 暂无下一步任务
+  priority: none
   reason: 来自 optimization_planning 生成的下一轮优化任务。

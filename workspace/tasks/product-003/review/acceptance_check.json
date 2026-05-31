@@ -1,0 +1,33 @@
+{
+  "task_id": "product-003",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Recommended Agent",
+      "result": "pass",
+      "evidence": "next_optimization_tasks.yaml includes recommended_agent for each generated task."
+    },
+    {
+      "name": "Risk Level",
+      "result": "pass",
+      "evidence": "next_optimization_tasks.yaml includes risk_level for each generated task."
+    },
+    {
+      "name": "Human Gate",
+      "result": "pass",
+      "evidence": "next_optimization_tasks.yaml includes human_gate fields for goal, risk and merge approval."
+    },
+    {
+      "name": "Repair Risk",
+      "result": "pass",
+      "evidence": "tests/test_optimization_planner_agent.py covers repair tasks as high risk with risk approval required."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 46 passed."
+    }
+  ],
+  "blocking_issues": []
+}

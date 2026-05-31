@@ -1,0 +1,20 @@
+{
+  "task_id": "product-003",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "agents/optimization_planner_agent.py",
+    "tests/test_optimization_planner_agent.py",
+    "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+    "workspace/tasks/product-003/review/acceptance_check.json",
+    "workspace/tasks/product-003/final/implementation_summary.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}
