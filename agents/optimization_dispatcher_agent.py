@@ -7,6 +7,8 @@ from typing import Any, Mapping
 
 from agents import BaseAgent, CoderAgent
 from agents.optimization_executor_agent import DEFAULT_OPTIMIZATION_TASKS_PATH, OptimizationExecutorAgent
+from artifacts import write_json
+from tasks import TaskState, save_state
 
 
 class OptimizationDispatcherAgent(BaseAgent):
@@ -46,6 +48,24 @@ class OptimizationDispatcherAgent(BaseAgent):
                     "tasks_path": tasks_path,
                 }
             ).output
+            dispatched_task_id = selected_task["id"]
+            implementation_plan_path = (
+                f"workspace/tasks/{dispatched_task_id}/code/implementation_plan.json"
+            )
+            write_json(repo_root, implementation_plan_path, dispatch_result)
+            dispatched_state = TaskState(
+                task_id=dispatched_task_id,
+                step="dispatched",
+                status="waiting_for_validation",
+                artifacts=[implementation_plan_path],
+                gates={
+                    "goal_approved": True,
+                    "tests_passed": False,
+                    "code_review_passed": False,
+                    "human_merge_approved": False,
+                },
+            )
+            save_state(repo_root, dispatched_state)
         else:
             return {
                 "status": "blocked",
@@ -67,5 +87,9 @@ class OptimizationDispatcherAgent(BaseAgent):
             "selected_task": selected_task,
             "execution": execution,
             "dispatch_result": dispatch_result,
+            "written_artifacts": [
+                f"workspace/tasks/{selected_task['id']}/code/implementation_plan.json",
+                f"workspace/tasks/{selected_task['id']}/state.json",
+            ],
             "blocking_issues": [],
         }

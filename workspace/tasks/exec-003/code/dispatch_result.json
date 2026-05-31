@@ -111,5 +111,9 @@
       "workspace/tasks/dispatch-demo/final/implementation_summary.yaml"
     ]
   },
+  "written_artifacts": [
+    "workspace/tasks/dispatch-demo/code/implementation_plan.json",
+    "workspace/tasks/dispatch-demo/state.json"
+  ],
   "blocking_issues": []
 }

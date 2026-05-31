@@ -1,0 +1,44 @@
+task_id: planning-004
+title: 调度后自动验证和状态闭环
+status: completed
+goal: 让优化任务被本地 Agent 调度后自动进入验证和反馈闭环，并保留人工 merge gate。
+completed_effect:
+  - optimization_dispatch workflow 会先执行优化任务调度，再执行测试验证、代码评审和目标效果验证。
+  - OptimizationDispatcherAgent 会把被调度任务的实现计划写入 workspace/tasks/{task_id}/code/implementation_plan.json。
+  - OptimizationDispatcherAgent 会把被调度任务状态写入 workspace/tasks/{task_id}/state.json。
+  - exec-003 的真实运行产物已包含 dispatch_result、test_validation、code_review 和 validation_feedback。
+  - PR 或 merge 仍保持人工审批，不由 Agent 自动执行。
+current_gaps:
+  - 当前只支持 CoderAgent 的本地调度。
+  - 被调度任务自己的测试、评审和目标验证尚未独立运行。
+  - 验证反馈尚未自动回写到被调度任务的下一步任务队列。
+recommended_next_task:
+  id: dispatch-001
+  title: 被调度任务的独立验证闭环
+  recommended_agent: SystemDesignAgent
+  priority: high
+  risk_level: medium
+  goal: 调度生成任务状态后，针对被调度 task_id 独立运行测试验证、代码评审、目标效果验证，并把反馈写回该任务目录。
+  acceptance_criteria:
+    - dispatch-demo 或新 task_id 具备自己的 review/test_validation.json。
+    - dispatch-demo 或新 task_id 具备自己的 review/code_review.json。
+    - dispatch-demo 或新 task_id 具备自己的 final/validation_feedback.json。
+    - 父任务 dispatch_result 能引用被调度任务验证状态。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: dispatch-002
+    title: 支持更多本地 Agent 调度
+    recommended_agent: ArchitectAgent
+    priority: medium
+    risk_level: medium
+    goal: 将 DesignReviewerAgent、TestValidatorAgent、CodeReviewerAgent 纳入 dispatcher 的安全调度表。
+  - id: ux-001
+    title: 将目标效果图转换为可机读验收点
+    recommended_agent: RequirementAgent
+    priority: medium
+    risk_level: low
+    goal: 从 docs/demos/ai_dev_pipeline_demo.html 提取页面结构、核心交互和验收指标，纳入目标效果验证。

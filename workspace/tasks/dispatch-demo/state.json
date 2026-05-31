@@ -1,0 +1,16 @@
+{
+  "task_id": "dispatch-demo",
+  "step": "dispatched",
+  "status": "waiting_for_validation",
+  "artifacts": [
+    "workspace/tasks/dispatch-demo/code/implementation_plan.json"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": false,
+    "tests_passed": false,
+    "code_review_passed": false,
+    "human_merge_approved": false
+  }
+}

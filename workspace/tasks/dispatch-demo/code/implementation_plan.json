@@ -1,0 +1,56 @@
+{
+  "task_id": "dispatch-demo",
+  "title": "调度 CoderAgent 生成执行计划",
+  "priority": "medium",
+  "scope": [
+    "读取任务说明。",
+    "生成结构化实现计划。",
+    "明确不自动 PR 或 merge。"
+  ],
+  "out_of_scope": [
+    "自动修改代码。",
+    "自动提交或合并。"
+  ],
+  "acceptance_criteria": [
+    "CoderAgent 被成功调度。",
+    "dispatch_result.json 包含 dispatch_result.task_id。",
+    "dispatch_result.safety.pr_or_merge 为 not_allowed。"
+  ],
+  "implementation_plan": [
+    {
+      "order": 1,
+      "description": "读取任务说明。",
+      "expected_artifact": "workspace/tasks/dispatch-demo/code/"
+    },
+    {
+      "order": 2,
+      "description": "生成结构化实现计划。",
+      "expected_artifact": "workspace/tasks/dispatch-demo/"
+    },
+    {
+      "order": 3,
+      "description": "明确不自动 PR 或 merge。",
+      "expected_artifact": "workspace/tasks/dispatch-demo/code/"
+    }
+  ],
+  "verification": {
+    "required_commands": [
+      "python -m pytest -q"
+    ],
+    "acceptance_criteria": [
+      "CoderAgent 被成功调度。",
+      "dispatch_result.json 包含 dispatch_result.task_id。",
+      "dispatch_result.safety.pr_or_merge 为 not_allowed。"
+    ]
+  },
+  "safety": {
+    "external_model_api": "not_used",
+    "pr_or_merge": "not_allowed",
+    "destructive_operations": "not_allowed"
+  },
+  "output_artifacts": [
+    "workspace/tasks/dispatch-demo/code/implementation_plan.json",
+    "workspace/tasks/dispatch-demo/review/acceptance_check.json",
+    "workspace/tasks/dispatch-demo/final/implementation_summary.yaml"
+  ]
+}

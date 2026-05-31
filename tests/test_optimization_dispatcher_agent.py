@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agents import OptimizationDispatcherAgent
-from artifacts import write_json, write_yaml
+from artifacts import read_json, write_json, write_yaml
 
 
 def write_tasks(tmp_path: Path, *, risk_level: str = "medium", agent: str = "CoderAgent") -> None:
@@ -41,6 +41,13 @@ def test_optimization_dispatcher_dispatches_coder_agent(tmp_path: Path) -> None:
     assert result.output["selected_task"]["id"] == "dispatch-task"
     assert result.output["dispatch_result"]["task_id"] == "dispatch-task"
     assert result.output["dispatch_result"]["safety"]["pr_or_merge"] == "not_allowed"
+    assert result.output["written_artifacts"] == [
+        "workspace/tasks/dispatch-task/code/implementation_plan.json",
+        "workspace/tasks/dispatch-task/state.json",
+    ]
+    state = read_json(tmp_path, "workspace/tasks/dispatch-task/state.json")
+    assert state["status"] == "waiting_for_validation"
+    assert state["artifacts"] == ["workspace/tasks/dispatch-task/code/implementation_plan.json"]
 
 
 def test_optimization_dispatcher_returns_no_open_tasks(tmp_path: Path) -> None:

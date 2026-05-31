@@ -328,3 +328,5 @@ def test_run_local_task_dispatches_optimization_task(tmp_path: Path) -> None:
     result = read_json(tmp_path, state.artifacts[0])
     assert result["status"] == "dispatched"
     assert result["dispatch_result"]["task_id"] == "dispatch-task"
+    dispatched_state = read_json(tmp_path, "workspace/tasks/dispatch-task/state.json")
+    assert dispatched_state["status"] == "waiting_for_validation"

@@ -4,9 +4,16 @@
   "status": "waiting_for_human_merge_approval",
   "artifacts": [
     "agents/optimization_dispatcher_agent.py",
+    "config/pipeline.yaml",
     "tests/test_optimization_dispatcher_agent.py",
+    "tests/test_run_local_task.py",
     "workspace/tasks/exec-003/input/dispatch_tasks.yaml",
     "workspace/tasks/exec-003/code/dispatch_result.json",
+    "workspace/tasks/exec-003/review/test_validation.json",
+    "workspace/tasks/exec-003/review/code_review.json",
+    "workspace/tasks/exec-003/final/validation_feedback.json",
+    "workspace/tasks/dispatch-demo/code/implementation_plan.json",
+    "workspace/tasks/dispatch-demo/state.json",
     "workspace/tasks/exec-003/review/acceptance_check.json",
     "workspace/tasks/exec-003/final/implementation_summary.yaml"
   ],

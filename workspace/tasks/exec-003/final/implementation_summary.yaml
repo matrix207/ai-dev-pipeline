@@ -7,6 +7,9 @@ completed_scope:
   - 新增 optimization_dispatch workflow。
   - 支持调度 CoderAgent。
   - 将调度结果写入 workspace/tasks/exec-003/code/dispatch_result.json。
+  - 将被调度任务的实现计划写入 workspace/tasks/{task_id}/code/implementation_plan.json。
+  - 将被调度任务状态写入 workspace/tasks/{task_id}/state.json。
+  - 调度后自动运行 test_validation、code_review 和 goal_effect_validation。
   - 调度结果保留 safety.pr_or_merge = not_allowed。
 changed_files:
   - agents/optimization_dispatcher_agent.py
@@ -17,15 +20,21 @@ changed_files:
   - tests/test_run_local_task.py
   - workspace/tasks/exec-003/input/dispatch_tasks.yaml
   - workspace/tasks/exec-003/code/dispatch_result.json
+  - workspace/tasks/dispatch-demo/code/implementation_plan.json
+  - workspace/tasks/dispatch-demo/state.json
 acceptance_status:
   dispatches_local_agent: passed
   writes_dispatch_result: passed
+  writes_dispatched_task_state: passed
+  runs_validation_after_dispatch: passed
   keeps_pr_merge_disallowed: passed
   risk_gate_blocks_high_risk_tasks: passed
   pytest: passed
 validation_result:
   dispatched_agent: CoderAgent
   dispatched_task: dispatch-demo
+  dispatched_task_state: workspace/tasks/dispatch-demo/state.json
+  dispatched_task_plan: workspace/tasks/dispatch-demo/code/implementation_plan.json
   automated_validation: passed
 out_of_scope_confirmed:
   - 未自动 PR 或 merge。

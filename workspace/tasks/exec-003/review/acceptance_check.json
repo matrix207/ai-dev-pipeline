@@ -14,6 +14,16 @@
       "evidence": "workspace/tasks/exec-003/code/dispatch_result.json contains selected_task, execution and dispatch_result."
     },
     {
+      "name": "Dispatched task state",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-demo/state.json records status waiting_for_validation and implementation plan artifact."
+    },
+    {
+      "name": "Post-dispatch validation",
+      "result": "pass",
+      "evidence": "optimization_dispatch workflow writes test_validation.json, code_review.json and validation_feedback.json for exec-003."
+    },
+    {
       "name": "Safety",
       "result": "pass",
       "evidence": "dispatch_result.safety.pr_or_merge is not_allowed."

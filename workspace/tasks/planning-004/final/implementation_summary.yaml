@@ -1,0 +1,10 @@
+task_id: planning-004
+title: 调度后自动验证和状态闭环
+status: completed
+summary:
+  - 已完成 exec-003 的调度后验证闭环。
+  - 已补充 planning-004 的下一步任务建议。
+  - 当前系统可以把一个优化任务调度给本地 CoderAgent，并在父任务上自动生成验证反馈。
+decision_needed:
+  - 是否批准 dispatch-001，继续把验证闭环下钻到被调度任务自身。
+next_recommended_task: dispatch-001

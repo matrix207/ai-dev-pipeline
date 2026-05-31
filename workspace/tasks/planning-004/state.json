@@ -1,0 +1,18 @@
+{
+  "task_id": "planning-004",
+  "step": "completed",
+  "status": "waiting_for_next_goal_approval",
+  "artifacts": [
+    "workspace/tasks/planning-004/final/next_dev_tasks.yaml",
+    "workspace/tasks/planning-004/review/acceptance_check.json",
+    "workspace/tasks/planning-004/final/implementation_summary.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

@@ -61,6 +61,9 @@ workflows:
     steps:
       - name: optimization_dispatch
         tasks_path: workspace/tasks/exec-003/input/dispatch_tasks.yaml
+      - test_validation
+      - code_review
+      - goal_effect_validation
     human_gate_required: true
 
 persistence:
