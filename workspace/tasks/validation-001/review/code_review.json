@@ -20,8 +20,32 @@
       "name": "task_state_recorded",
       "result": "pass",
       "notes": "任务状态产物存在。"
+    },
+    {
+      "name": "state_artifacts_exist",
+      "result": "pass",
+      "notes": "任务状态中的 artifact 路径均存在。"
+    },
+    {
+      "name": "acceptance_criteria_coverage",
+      "result": "pass_with_notes",
+      "notes": "未找到任务验收标准，跳过 evidence 覆盖检查。"
     }
   ],
   "blocking_issues": [],
-  "non_blocking_issues": []
+  "non_blocking_issues": [],
+  "recommendations": [
+    "为任务定义 acceptance_criteria，以便代码评审检查 evidence 覆盖。"
+  ],
+  "acceptance_coverage": {
+    "criteria": [],
+    "covered": [],
+    "missing_evidence": []
+  },
+  "artifact_consistency": {
+    "checked": [
+      "workspace/tasks/validation-001/review/test_validation.json"
+    ],
+    "missing": []
+  }
 }

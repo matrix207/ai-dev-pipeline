@@ -41,6 +41,7 @@ def test_code_reviewer_agent_passes_when_tests_and_state_exist(tmp_path: Path) -
 
     assert result.output["status"] == "passed"
     assert result.output["blocking_issues"] == []
+    assert result.output["artifact_consistency"]["missing"] == []
 
 
 def test_code_reviewer_agent_blocks_when_tests_fail(tmp_path: Path) -> None:
@@ -51,6 +52,76 @@ def test_code_reviewer_agent_blocks_when_tests_fail(tmp_path: Path) -> None:
 
     assert result.output["status"] == "blocked"
     assert result.output["blocking_issues"][0]["id"] == "tests_passed"
+
+
+def test_code_reviewer_agent_blocks_missing_state_artifact_path(tmp_path: Path) -> None:
+    write_json(tmp_path, "workspace/tasks/opt-001/review/test_validation.json", {"passed": True})
+    write_json(
+        tmp_path,
+        "workspace/tasks/opt-001/state.json",
+        {
+            "task_id": "opt-001",
+            "artifacts": ["workspace/tasks/opt-001/final/missing.yaml"],
+        },
+    )
+
+    result = CodeReviewerAgent().run({"repo_root": str(tmp_path), "task_id": "opt-001"})
+
+    assert result.output["status"] == "blocked"
+    assert result.output["blocking_issues"][0]["id"] == "state_artifacts_exist"
+    assert result.output["artifact_consistency"]["missing"] == [
+        "workspace/tasks/opt-001/final/missing.yaml"
+    ]
+
+
+def test_code_reviewer_agent_reports_acceptance_coverage(tmp_path: Path) -> None:
+    write_json(tmp_path, "workspace/tasks/opt-001/review/test_validation.json", {"passed": True})
+    write_json(
+        tmp_path,
+        "workspace/tasks/opt-001/state.json",
+        {
+            "task_id": "opt-001",
+            "artifacts": ["workspace/tasks/opt-001/review/acceptance_check.json"],
+        },
+    )
+    write_json(
+        tmp_path,
+        "workspace/tasks/opt-001/review/acceptance_check.json",
+        {
+            "checks": [
+                {
+                    "name": "coverage",
+                    "evidence": "代码评审报告包含验收标准覆盖情况。",
+                }
+            ]
+        },
+    )
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": "opt-001",
+                    "acceptance_criteria": [
+                        "代码评审报告包含验收标准覆盖情况。",
+                        "缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。",
+                    ],
+                }
+            ]
+        },
+    )
+
+    result = CodeReviewerAgent().run({"repo_root": str(tmp_path), "task_id": "opt-001"})
+
+    assert result.output["status"] == "passed"
+    assert result.output["acceptance_coverage"]["covered"] == [
+        "代码评审报告包含验收标准覆盖情况。"
+    ]
+    assert result.output["acceptance_coverage"]["missing_evidence"] == [
+        "缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。"
+    ]
+    assert result.output["non_blocking_issues"][0]["id"] == "acceptance_criteria_evidence"
 
 
 def test_goal_effect_validator_agent_outputs_feedback(tmp_path: Path) -> None:

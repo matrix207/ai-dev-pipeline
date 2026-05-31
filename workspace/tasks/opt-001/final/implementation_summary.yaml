@@ -1,0 +1,25 @@
+task_id: opt-001
+title: 增强代码评审 Agent 的检查深度
+status: waiting_for_human_merge_approval
+goal: 让 CodeReviewerAgent 能检查验收标准 evidence、任务状态 artifact 路径和验证状态一致性。
+completed_scope:
+  - 扩展 CodeReviewerAgent，输出 acceptance_coverage。
+  - 检查任务状态中的 artifact 路径是否存在。
+  - 输出 non_blocking_issues 和 recommendations。
+  - 补充缺 evidence 和缺 artifact 的测试覆盖。
+changed_files:
+  - agents/code_reviewer_agent.py
+  - tests/test_validation_agents.py
+  - workspace/tasks/validation-001/review/code_review.json
+acceptance_status:
+  review_report_contains_acceptance_coverage: passed
+  missing_evidence_generates_recommendation: passed
+  missing_state_artifact_generates_blocking_issue: passed
+  pytest: passed
+validation_result:
+  automated_validation: passed
+  alignment_score: 1.0
+out_of_scope_confirmed:
+  - 未接入外部代码托管平台 API。
+  - 未执行自动 merge。
+next_recommended_task: opt-002
