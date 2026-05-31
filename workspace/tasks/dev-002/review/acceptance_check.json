@@ -1,0 +1,36 @@
+{
+  "task_id": "dev-002",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Create, save, load, and update task state",
+      "result": "pass",
+      "evidence": "tests/test_task_state.py covers round-trip persistence and update behavior."
+    },
+    {
+      "name": "State file location",
+      "result": "pass",
+      "evidence": "state_file_path() and save_state() write to workspace/tasks/{task_id}/state.json."
+    },
+    {
+      "name": "Quality gate fields",
+      "result": "pass",
+      "evidence": "TaskState includes goal_approved, design_review_passed, tests_passed, code_review_passed, and human_merge_approved gates."
+    },
+    {
+      "name": "Error paths",
+      "result": "pass",
+      "evidence": "Tests cover invalid task ids, escaping artifact paths, and unknown quality gates."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 16 passed."
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_notes": [
+    "dev-003 should wire TaskState into the local orchestrator and stop only at configured quality gates."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "task_id": "dev-002",
+  "step": "acceptance",
+  "status": "ready_for_human_review",
+  "artifacts": [
+    "tasks/__init__.py",
+    "tasks/state.py",
+    "tests/test_task_state.py",
+    "workspace/tasks/dev-002/final/implementation_summary.yaml",
+    "workspace/tasks/dev-002/review/acceptance_check.json"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": false,
+    "human_merge_approved": false
+  }
+}

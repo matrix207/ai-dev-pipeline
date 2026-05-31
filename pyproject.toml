@@ -14,7 +14,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.setuptools.packages.find]
-include = ["agents*", "artifacts*"]
+include = ["agents*", "artifacts*", "tasks*"]
 
 [tool.ruff]
 line-length = 100

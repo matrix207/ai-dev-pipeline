@@ -1,0 +1,25 @@
+task_id: dev-002
+title: 任务状态管理器
+status: ready_for_human_review
+completed_scope:
+  - 定义 TaskState 状态结构。
+  - 实现本地 JSON 状态保存和加载。
+  - 记录 task_id、step、status、artifacts、errors 和质量门状态。
+  - 添加单元测试覆盖正常路径和错误路径。
+changed_files:
+  - tasks/__init__.py
+  - tasks/state.py
+  - tests/test_task_state.py
+  - pyproject.toml
+  - workspace/tasks/dev-002/state.json
+acceptance_status:
+  create_save_load_update_task_state: passed
+  state_file_under_workspace_task_root: passed
+  gate_status_fields: passed
+  normal_and_error_path_tests: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未引入数据库持久化。
+  - 未引入远程状态同步。
+  - 未自动审批人工质量门。
+next_recommended_task: dev-003
