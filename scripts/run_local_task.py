@@ -14,6 +14,7 @@ from agents import (
     CoderAgent,
     DesignReviewerAgent,
     GoalEffectValidatorAgent,
+    OptimizationDispatcherAgent,
     OptimizationExecutorAgent,
     OptimizationPlannerAgent,
     TestValidatorAgent,
@@ -125,6 +126,18 @@ def _run_step(
             }
         )
         return f"workspace/tasks/{task_id}/code/execution_plan.json", result.output
+    if step == "optimization_dispatch":
+        result = OptimizationDispatcherAgent().run(
+            {
+                "repo_root": str(repo_root),
+                "tasks_path": step_options.get(
+                    "tasks_path",
+                    "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+                ),
+                "risk_approved": step_options.get("risk_approved", False),
+            }
+        )
+        return f"workspace/tasks/{task_id}/code/dispatch_result.json", result.output
 
     result = PlaceholderAgent("placeholder-agent").run(
         {
@@ -204,6 +217,10 @@ def run_local_task(
                 return state
             if step == "optimization_execution_plan" and output["blocking_issues"]:
                 state.update(step=step, status="blocked_by_risk_gate")
+                save_state(repo_root, state)
+                return state
+            if step == "optimization_dispatch" and output["blocking_issues"]:
+                state.update(step=step, status="blocked_by_dispatch")
                 save_state(repo_root, state)
                 return state
             save_state(repo_root, state)

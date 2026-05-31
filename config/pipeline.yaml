@@ -56,6 +56,12 @@ workflows:
     steps:
       - optimization_execution_plan
     human_gate_required: true
+  optimization_dispatch:
+    task_id: exec-003
+    steps:
+      - name: optimization_dispatch
+        tasks_path: workspace/tasks/exec-003/input/dispatch_tasks.yaml
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem

@@ -292,3 +292,39 @@ def test_run_local_task_writes_optimization_execution_plan(tmp_path: Path) -> No
     assert state.artifacts == ["workspace/tasks/planning-003/code/execution_plan.json"]
     plan = read_json(tmp_path, state.artifacts[0])
     assert plan["selected_task"]["id"] == "next-task"
+
+
+def test_run_local_task_dispatches_optimization_task(tmp_path: Path) -> None:
+    write_config(tmp_path, ["optimization_dispatch"])
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": "dispatch-task",
+                    "title": "Dispatch Task",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["生成执行计划。"],
+                    "out_of_scope": ["自动 merge。"],
+                    "acceptance_criteria": ["执行后产生任务状态和验证反馈。"],
+                }
+            ]
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="exec-003", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == ["workspace/tasks/exec-003/code/dispatch_result.json"]
+    result = read_json(tmp_path, state.artifacts[0])
+    assert result["status"] == "dispatched"
+    assert result["dispatch_result"]["task_id"] == "dispatch-task"

@@ -1,0 +1,27 @@
+task_batch:
+  source_task: exec-003
+  language: zh-CN
+  status: ready_for_execution_demo
+  goal: 验证 optimization_dispatch workflow 能根据 recommended_agent 调度本地 Agent。
+
+tasks:
+  - id: dispatch-demo
+    title: 调度 CoderAgent 生成执行计划
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 读取任务说明。
+      - 生成结构化实现计划。
+      - 明确不自动 PR 或 merge。
+    out_of_scope:
+      - 自动修改代码。
+      - 自动提交或合并。
+    acceptance_criteria:
+      - CoderAgent 被成功调度。
+      - dispatch_result.json 包含 dispatch_result.task_id。
+      - dispatch_result.safety.pr_or_merge 为 not_allowed。

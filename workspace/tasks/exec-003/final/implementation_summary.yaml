@@ -1,0 +1,33 @@
+task_id: exec-003
+title: 自动执行优化任务的真实 Agent 调度
+status: waiting_for_human_merge_approval
+goal: 根据 selected_task.recommended_agent 调用本地 Agent，生成任务执行结果，并保持 PR/merge 人工审批。
+completed_scope:
+  - 创建 OptimizationDispatcherAgent。
+  - 新增 optimization_dispatch workflow。
+  - 支持调度 CoderAgent。
+  - 将调度结果写入 workspace/tasks/exec-003/code/dispatch_result.json。
+  - 调度结果保留 safety.pr_or_merge = not_allowed。
+changed_files:
+  - agents/optimization_dispatcher_agent.py
+  - agents/__init__.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_optimization_dispatcher_agent.py
+  - tests/test_run_local_task.py
+  - workspace/tasks/exec-003/input/dispatch_tasks.yaml
+  - workspace/tasks/exec-003/code/dispatch_result.json
+acceptance_status:
+  dispatches_local_agent: passed
+  writes_dispatch_result: passed
+  keeps_pr_merge_disallowed: passed
+  risk_gate_blocks_high_risk_tasks: passed
+  pytest: passed
+validation_result:
+  dispatched_agent: CoderAgent
+  dispatched_task: dispatch-demo
+  automated_validation: passed
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未同步外部任务系统。
+next_recommended_task: planning-004
