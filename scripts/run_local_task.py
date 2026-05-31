@@ -14,9 +14,10 @@ from agents import (
     CoderAgent,
     DesignReviewerAgent,
     GoalEffectValidatorAgent,
+    OptimizationPlannerAgent,
     TestValidatorAgent,
 )
-from artifacts import read_yaml, write_json
+from artifacts import read_yaml, write_json, write_yaml
 from tasks import TaskState, save_state
 
 
@@ -100,6 +101,17 @@ def _run_step(
             }
         )
         return f"workspace/tasks/{task_id}/final/validation_feedback.json", result.output
+    if step == "optimization_planning":
+        result = OptimizationPlannerAgent().run(
+            {
+                "repo_root": str(repo_root),
+                "feedback_path": step_options.get(
+                    "feedback_path",
+                    "workspace/tasks/validation-001/final/validation_feedback.json",
+                ),
+            }
+        )
+        return f"workspace/tasks/{task_id}/final/next_optimization_tasks.yaml", result.output
 
     result = PlaceholderAgent("placeholder-agent").run(
         {
@@ -146,7 +158,10 @@ def run_local_task(
             save_state(repo_root, state)
 
             artifact_path, output = _run_step(repo_root, workflow_name, task_id, step, step_options)
-            write_json(repo_root, artifact_path, output)
+            if artifact_path.endswith((".yaml", ".yml")):
+                write_yaml(repo_root, artifact_path, output)
+            else:
+                write_json(repo_root, artifact_path, output)
             state.record_artifact(artifact_path)
             if step == "design_review":
                 if output["blocking_issues"]:

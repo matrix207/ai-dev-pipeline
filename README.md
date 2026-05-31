@@ -31,6 +31,16 @@ python scripts/run_local_task.py --workflow automated_validation --goal-approved
 - `workspace/tasks/validation-001/review/code_review.json`
 - `workspace/tasks/validation-001/final/validation_feedback.json`
 
+将验证反馈转换为下一轮优化任务：
+
+```bash
+python scripts/run_local_task.py --workflow optimization_planning --goal-approved
+```
+
+优化任务会写入：
+
+- `workspace/tasks/optimization-001/final/next_optimization_tasks.yaml`
+
 ## 第一轮任务
 
 ```bash

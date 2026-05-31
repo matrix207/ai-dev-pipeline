@@ -46,6 +46,11 @@ workflows:
       - code_review
       - goal_effect_validation
     human_gate_required: true
+  optimization_planning:
+    task_id: optimization-001
+    steps:
+      - optimization_planning
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem

@@ -1,0 +1,31 @@
+task_id: optimization-001
+title: 基于验证反馈生成下一轮优化任务
+status: waiting_for_human_merge_approval
+goal: 将 validation_feedback.json 转换为可评审、可执行的下一轮优化任务。
+completed_scope:
+  - 创建 OptimizationPlannerAgent。
+  - 支持验证通过时生成 enhancement 任务。
+  - 支持存在 blocking issue 时生成 repair 任务。
+  - 新增 optimization_planning workflow。
+  - 生成 next_optimization_tasks.yaml。
+changed_files:
+  - agents/optimization_planner_agent.py
+  - agents/__init__.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_optimization_planner_agent.py
+  - tests/test_run_local_task.py
+  - README.md
+acceptance_status:
+  reads_validation_feedback: passed
+  generates_enhancement_tasks_when_validation_passes: passed
+  generates_repair_tasks_when_blocked: passed
+  workflow_writes_next_optimization_tasks: passed
+  pytest: passed
+result:
+  planning_mode: enhancement
+  generated_tasks:
+    - opt-001
+    - opt-002
+    - opt-003
+next_recommended_task: opt-001

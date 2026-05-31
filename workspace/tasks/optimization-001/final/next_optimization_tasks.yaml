@@ -1,0 +1,52 @@
+task_batch:
+  source_task: validation-001
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 基于自动化验证反馈生成下一轮优化任务。
+  planning_mode: enhancement
+  alignment_score: 1.0
+tasks:
+- id: opt-001
+  title: 增强代码评审 Agent 的检查深度
+  priority: medium
+  scope:
+  - 扩展 CodeReviewerAgent，检查任务验收标准是否都有对应 evidence。
+  - 检查测试结果、任务状态和产物路径是否一致。
+  - 输出更具体的 non_blocking_issues 和 recommendations。
+  out_of_scope:
+  - 接入外部代码托管平台 API。
+  - 执行自动 merge。
+  acceptance_criteria:
+  - 代码评审报告包含验收标准覆盖情况。
+  - 缺少 evidence 时产生 blocking issue 或 non-blocking recommendation。
+  - python -m pytest -q 通过。
+- id: opt-002
+  title: 将目标效果 demo 映射到真实 workflow 能力
+  priority: medium
+  scope:
+  - 从 docs/demos/ai_dev_pipeline_demo.html 提取关键用户效果。
+  - 将关键效果映射到现有 workflow、Agent 和产物。
+  - 更新 validation_goal.yaml，使目标效果验证覆盖这些映射。
+  out_of_scope:
+  - 重做前端 demo。
+  - 引入 Web 服务。
+  acceptance_criteria:
+  - validation_goal.yaml 包含目标效果映射项。
+  - validation_feedback.json 能报告目标效果映射通过或缺失。
+- id: opt-003
+  title: 把验证反馈转换为可执行任务的端到端 workflow
+  priority: medium
+  scope:
+  - 新增 optimization_planning workflow。
+  - 运行后生成 workspace/tasks/optimization-001/final/next_optimization_tasks.yaml。
+  - 在 README 中说明从验证到优化任务的闭环命令。
+  out_of_scope:
+  - 自动执行生成的优化任务。
+  - 自动提交或合并。
+  acceptance_criteria:
+  - workflow 能读取 validation_feedback.json 并生成优化任务。
+  - 验证通过和验证失败两种反馈都有测试覆盖。
+human_gate:
+  required_before_starting_dev: true
+  required_before_pr_or_merge: true
+  role: 人确认优化方向；Agent 执行设计、开发、验证和评审。

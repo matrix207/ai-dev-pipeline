@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from artifacts import read_json, write_yaml
+from artifacts import read_json, read_yaml, write_json, write_yaml
 from scripts.run_local_task import run_local_task
 from tasks import load_state
 
@@ -236,3 +236,25 @@ def test_run_local_task_stops_when_test_validation_fails(tmp_path: Path) -> None
     assert state.step == "test_validation"
     assert state.status == "blocked_by_test_validation"
     assert state.gates["tests_passed"] is False
+
+
+def test_run_local_task_generates_optimization_tasks(tmp_path: Path) -> None:
+    write_config(tmp_path, ["optimization_planning"])
+
+    write_json(
+        tmp_path,
+        "workspace/tasks/validation-001/final/validation_feedback.json",
+        {
+            "task_id": "validation-001",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="optimization-001", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == ["workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"]
+    generated = read_yaml(tmp_path, state.artifacts[0])
+    assert generated["task_batch"]["planning_mode"] == "enhancement"
