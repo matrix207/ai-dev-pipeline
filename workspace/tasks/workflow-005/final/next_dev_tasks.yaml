@@ -1,0 +1,27 @@
+task_id: workflow-005
+title: 端到端闭环后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-006
+  title: 端到端闭环质量门配置化
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 将质量门必需 evidence、阻塞级别和人工审批策略做成可配置规则。
+  acceptance_criteria:
+    - 质量门必需 evidence 决策项可从配置读取。
+    - missing evidence 可配置为 blocking 或 warning。
+    - CLI 摘要能区分 blocking 和 warning。
+    - 用例先行覆盖默认配置、自定义配置和缺失证据路径。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。

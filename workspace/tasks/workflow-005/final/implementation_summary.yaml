@@ -1,0 +1,35 @@
+task_id: workflow-005
+title: 端到端闭环运行记录质量门
+status: waiting_for_human_merge_approval
+goal: 将 run record、evidence_map 和人工审批状态纳入明确质量门，提升决策可信度。
+completed_scope:
+  - 为 scripts/run_end_to_end.py 补充关键中文注释。
+  - 为 scripts/run_local_task.py 补充关键中文注释。
+  - 新增 REQUIRED_EVIDENCE_DECISIONS 和 _quality_gate。
+  - decision_summary.yaml 和 run record 均包含 quality_gate。
+  - quality_gate 包含 blocking_issues、can_continue、human_approval 和 next_allowed_action。
+  - CLI 文本摘要显示 Quality gate 状态。
+  - list-runs 输出 quality_gate_status。
+  - 用例覆盖正常质量门、缺失 evidence 阻塞、run record 审批状态和 CLI 摘要。
+changed_files:
+  - scripts/run_end_to_end.py
+  - scripts/run_local_task.py
+  - tests/test_run_end_to_end.py
+  - workspace/tasks/workflow-005/final/decision_summary.yaml
+  - workspace/tasks/workflow-005/runs/workflow-005-run.yaml
+validation_result:
+  dry_run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-005 --dry-run --rerun-policy skip_completed --run-id workflow-005-dry-run --json
+  run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-005 --rerun-policy skip_completed --run-id workflow-005-run --json
+  list_runs_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-005 --list-runs --json
+  pytest: passed
+  pytest_count: 79
+  validation_status: passed
+  alignment_score: 1.0
+  quality_gate_status: waiting_for_human_approval
+  retry_plan_status: not_required
+  next_recommended_task: workflow-006
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+  - 未删除用户文件。
+next_recommended_task: workflow-006

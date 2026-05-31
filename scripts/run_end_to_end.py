@@ -23,6 +23,13 @@ from tasks import TaskState, load_state, save_state
 DEFAULT_TASK_ID = "workflow-001"
 RERUN_POLICIES = {"new_ids", "skip_completed", "force"}
 SUCCESS_STATUSES = {"waiting_for_human_merge_approval", "completed"}
+REQUIRED_EVIDENCE_DECISIONS = {
+    "goal_effect_aligned",
+    "tests_passed",
+    "dispatch_validated",
+    "code_review_passed",
+    "next_action",
+}
 SUPPORTED_DISPATCH_AGENTS = {
     "CoderAgent",
     "DesignReviewerAgent",
@@ -52,6 +59,7 @@ def run_end_to_end(
     dispatch_task_id = f"{task_id}-dispatch"
     review_task_id = f"{task_id}-review"
 
+    # dry-run 只返回可执行计划，不写任务产物；用于人工在正式运行前确认影响范围。
     if dry_run:
         return _dry_run_summary(
             repo_root,
@@ -65,6 +73,7 @@ def run_end_to_end(
         )
 
     events: list[dict[str, Any]] = []
+    # 端到端闭环拆成 validation、dispatch、review 三个可复用子流程，便于失败后跳过已完成步骤。
     validation_state = _run_or_skip_workflow(
         repo_root,
         workflow_name="ui_validation",
@@ -77,6 +86,7 @@ def run_end_to_end(
     validation_feedback_path = f"workspace/tasks/{validation_task_id}/final/validation_feedback.json"
     validation_feedback = _read_feedback_or_placeholder(repo_root, validation_feedback_path, validation_state)
 
+    # 第一轮规划只看目标验证反馈，用来生成本次可调度任务队列。
     initial_plan = OptimizationPlannerAgent().run(
         {
             "repo_root": str(repo_root),
@@ -125,6 +135,7 @@ def run_end_to_end(
             f"workspace/tasks/{review_task_id}/final/validation_feedback.json",
         ],
     )
+    # 最终规划汇总 validation、dispatch、review 的反馈，作为下一步人工决策依据。
     final_plan = OptimizationPlannerAgent().run(
         {
             "repo_root": str(repo_root),
@@ -170,6 +181,8 @@ def run_end_to_end(
     }
     summary["run_record_artifact"] = _run_record_path(task_id, run_metadata["run_id"])
     summary["evidence_map"] = _evidence_map(summary)
+    summary["quality_gate"] = _quality_gate(summary)
+    # run record 是不可覆盖的单次运行记录；decision_summary.yaml 保留“最新摘要”入口。
     write_yaml(repo_root, summary["run_record_artifact"], summary)
     write_yaml(repo_root, paths["decision_summary"], summary)
     _save_parent_state(repo_root, task_id, paths, summary)
@@ -241,6 +254,7 @@ def _run_or_skip_workflow(
             existing_state = load_state(repo_root, task_id)
         except Exception:
             existing_state = None
+        # skip_completed 只复用已通过质量门且关键产物存在的子流程，避免误跳过半成品。
         if existing_state and _task_succeeded(existing_state, required_artifacts, repo_root):
             events.append(_state_event(label, existing_state, "skipped"))
             return existing_state
@@ -258,6 +272,7 @@ def _run_or_skip_workflow(
 def _read_feedback_or_placeholder(repo_root: Path, path: str, state: TaskState) -> dict[str, Any]:
     if (repo_root / path).exists():
         return read_json(repo_root, path)
+    # 即使前置验证失败，也落盘结构化反馈，保证后续 planner 和 retry_plan 有稳定输入。
     feedback = {
         "task_id": state.task_id,
         "status": "failed",
@@ -291,6 +306,7 @@ def _dispatchable_task_batch(
         if task.get("recommended_agent") not in SUPPORTED_DISPATCH_AGENTS:
             continue
         cloned = dict(task)
+        # new_ids 用于保留历史运行，skip_completed/force 则固定任务 ID，便于复用或覆盖。
         cloned["id"] = _dispatch_task_id(repo_root, f"{task_id}-{task['id']}", rerun_policy)
         tasks.append(cloned)
         if len(tasks) >= max_tasks:
@@ -443,6 +459,7 @@ def _evidence_item(
 
 
 def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
+    # evidence_map 把人工审批问题和具体产物路径绑定，避免只靠自然语言判断是否可继续。
     current = summary["current_result"]
     execution = summary["execution_summary"]
     retry = summary["retry_plan"]
@@ -492,6 +509,74 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
             notes=f"{summary['next_recommended_action'].get('task_id')}: {summary['next_recommended_action'].get('title')}",
         ),
     ]
+
+
+def _quality_gate(summary: dict[str, Any]) -> dict[str, Any]:
+    """根据运行状态和 evidence_map 生成进入人工审批前的质量门结论。"""
+    blocking_issues: list[dict[str, Any]] = []
+    evidence_by_decision = {
+        item.get("decision"): item
+        for item in summary.get("evidence_map", [])
+    }
+
+    # 关键 evidence 缺失时直接阻塞，避免没有证据的运行记录进入人工批准阶段。
+    for decision in sorted(REQUIRED_EVIDENCE_DECISIONS):
+        item = evidence_by_decision.get(decision)
+        if not item or not item.get("evidence"):
+            blocking_issues.append(
+                {
+                    "id": f"missing_evidence_{decision}",
+                    "severity": "high",
+                    "description": f"质量门缺少必要 evidence：{decision}。",
+                    "recommendation": "补齐对应验证产物后重新运行端到端闭环。",
+                }
+            )
+            continue
+        if item.get("status") in {"failed", "blocked", "not_passed"}:
+            blocking_issues.append(
+                {
+                    "id": f"failed_evidence_{decision}",
+                    "severity": "high",
+                    "description": f"质量门 evidence 未通过：{decision}。",
+                    "recommendation": "修复失败验证或评审结论后重新运行端到端闭环。",
+                }
+            )
+
+    if summary.get("execution_summary", {}).get("failed"):
+        blocking_issues.append(
+            {
+                "id": "failed_execution_steps",
+                "severity": "high",
+                "description": "端到端运行存在失败步骤。",
+                "recommendation": "先按 retry_plan 修复失败步骤。",
+            }
+        )
+    if summary.get("retry_plan", {}).get("status") == "retry_required":
+        blocking_issues.append(
+            {
+                "id": "retry_required",
+                "severity": "high",
+                "description": "当前运行需要重试，不能进入合并审批。",
+                "recommendation": "执行 retry_plan 中的 recommended_command。",
+            }
+        )
+
+    status = "blocked" if blocking_issues else "waiting_for_human_approval"
+    return {
+        "status": status,
+        "can_continue": False,
+        "blocking_issues": blocking_issues,
+        "human_approval": {
+            "required": True,
+            "merge_approved": False,
+            "status": "pending" if not blocking_issues else "blocked",
+        },
+        "next_allowed_action": (
+            "人工审批通过后继续。"
+            if not blocking_issues
+            else "先修复质量门阻塞问题，再重新运行端到端闭环。"
+        ),
+    }
 
 
 def _planned_event(
@@ -628,6 +713,17 @@ def _dry_run_summary(
                 notes="dry-run 仅预览计划，不写入产物。",
             )
         ],
+        "quality_gate": {
+            "status": "dry_run",
+            "can_continue": False,
+            "blocking_issues": [],
+            "human_approval": {
+                "required": True,
+                "merge_approved": False,
+                "status": "not_requested",
+            },
+            "next_allowed_action": "正式运行端到端闭环后再进入人工审批。",
+        },
     }
 
 
@@ -642,6 +738,7 @@ def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
         "workflow-003": "端到端闭环持续优化",
         "workflow-004": "端到端闭环决策产物可追溯化",
         "workflow-005": "端到端闭环运行记录质量门",
+        "workflow-006": "端到端闭环质量门配置化",
     }
     return {
         "id": next_task_id,
@@ -713,6 +810,7 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
     execution = summary.get("execution_summary", {})
     retry = summary.get("retry_plan", {})
     run_metadata = summary.get("run_metadata", {})
+    quality_gate = summary.get("quality_gate", {})
     return "\n".join(
         [
             "AI Dev Pipeline End-to-End Summary",
@@ -726,6 +824,7 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"Dispatch state: {current['dispatch_state']['status']}",
             f"Review state: {current['review_state']['status']}",
             f"Retry plan: {retry.get('status', 'not_required')}",
+            f"Quality gate: {quality_gate.get('status', 'unknown')}",
             "",
             "Execution:",
             *_format_execution_group("Completed", execution.get("completed", [])),
@@ -781,11 +880,13 @@ def list_run_records(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK
         relative_path = path.relative_to(repo_root).as_posix()
         data = read_yaml(repo_root, relative_path)
         metadata = data.get("run_metadata", {})
+        # 列表只返回决策索引信息，完整 evidence 仍保留在单个 run record 中。
         records.append(
             {
                 "run_id": metadata.get("run_id", path.stem),
                 "started_at": metadata.get("started_at"),
                 "status": data.get("status"),
+                "quality_gate_status": (data.get("quality_gate") or {}).get("status"),
                 "artifact": relative_path,
                 "next_recommended_action": data.get("next_recommended_action"),
             }
@@ -847,7 +948,8 @@ def main() -> int:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     else:
         print(format_end_to_end_summary(summary))
-    return 0 if not summary["goal_effect"]["blocking_issues"] and not summary["execution_summary"]["failed"] else 1
+    quality_blocked = summary.get("quality_gate", {}).get("status") == "blocked"
+    return 0 if not summary["goal_effect"]["blocking_issues"] and not summary["execution_summary"]["failed"] and not quality_blocked else 1
 
 
 if __name__ == "__main__":

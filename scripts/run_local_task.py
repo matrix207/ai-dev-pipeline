@@ -66,6 +66,7 @@ def _step_options(step: str | dict[str, Any]) -> dict[str, Any]:
 
 
 def _parent_task_id(task_id: str, suffix: str) -> str:
+    # 端到端子任务使用固定后缀；从子任务反推父任务后可复用同一套 workflow 配置。
     if task_id.endswith(suffix):
         return task_id[: -len(suffix)]
     return task_id
@@ -97,6 +98,7 @@ def _run_step(
     if step == "code_review":
         task_definition_path = step_options.get("task_definition_path")
         if task_definition_path is None and task_id.endswith("-review"):
+            # review 子流程默认读取父任务生成的 review_tasks.yaml，避免配置里硬编码某个 workflow id。
             task_definition_path = f"workspace/tasks/{_parent_task_id(task_id, '-review')}/input/review_tasks.yaml"
         result = CodeReviewerAgent().run(
             {
@@ -146,6 +148,7 @@ def _run_step(
     if step == "optimization_dispatch":
         tasks_path = step_options.get("tasks_path")
         if tasks_path is None and task_id.endswith("-dispatch"):
+            # dispatch 子流程默认读取父任务生成的 dispatch_tasks.yaml，保证 workflow-00N 都能复用。
             tasks_path = f"workspace/tasks/{_parent_task_id(task_id, '-dispatch')}/input/dispatch_tasks.yaml"
         result = OptimizationDispatcherAgent().run(
             {
@@ -265,6 +268,7 @@ def _run_dispatched_task_validation(
         summaries = []
         artifacts: list[str] = []
         blocking_issues: list[dict[str, Any]] = []
+        # 批量调度时每个子任务独立验证，父任务只汇总所有子任务的阻塞问题和产物。
         for dispatch in dispatch_result["dispatches"]:
             summary = _validate_one_dispatched_task(repo_root, parent_task_id, dispatch, step_options)
             summaries.append(summary)
@@ -468,6 +472,7 @@ def run_local_task(
             save_state(repo_root, state)
 
             artifact_path, output = _run_step(repo_root, workflow_name, task_id, step, step_options)
+            # 每一步执行后立即落盘产物和状态，失败时仍能定位最后成功步骤。
             if artifact_path.endswith((".yaml", ".yml")):
                 write_yaml(repo_root, artifact_path, output)
             else:

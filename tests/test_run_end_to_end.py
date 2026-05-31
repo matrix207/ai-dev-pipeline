@@ -5,7 +5,13 @@ import sys
 from pathlib import Path
 
 from artifacts import read_yaml, write_yaml
-from scripts.run_end_to_end import _fallback_recommended_task, format_end_to_end_summary, main, run_end_to_end
+from scripts.run_end_to_end import (
+    _fallback_recommended_task,
+    _quality_gate,
+    format_end_to_end_summary,
+    main,
+    run_end_to_end,
+)
 from tasks import load_state
 
 
@@ -128,8 +134,30 @@ def test_run_end_to_end_writes_run_record(tmp_path: Path) -> None:
     assert run_record["run_metadata"]["run_id"] == "run-record-001"
     assert run_record["execution_summary"] == summary["execution_summary"]
     assert run_record["evidence_map"] == summary["evidence_map"]
+    assert run_record["quality_gate"] == summary["quality_gate"]
+    assert run_record["quality_gate"]["human_approval"]["merge_approved"] is False
     latest_summary = read_yaml(tmp_path, "workspace/tasks/workflow-004/final/decision_summary.yaml")
     assert latest_summary["run_record_artifact"] == summary["run_record_artifact"]
+
+
+def test_quality_gate_blocks_missing_required_evidence() -> None:
+    summary = {
+        "execution_summary": {"failed": []},
+        "retry_plan": {"status": "not_required"},
+        "evidence_map": [
+            {"decision": "goal_effect_aligned", "status": "passed", "evidence": ["goal.json"]},
+            {"decision": "tests_passed", "status": "passed", "evidence": []},
+            {"decision": "dispatch_validated", "status": "passed", "evidence": ["dispatch.json"]},
+            {"decision": "code_review_passed", "status": "passed", "evidence": ["review.json"]},
+            {"decision": "next_action", "status": "medium", "evidence": ["next.yaml"]},
+        ],
+    }
+
+    gate = _quality_gate(summary)
+
+    assert gate["status"] == "blocked"
+    assert gate["can_continue"] is False
+    assert gate["blocking_issues"][0]["id"] == "missing_evidence_tests_passed"
 
 
 def test_run_end_to_end_uses_unique_dispatch_task_ids_on_rerun(tmp_path: Path) -> None:
@@ -222,6 +250,7 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
             "failed": [],
         },
         "retry_plan": {"status": "not_required"},
+        "quality_gate": {"status": "waiting_for_human_approval"},
         "evidence_map": [
             {
                 "decision": "goal_effect_aligned",
@@ -239,6 +268,7 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
     assert "- Completed:" in output
     assert "- Skipped:" in output
     assert "Evidence:" in output
+    assert "Quality gate: waiting_for_human_approval" in output
     assert "Dispatch state: waiting_for_human_merge_approval" in output
     assert "workflow-002: Next workflow task" in output
 
@@ -305,5 +335,10 @@ def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
     assert _fallback_recommended_task("workflow-004") == {
         "id": "workflow-005",
         "title": "端到端闭环运行记录质量门",
+        "priority": "medium",
+    }
+    assert _fallback_recommended_task("workflow-005") == {
+        "id": "workflow-006",
+        "title": "端到端闭环质量门配置化",
         "priority": "medium",
     }
