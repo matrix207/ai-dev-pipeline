@@ -1,0 +1,28 @@
+task_id: dev-005
+title: 编码 Agent 骨架
+status: waiting_for_human_merge_approval
+completed_scope:
+  - 创建 CoderAgent 最小接口。
+  - 支持从 next_dev_tasks.yaml 读取指定 dev task 的范围和验收标准。
+  - 输出结构化实现计划。
+  - 在本地编排脚本中接入 coding_plan step。
+  - 将生成产物保存到 workspace/tasks/{task_id}/code/implementation_plan.json。
+changed_files:
+  - agents/__init__.py
+  - agents/coder_agent.py
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_coder_agent.py
+  - tests/test_run_local_task.py
+  - workspace/tasks/dev-005/code/implementation_plan.json
+acceptance_status:
+  reads_dev_task: passed
+  outputs_structured_implementation_plan: passed
+  no_pr_or_merge_by_default: passed
+  artifact_saved_under_task_root: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未自动修改大量文件。
+  - 未自动提交或自动合并。
+  - 未调用外部模型 API。
+next_recommended_task: code-review-agent

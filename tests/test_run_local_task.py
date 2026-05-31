@@ -46,6 +46,25 @@ def write_design_artifacts(tmp_path: Path, task_id: str, *, valid_design: bool =
     write_yaml(tmp_path, f"workspace/tasks/{task_id}/design/mvp_system_design.yaml", design)
 
 
+def write_task_batch(tmp_path: Path, task_id: str = "dev-005") -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/bootstrap-001/final/next_dev_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": task_id,
+                    "title": "编码 Agent 骨架",
+                    "priority": "medium",
+                    "scope": ["创建 coder Agent 的最小接口。"],
+                    "out_of_scope": ["自动提交或自动合并。"],
+                    "acceptance_criteria": ["输出结构化实现计划。"],
+                }
+            ]
+        },
+    )
+
+
 def test_run_local_task_writes_state_and_step_artifacts(tmp_path: Path) -> None:
     write_config(tmp_path, ["load_config", "write_state"])
 
@@ -139,3 +158,17 @@ def test_run_local_task_continues_when_design_review_passes(tmp_path: Path) -> N
         "workspace/tasks/dev-003/review/design_review.json",
         "workspace/tasks/dev-003/orchestration/write_state.json",
     ]
+
+
+def test_run_local_task_writes_coding_plan_artifact(tmp_path: Path) -> None:
+    write_config(tmp_path, ["coding_plan"])
+    write_task_batch(tmp_path, "dev-003")
+
+    state = run_local_task(tmp_path, "local_dev", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == ["workspace/tasks/dev-003/code/implementation_plan.json"]
+    plan = read_json(tmp_path, state.artifacts[0])
+    assert plan["task_id"] == "dev-003"
+    assert plan["safety"]["pr_or_merge"] == "not_allowed"

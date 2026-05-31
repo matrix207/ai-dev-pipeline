@@ -34,6 +34,11 @@ workflows:
     steps:
       - design_review
     human_gate_required: true
+  coding_plan:
+    task_id: dev-005
+    steps:
+      - coding_plan
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem

@@ -1,0 +1,56 @@
+{
+  "task_id": "dev-005",
+  "title": "编码 Agent 骨架",
+  "priority": "medium",
+  "scope": [
+    "创建 coder Agent 的最小接口。",
+    "支持从任务说明读取开发范围和验收标准。",
+    "输出代码变更计划或草稿产物。"
+  ],
+  "out_of_scope": [
+    "自动修改大量文件。",
+    "自动提交或自动合并。"
+  ],
+  "acceptance_criteria": [
+    "coder Agent 能读取 dev task 并输出结构化实现计划。",
+    "默认不执行 PR 或 merge 操作。",
+    "生成产物保存在 workspace/tasks/{task_id}/ 下。"
+  ],
+  "implementation_plan": [
+    {
+      "order": 1,
+      "description": "创建 coder Agent 的最小接口。",
+      "expected_artifact": "agents/"
+    },
+    {
+      "order": 2,
+      "description": "支持从任务说明读取开发范围和验收标准。",
+      "expected_artifact": "workspace/tasks/dev-005/code/"
+    },
+    {
+      "order": 3,
+      "description": "输出代码变更计划或草稿产物。",
+      "expected_artifact": "workspace/tasks/dev-005/"
+    }
+  ],
+  "verification": {
+    "required_commands": [
+      "python -m pytest -q"
+    ],
+    "acceptance_criteria": [
+      "coder Agent 能读取 dev task 并输出结构化实现计划。",
+      "默认不执行 PR 或 merge 操作。",
+      "生成产物保存在 workspace/tasks/{task_id}/ 下。"
+    ]
+  },
+  "safety": {
+    "external_model_api": "not_used",
+    "pr_or_merge": "not_allowed",
+    "destructive_operations": "not_allowed"
+  },
+  "output_artifacts": [
+    "workspace/tasks/dev-005/code/implementation_plan.json",
+    "workspace/tasks/dev-005/review/acceptance_check.json",
+    "workspace/tasks/dev-005/final/implementation_summary.yaml"
+  ]
+}

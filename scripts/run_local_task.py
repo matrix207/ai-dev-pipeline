@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from agents import BaseAgent, DesignReviewerAgent
+from agents import BaseAgent, CoderAgent, DesignReviewerAgent
 from artifacts import read_yaml, write_json
 from tasks import TaskState, save_state
 
@@ -52,6 +52,9 @@ def _run_step(
     if step == "design_review":
         result = DesignReviewerAgent().run({"repo_root": str(repo_root), "task_id": task_id})
         return f"workspace/tasks/{task_id}/review/design_review.json", result.output
+    if step == "coding_plan":
+        result = CoderAgent().run({"repo_root": str(repo_root), "task_id": task_id})
+        return f"workspace/tasks/{task_id}/code/implementation_plan.json", result.output
 
     result = PlaceholderAgent("placeholder-agent").run(
         {

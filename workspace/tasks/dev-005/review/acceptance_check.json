@@ -1,0 +1,36 @@
+{
+  "task_id": "dev-005",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Reads dev task",
+      "result": "pass",
+      "evidence": "CoderAgent reads workspace/tasks/bootstrap-001/final/next_dev_tasks.yaml and selects a task by id."
+    },
+    {
+      "name": "Structured implementation plan",
+      "result": "pass",
+      "evidence": "workspace/tasks/dev-005/code/implementation_plan.json includes task metadata, scope, out_of_scope, acceptance_criteria, implementation_plan, verification and safety fields."
+    },
+    {
+      "name": "No PR or merge by default",
+      "result": "pass",
+      "evidence": "CoderAgent output marks pr_or_merge as not_allowed and no git merge or PR operation is executed."
+    },
+    {
+      "name": "Artifact location",
+      "result": "pass",
+      "evidence": "The generated implementation plan is saved under workspace/tasks/dev-005/code/."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 28 passed."
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_notes": [
+    "Next work should add a code review Agent or expand orchestration to connect design_review, coding_plan, tests and code_review."
+  ]
+}
