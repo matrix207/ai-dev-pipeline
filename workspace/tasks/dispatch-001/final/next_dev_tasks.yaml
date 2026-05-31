@@ -1,0 +1,33 @@
+task_id: dispatch-001
+title: 被调度任务独立验证后的下一步任务
+status: proposed
+recommended_next_task:
+  id: feedback-001
+  title: 将验证反馈自动转为下一轮优化任务
+  recommended_agent: SystemDesignAgent
+  priority: high
+  risk_level: medium
+  goal: 将父任务和被调度任务的 validation_feedback 输入 OptimizationPlannerAgent，自动生成下一轮可执行优化任务队列。
+  acceptance_criteria:
+    - workflow 支持在验证通过或失败后运行 optimization_planning。
+    - 生成 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。
+    - next_optimization_tasks.yaml 能引用来源 validation_feedback。
+    - 对 blocking issue 生成高优先级修复任务。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: dispatch-002
+    title: 支持更多本地 Agent 调度
+    recommended_agent: ArchitectAgent
+    priority: medium
+    risk_level: medium
+    goal: 将 DesignReviewerAgent、TestValidatorAgent、CodeReviewerAgent、GoalEffectValidatorAgent 纳入 dispatcher 的安全调度表。
+  - id: ui-validation-001
+    title: 增加目标效果图的自动检查
+    recommended_agent: TestValidatorAgent
+    priority: medium
+    risk_level: low
+    goal: 对 docs/demos/ai_dev_pipeline_demo.html 提取可机读检查项，并让目标效果验证报告页面目标达成度。

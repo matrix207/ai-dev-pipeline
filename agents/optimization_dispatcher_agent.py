@@ -60,6 +60,7 @@ class OptimizationDispatcherAgent(BaseAgent):
                 artifacts=[implementation_plan_path],
                 gates={
                     "goal_approved": True,
+                    "design_review_passed": True,
                     "tests_passed": False,
                     "code_review_passed": False,
                     "human_merge_approved": False,
@@ -85,6 +86,7 @@ class OptimizationDispatcherAgent(BaseAgent):
         return {
             "status": "dispatched",
             "selected_task": selected_task,
+            "tasks_path": tasks_path,
             "execution": execution,
             "dispatch_result": dispatch_result,
             "written_artifacts": [

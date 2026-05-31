@@ -330,3 +330,66 @@ def test_run_local_task_dispatches_optimization_task(tmp_path: Path) -> None:
     assert result["dispatch_result"]["task_id"] == "dispatch-task"
     dispatched_state = read_json(tmp_path, "workspace/tasks/dispatch-task/state.json")
     assert dispatched_state["status"] == "waiting_for_validation"
+
+
+def test_run_local_task_validates_dispatched_task(tmp_path: Path) -> None:
+    write_config(
+        tmp_path,
+        [
+            "optimization_dispatch",
+            {
+                "name": "dispatched_task_validation",
+                "commands": [[sys.executable, "-c", "print('ok')"]],
+            },
+        ],
+    )
+    write_validation_goal(tmp_path)
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": "dispatch-task",
+                    "title": "Dispatch Task",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["生成执行计划。"],
+                    "out_of_scope": ["自动 merge。"],
+                    "acceptance_criteria": ["执行后产生任务状态和验证反馈。"],
+                }
+            ]
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="exec-003", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == [
+        "workspace/tasks/exec-003/code/dispatch_result.json",
+        "workspace/tasks/exec-003/review/dispatched_task_validation.json",
+        "workspace/tasks/dispatch-task/review/test_validation.json",
+        "workspace/tasks/dispatch-task/review/code_review.json",
+        "workspace/tasks/dispatch-task/final/validation_feedback.json",
+    ]
+    summary = read_json(tmp_path, "workspace/tasks/exec-003/review/dispatched_task_validation.json")
+    assert summary["status"] == "passed"
+    assert summary["dispatched_task_id"] == "dispatch-task"
+    assert summary["artifacts"] == [
+        "workspace/tasks/dispatch-task/review/test_validation.json",
+        "workspace/tasks/dispatch-task/review/code_review.json",
+        "workspace/tasks/dispatch-task/final/validation_feedback.json",
+    ]
+    dispatch_result = read_json(tmp_path, "workspace/tasks/exec-003/code/dispatch_result.json")
+    assert dispatch_result["dispatched_task_validation"]["status"] == "passed"
+    dispatched_state = read_json(tmp_path, "workspace/tasks/dispatch-task/state.json")
+    assert dispatched_state["status"] == "waiting_for_human_merge_approval"
+    assert dispatched_state["gates"]["tests_passed"] is True
+    assert dispatched_state["gates"]["code_review_passed"] is True

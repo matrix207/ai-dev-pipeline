@@ -1,0 +1,26 @@
+tasks:
+  - id: dispatch-validation-demo
+    title: 被调度任务独立验证闭环
+    priority: high
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 生成被调度任务的结构化执行计划。
+      - 对被调度任务运行独立测试验证。
+      - 对被调度任务运行独立代码评审。
+      - 对被调度任务运行独立目标效果验证。
+      - 将被调度任务验证摘要回写到父任务 dispatch_result。
+    out_of_scope:
+      - 自动 PR。
+      - 自动 merge。
+      - 调用外部模型服务。
+    acceptance_criteria:
+      - 被调度任务具备自己的 review/test_validation.json。
+      - 被调度任务具备自己的 review/code_review.json。
+      - 被调度任务具备自己的 final/validation_feedback.json。
+      - 父任务 dispatch_result 引用被调度任务验证状态。
+      - python -m pytest -q 通过。

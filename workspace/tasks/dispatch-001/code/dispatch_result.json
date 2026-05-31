@@ -1,0 +1,163 @@
+{
+  "status": "dispatched",
+  "selected_task": {
+    "id": "dispatch-validation-demo",
+    "title": "被调度任务独立验证闭环",
+    "priority": "high",
+    "recommended_agent": "CoderAgent",
+    "risk_level": "medium",
+    "human_gate": {
+      "goal_approval_required": true,
+      "risk_approval_required": false,
+      "merge_approval_required": true
+    }
+  },
+  "tasks_path": "workspace/tasks/dispatch-001/input/dispatch_tasks.yaml",
+  "execution": {
+    "status": "ready",
+    "selected_task": {
+      "id": "dispatch-validation-demo",
+      "title": "被调度任务独立验证闭环",
+      "priority": "high",
+      "recommended_agent": "CoderAgent",
+      "risk_level": "medium",
+      "human_gate": {
+        "goal_approval_required": true,
+        "risk_approval_required": false,
+        "merge_approval_required": true
+      }
+    },
+    "execution_allowed": true,
+    "blocking_issues": [],
+    "execution_plan": [
+      {
+        "order": 1,
+        "description": "生成被调度任务的结构化执行计划。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 2,
+        "description": "对被调度任务运行独立测试验证。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 3,
+        "description": "对被调度任务运行独立代码评审。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 4,
+        "description": "对被调度任务运行独立目标效果验证。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 5,
+        "description": "将被调度任务验证摘要回写到父任务 dispatch_result。",
+        "recommended_agent": "CoderAgent"
+      }
+    ],
+    "out_of_scope": [
+      "自动 PR。",
+      "自动 merge。",
+      "调用外部模型服务。"
+    ],
+    "acceptance_criteria": [
+      "被调度任务具备自己的 review/test_validation.json。",
+      "被调度任务具备自己的 review/code_review.json。",
+      "被调度任务具备自己的 final/validation_feedback.json。",
+      "父任务 dispatch_result 引用被调度任务验证状态。",
+      "python -m pytest -q 通过。"
+    ]
+  },
+  "dispatch_result": {
+    "task_id": "dispatch-validation-demo",
+    "title": "被调度任务独立验证闭环",
+    "priority": "high",
+    "scope": [
+      "生成被调度任务的结构化执行计划。",
+      "对被调度任务运行独立测试验证。",
+      "对被调度任务运行独立代码评审。",
+      "对被调度任务运行独立目标效果验证。",
+      "将被调度任务验证摘要回写到父任务 dispatch_result。"
+    ],
+    "out_of_scope": [
+      "自动 PR。",
+      "自动 merge。",
+      "调用外部模型服务。"
+    ],
+    "acceptance_criteria": [
+      "被调度任务具备自己的 review/test_validation.json。",
+      "被调度任务具备自己的 review/code_review.json。",
+      "被调度任务具备自己的 final/validation_feedback.json。",
+      "父任务 dispatch_result 引用被调度任务验证状态。",
+      "python -m pytest -q 通过。"
+    ],
+    "implementation_plan": [
+      {
+        "order": 1,
+        "description": "生成被调度任务的结构化执行计划。",
+        "expected_artifact": "workspace/tasks/dispatch-validation-demo/"
+      },
+      {
+        "order": 2,
+        "description": "对被调度任务运行独立测试验证。",
+        "expected_artifact": "tests/"
+      },
+      {
+        "order": 3,
+        "description": "对被调度任务运行独立代码评审。",
+        "expected_artifact": "workspace/tasks/dispatch-validation-demo/code/"
+      },
+      {
+        "order": 4,
+        "description": "对被调度任务运行独立目标效果验证。",
+        "expected_artifact": "workspace/tasks/dispatch-validation-demo/code/"
+      },
+      {
+        "order": 5,
+        "description": "将被调度任务验证摘要回写到父任务 dispatch_result。",
+        "expected_artifact": "workspace/tasks/dispatch-validation-demo/code/"
+      }
+    ],
+    "verification": {
+      "required_commands": [
+        "python -m pytest -q"
+      ],
+      "acceptance_criteria": [
+        "被调度任务具备自己的 review/test_validation.json。",
+        "被调度任务具备自己的 review/code_review.json。",
+        "被调度任务具备自己的 final/validation_feedback.json。",
+        "父任务 dispatch_result 引用被调度任务验证状态。",
+        "python -m pytest -q 通过。"
+      ]
+    },
+    "safety": {
+      "external_model_api": "not_used",
+      "pr_or_merge": "not_allowed",
+      "destructive_operations": "not_allowed"
+    },
+    "output_artifacts": [
+      "workspace/tasks/dispatch-validation-demo/code/implementation_plan.json",
+      "workspace/tasks/dispatch-validation-demo/review/acceptance_check.json",
+      "workspace/tasks/dispatch-validation-demo/final/implementation_summary.yaml"
+    ]
+  },
+  "written_artifacts": [
+    "workspace/tasks/dispatch-validation-demo/code/implementation_plan.json",
+    "workspace/tasks/dispatch-validation-demo/state.json",
+    "workspace/tasks/dispatch-validation-demo/review/test_validation.json",
+    "workspace/tasks/dispatch-validation-demo/review/code_review.json",
+    "workspace/tasks/dispatch-validation-demo/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "dispatched_task_validation": {
+    "status": "passed",
+    "dispatched_task_id": "dispatch-validation-demo",
+    "artifacts": [
+      "workspace/tasks/dispatch-validation-demo/review/test_validation.json",
+      "workspace/tasks/dispatch-validation-demo/review/code_review.json",
+      "workspace/tasks/dispatch-validation-demo/final/validation_feedback.json"
+    ],
+    "blocking_issues": []
+  }
+}

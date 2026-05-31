@@ -19,8 +19,8 @@ from agents import (
     OptimizationPlannerAgent,
     TestValidatorAgent,
 )
-from artifacts import read_yaml, write_json, write_yaml
-from tasks import TaskState, save_state
+from artifacts import read_json, read_yaml, write_json, write_yaml
+from tasks import TaskState, load_state, save_state
 
 
 class PlaceholderAgent(BaseAgent):
@@ -138,6 +138,8 @@ def _run_step(
             }
         )
         return f"workspace/tasks/{task_id}/code/dispatch_result.json", result.output
+    if step == "dispatched_task_validation":
+        return _run_dispatched_task_validation(repo_root, task_id, step_options)
 
     result = PlaceholderAgent("placeholder-agent").run(
         {
@@ -147,6 +149,208 @@ def _run_step(
         }
     )
     return _step_artifact_path(task_id, step), result.output
+
+
+def _load_or_create_state(repo_root: str | Path, task_id: str) -> TaskState:
+    try:
+        return load_state(repo_root, task_id)
+    except Exception:
+        return TaskState(
+            task_id=task_id,
+            step="created",
+            status="pending",
+            gates={"goal_approved": True},
+        )
+
+
+def _append_unique(values: list[str], new_values: list[str]) -> list[str]:
+    result = list(values)
+    for value in new_values:
+        if value not in result:
+            result.append(value)
+    return result
+
+
+def _task_validation_summary(
+    *,
+    parent_task_id: str,
+    dispatched_task_id: str,
+    status: str,
+    artifacts: list[str],
+    blocking_issues: list[dict[str, Any]],
+    gates: dict[str, bool],
+) -> dict[str, Any]:
+    return {
+        "task_id": parent_task_id,
+        "status": status,
+        "dispatched_task_id": dispatched_task_id,
+        "artifacts": artifacts,
+        "blocking_issues": blocking_issues,
+        "gates": gates,
+    }
+
+
+def _persist_dispatched_validation(
+    repo_root: str | Path,
+    dispatch_result_path: str,
+    dispatch_result: dict[str, Any],
+    summary: dict[str, Any],
+) -> None:
+    dispatch_result["dispatched_task_validation"] = {
+        "status": summary["status"],
+        "dispatched_task_id": summary["dispatched_task_id"],
+        "artifacts": summary["artifacts"],
+        "blocking_issues": summary["blocking_issues"],
+    }
+    dispatch_result["written_artifacts"] = _append_unique(
+        list(dispatch_result.get("written_artifacts", [])),
+        list(summary["artifacts"]),
+    )
+    write_json(repo_root, dispatch_result_path, dispatch_result)
+
+
+def _run_dispatched_task_validation(
+    repo_root: str | Path,
+    parent_task_id: str,
+    step_options: dict[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    dispatch_result_path = step_options.get(
+        "dispatch_result_path",
+        f"workspace/tasks/{parent_task_id}/code/dispatch_result.json",
+    )
+    dispatch_result = read_json(repo_root, dispatch_result_path)
+    if dispatch_result.get("status") != "dispatched" or dispatch_result.get("dispatch_result") is None:
+        blocking_issues = dispatch_result.get("blocking_issues") or [
+            {
+                "id": "no_dispatched_task",
+                "severity": "medium",
+                "description": "没有可验证的被调度任务。",
+                "recommendation": "先提供 open 状态的优化任务并完成调度。",
+            }
+        ]
+        summary = _task_validation_summary(
+            parent_task_id=parent_task_id,
+            dispatched_task_id="",
+            status="blocked",
+            artifacts=[],
+            blocking_issues=blocking_issues,
+            gates={},
+        )
+        _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
+        return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+
+    selected_task = dispatch_result.get("selected_task") or {}
+    dispatched_task_id = selected_task.get("id") or dispatch_result["dispatch_result"]["task_id"]
+    task_definition_path = step_options.get(
+        "task_definition_path",
+        dispatch_result.get("tasks_path", "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"),
+    )
+
+    state = _load_or_create_state(repo_root, dispatched_task_id)
+    artifacts: list[str] = []
+    blocking_issues: list[dict[str, Any]] = []
+
+    test_validation_path = f"workspace/tasks/{dispatched_task_id}/review/test_validation.json"
+    state.update(step="test_validation", status="running")
+    save_state(repo_root, state)
+    validation = TestValidatorAgent().run(
+        {
+            "repo_root": str(repo_root),
+            "commands": step_options.get("commands"),
+            "timeout_seconds": step_options.get("timeout_seconds", 120),
+        }
+    ).output
+    write_json(repo_root, test_validation_path, validation)
+    state.record_artifact(test_validation_path)
+    artifacts.append(test_validation_path)
+    state.set_gate("tests_passed", bool(validation.get("passed")))
+    if not validation.get("passed"):
+        state.update(step="test_validation", status="blocked_by_test_validation")
+        save_state(repo_root, state)
+        blocking_issues.append(
+            {
+                "id": "dispatched_task_tests",
+                "severity": "high",
+                "description": "被调度任务测试验证未通过。",
+                "recommendation": "修复被调度任务后重新运行调度验证闭环。",
+            }
+        )
+        summary = _task_validation_summary(
+            parent_task_id=parent_task_id,
+            dispatched_task_id=dispatched_task_id,
+            status="blocked",
+            artifacts=artifacts,
+            blocking_issues=blocking_issues,
+            gates=state.gates,
+        )
+        _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
+        return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+
+    code_review_path = f"workspace/tasks/{dispatched_task_id}/review/code_review.json"
+    state.update(step="code_review", status="running")
+    save_state(repo_root, state)
+    code_review = CodeReviewerAgent().run(
+        {
+            "repo_root": str(repo_root),
+            "task_id": dispatched_task_id,
+            "validation_path": test_validation_path,
+            "task_definition_path": task_definition_path,
+        }
+    ).output
+    write_json(repo_root, code_review_path, code_review)
+    state.record_artifact(code_review_path)
+    artifacts.append(code_review_path)
+    state.set_gate("code_review_passed", not bool(code_review.get("blocking_issues")))
+    if code_review.get("blocking_issues"):
+        state.update(step="code_review", status="blocked_by_code_review")
+        save_state(repo_root, state)
+        blocking_issues.extend(code_review["blocking_issues"])
+        summary = _task_validation_summary(
+            parent_task_id=parent_task_id,
+            dispatched_task_id=dispatched_task_id,
+            status="blocked",
+            artifacts=artifacts,
+            blocking_issues=blocking_issues,
+            gates=state.gates,
+        )
+        _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
+        return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+
+    validation_feedback_path = f"workspace/tasks/{dispatched_task_id}/final/validation_feedback.json"
+    state.update(step="goal_effect_validation", status="running")
+    save_state(repo_root, state)
+    validation_feedback = GoalEffectValidatorAgent().run(
+        {
+            "repo_root": str(repo_root),
+            "task_id": dispatched_task_id,
+            "goal_spec_path": step_options.get(
+                "goal_spec_path",
+                "workspace/tasks/validation-001/input/validation_goal.yaml",
+            ),
+        }
+    ).output
+    write_json(repo_root, validation_feedback_path, validation_feedback)
+    state.record_artifact(validation_feedback_path)
+    artifacts.append(validation_feedback_path)
+    blocking_issues.extend(validation_feedback.get("blocking_issues", []))
+
+    if blocking_issues:
+        state.update(step="goal_effect_validation", status="blocked_by_goal_effect_validation")
+    else:
+        state.update(step="dispatched_task_validation", status="waiting_for_human_merge_approval")
+        state.set_gate("design_review_passed", True)
+    save_state(repo_root, state)
+
+    summary = _task_validation_summary(
+        parent_task_id=parent_task_id,
+        dispatched_task_id=dispatched_task_id,
+        status="passed" if not blocking_issues else "blocked",
+        artifacts=artifacts,
+        blocking_issues=blocking_issues,
+        gates=state.gates,
+    )
+    _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
+    return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
 
 
 def run_local_task(
@@ -189,6 +393,9 @@ def run_local_task(
             else:
                 write_json(repo_root, artifact_path, output)
             state.record_artifact(artifact_path)
+            if step == "dispatched_task_validation":
+                for child_artifact in output.get("artifacts", []):
+                    state.record_artifact(child_artifact)
             if step == "design_review":
                 if output["blocking_issues"]:
                     state.set_gate("design_review_passed", False)
@@ -221,6 +428,10 @@ def run_local_task(
                 return state
             if step == "optimization_dispatch" and output["blocking_issues"]:
                 state.update(step=step, status="blocked_by_dispatch")
+                save_state(repo_root, state)
+                return state
+            if step == "dispatched_task_validation" and output["blocking_issues"]:
+                state.update(step=step, status="blocked_by_dispatched_task_validation")
                 save_state(repo_root, state)
                 return state
             save_state(repo_root, state)

@@ -39,6 +39,7 @@ def test_optimization_dispatcher_dispatches_coder_agent(tmp_path: Path) -> None:
 
     assert result.output["status"] == "dispatched"
     assert result.output["selected_task"]["id"] == "dispatch-task"
+    assert result.output["tasks_path"] == "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml"
     assert result.output["dispatch_result"]["task_id"] == "dispatch-task"
     assert result.output["dispatch_result"]["safety"]["pr_or_merge"] == "not_allowed"
     assert result.output["written_artifacts"] == [
@@ -47,6 +48,7 @@ def test_optimization_dispatcher_dispatches_coder_agent(tmp_path: Path) -> None:
     ]
     state = read_json(tmp_path, "workspace/tasks/dispatch-task/state.json")
     assert state["status"] == "waiting_for_validation"
+    assert state["gates"]["design_review_passed"] is True
     assert state["artifacts"] == ["workspace/tasks/dispatch-task/code/implementation_plan.json"]
 
 
