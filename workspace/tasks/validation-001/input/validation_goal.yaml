@@ -109,6 +109,52 @@ target_effect_mappings:
     required_workflows:
       - automated_validation
       - optimization_planning
+demo_effect_checks:
+  - id: demo_interactive_controls
+    demo_path: docs/demos/ai_dev_pipeline_demo.html
+    expected_effect: 用户可以运行和重置演示，并看到总体进度和当前阶段。
+    required_terms:
+      - AI开发流水线效果展示
+      - 运行演示
+      - 当前阶段
+    required_selectors:
+      - "#playBtn"
+      - "#resetBtn"
+      - "#globalProgress"
+      - "#phaseValue"
+  - id: demo_agent_flow_board
+    demo_path: docs/demos/ai_dev_pipeline_demo.html
+    expected_effect: 页面展示多 Agent 协作流，包含生成、检视、测试、人工 gate 和 PR 节点。
+    required_terms:
+      - 多Agent协作流
+      - 生成模型 ≠ 检视模型
+      - 需求分析
+      - 设计检视
+      - 代码检视
+      - 测试执行
+      - 人工Gate
+      - 创建PR
+    required_selectors:
+      - "[data-node=\"ra\"]"
+      - "[data-node=\"dr\"]"
+      - "[data-node=\"cr\"]"
+      - "[data-node=\"qa\"]"
+      - "[data-node=\"hg\"]"
+      - "[data-node=\"pr\"]"
+  - id: demo_artifacts_and_human_gate
+    demo_path: docs/demos/ai_dev_pipeline_demo.html
+    expected_effect: 页面展示标准产物、PR 预览和人工质量门。
+    required_terms:
+      - 标准产物
+      - Artifacts
+      - PR预览
+      - 等待人工合并
+      - 人工质量门
+      - AI不自动合并
+    required_selectors:
+      - ".artifact-list"
+      - "#prCard"
+      - ".approval-card"
 feedback_policy:
   on_pass: 可以进入人工合并门，并基于反馈规划下一轮优化。
   on_block: 修复 blocking issue 后重新运行 automated_validation workflow。

@@ -150,6 +150,7 @@ def test_goal_effect_validator_agent_outputs_feedback(tmp_path: Path) -> None:
     assert result.output["alignment_score"] == 1.0
     assert result.output["feedback"] == ["目标对齐和效果验证通过，可以进入人工合并门。"]
     assert result.output["target_effect_mappings"] == []
+    assert result.output["demo_effect_checks"] == []
 
 
 def test_goal_effect_validator_agent_blocks_missing_effect(tmp_path: Path) -> None:
@@ -237,3 +238,84 @@ def test_goal_effect_validator_agent_blocks_missing_target_effect_mapping(
     assert result.output["status"] == "blocked"
     assert result.output["target_effect_mappings"][0]["result"] == "fail"
     assert result.output["blocking_issues"][0]["id"] == "target_effect_mapping:missing_mapping"
+
+
+def test_goal_effect_validator_agent_checks_demo_effects(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果 demo 可验证。",
+            "demo_effect_checks": [
+                {
+                    "id": "demo_controls",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "expected_effect": "可运行演示。",
+                    "required_terms": ["运行演示", "当前阶段"],
+                    "required_selectors": [
+                        "#playBtn",
+                        "#phaseValue",
+                        ".artifact-list",
+                        "[data-node=\"ra\"]",
+                    ],
+                }
+            ],
+        },
+    )
+    (tmp_path / "docs/demos").mkdir(parents=True)
+    (tmp_path / "docs/demos/ai_dev_pipeline_demo.html").write_text(
+        """
+        <button id="playBtn">运行演示</button>
+        <div id="phaseValue">当前阶段</div>
+        <div class="artifact-list"></div>
+        <div data-node="ra"></div>
+        """,
+        encoding="utf-8",
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    assert result.output["status"] == "passed"
+    assert result.output["demo_effect_checks"][0]["result"] == "pass"
+    assert result.output["demo_effect_checks"][0]["missing"] == {
+        "terms": [],
+        "selectors": [],
+    }
+
+
+def test_goal_effect_validator_agent_blocks_missing_demo_effects(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果 demo 可验证。",
+            "demo_effect_checks": [
+                {
+                    "id": "demo_controls",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "expected_effect": "可运行演示。",
+                    "required_terms": ["运行演示"],
+                    "required_selectors": ["#playBtn", ".missing-card"],
+                }
+            ],
+        },
+    )
+    (tmp_path / "docs/demos").mkdir(parents=True)
+    (tmp_path / "docs/demos/ai_dev_pipeline_demo.html").write_text(
+        "<button id=\"playBtn\">Demo</button>",
+        encoding="utf-8",
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    assert result.output["status"] == "blocked"
+    assert result.output["demo_effect_checks"][0]["result"] == "fail"
+    assert result.output["demo_effect_checks"][0]["missing"] == {
+        "terms": ["运行演示"],
+        "selectors": [".missing-card"],
+    }
+    assert result.output["blocking_issues"][0]["id"] == "demo_effect_check:demo_controls"

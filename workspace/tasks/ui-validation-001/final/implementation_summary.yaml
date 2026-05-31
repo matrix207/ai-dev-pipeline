@@ -1,0 +1,30 @@
+task_id: ui-validation-001
+title: 增加目标效果图的自动检查
+status: waiting_for_human_merge_approval
+goal: 对 docs/demos/ai_dev_pipeline_demo.html 提取可机读检查项，并让目标效果验证报告页面目标达成度。
+completed_scope:
+  - GoalEffectValidatorAgent 支持 demo_effect_checks。
+  - demo_effect_checks 可检查目标 HTML 文案。
+  - demo_effect_checks 可检查 id、class 和简单属性选择器。
+  - validation_goal.yaml 增加 demo_interactive_controls、demo_agent_flow_board、demo_artifacts_and_human_gate。
+  - 新增 ui_validation workflow。
+  - 真实运行 ui_validation 并生成包含 demo_effect_checks 的 validation_feedback.json。
+changed_files:
+  - agents/goal_effect_validator_agent.py
+  - config/pipeline.yaml
+  - tests/test_validation_agents.py
+  - workspace/tasks/validation-001/input/validation_goal.yaml
+  - workspace/tasks/ui-validation-001/final/validation_feedback.json
+validation_result:
+  pytest: passed
+  pytest_count: 66
+  workflow: ui_validation
+  demo_effect_checks:
+    demo_interactive_controls: passed
+    demo_agent_flow_board: passed
+    demo_artifacts_and_human_gate: passed
+out_of_scope_confirmed:
+  - 未引入浏览器云服务。
+  - 未重做 demo 页面。
+  - 未自动 PR 或 merge。
+next_recommended_task: dispatch-003

@@ -1,0 +1,27 @@
+task_id: ui-validation-001
+title: 目标效果图检查后的下一步任务
+status: proposed
+recommended_next_task:
+  id: dispatch-003
+  title: 连续调度同一任务队列中的多个 open tasks
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 让 dispatcher 可在一次 workflow 中处理多个 open tasks，并分别生成子任务状态和验证反馈。
+  acceptance_criteria:
+    - workflow 能配置 max_tasks 或 dispatch_all。
+    - 每个被调度任务都有独立 state.json。
+    - 每个被调度任务都有独立验证反馈。
+    - 父任务 dispatch_result 能汇总所有子任务结果。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-001
+    title: 加强验收标准 evidence 映射
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 将 acceptance_criteria 到 evidence 的映射做成结构化报告，而不是只作为文本启发式检查。

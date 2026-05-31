@@ -1,0 +1,38 @@
+{
+  "task_id": "ui-validation-001",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Structured demo checks",
+      "result": "pass",
+      "evidence": "workspace/tasks/validation-001/input/validation_goal.yaml contains demo_effect_checks."
+    },
+    {
+      "name": "Goal validator reports demo checks",
+      "result": "pass",
+      "evidence": "workspace/tasks/ui-validation-001/final/validation_feedback.json contains demo_effect_checks."
+    },
+    {
+      "name": "Interactive controls check",
+      "result": "pass",
+      "evidence": "demo_interactive_controls passed with no missing terms or selectors."
+    },
+    {
+      "name": "Agent flow board check",
+      "result": "pass",
+      "evidence": "demo_agent_flow_board passed with no missing terms or selectors."
+    },
+    {
+      "name": "Artifacts and human gate check",
+      "result": "pass",
+      "evidence": "demo_artifacts_and_human_gate passed with no missing terms or selectors."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 66 passed."
+    }
+  ],
+  "blocking_issues": []
+}

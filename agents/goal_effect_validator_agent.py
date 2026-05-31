@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -43,6 +44,7 @@ class GoalEffectValidatorAgent(BaseAgent):
                 )
 
         mapping_results = self._check_target_effect_mappings(repo_root, goal_spec, checks, blocking_issues)
+        demo_check_results = self._check_demo_effects(repo_root, goal_spec, checks, blocking_issues)
 
         validation = self._read_optional_json(
             repo_root,
@@ -84,6 +86,7 @@ class GoalEffectValidatorAgent(BaseAgent):
             "alignment_score": score,
             "checks": checks,
             "target_effect_mappings": mapping_results,
+            "demo_effect_checks": demo_check_results,
             "blocking_issues": blocking_issues,
             "feedback": feedback,
         }
@@ -180,6 +183,87 @@ class GoalEffectValidatorAgent(BaseAgent):
         if not demo_path.exists():
             return False
         return term in demo_path.read_text(encoding="utf-8")
+
+    def _check_demo_effects(
+        self,
+        repo_root: Path,
+        goal_spec: dict[str, Any],
+        checks: list[dict[str, Any]],
+        blocking_issues: list[dict[str, str]],
+    ) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        for demo_check in goal_spec.get("demo_effect_checks", []):
+            demo_path = demo_check.get("demo_path", "docs/demos/ai_dev_pipeline_demo.html")
+            html = self._read_optional_text(repo_root, demo_path)
+            missing = {
+                "terms": [
+                    term for term in demo_check.get("required_terms", []) if not html or term not in html
+                ],
+                "selectors": [
+                    selector
+                    for selector in demo_check.get("required_selectors", [])
+                    if not html or not self._selector_exists(html, selector)
+                ],
+            }
+            passed = not any(missing.values())
+            result = {
+                "id": demo_check["id"],
+                "demo_path": demo_path,
+                "expected_effect": demo_check.get("expected_effect", ""),
+                "result": "pass" if passed else "fail",
+                "missing": missing,
+                "required_terms": list(demo_check.get("required_terms", [])),
+                "required_selectors": list(demo_check.get("required_selectors", [])),
+            }
+            results.append(result)
+            checks.append(
+                {
+                    "name": demo_check["id"],
+                    "type": "demo_effect_check",
+                    "result": result["result"],
+                }
+            )
+            if not passed:
+                blocking_issues.append(
+                    {
+                        "id": f"demo_effect_check:{demo_check['id']}",
+                        "severity": "high",
+                        "description": f"目标效果 demo 检查未通过：{demo_check['id']}",
+                        "recommendation": "补齐 demo 文案、DOM 结构或更新目标检查配置后重新验证。",
+                    }
+                )
+        return results
+
+    def _read_optional_text(self, repo_root: Path, relative_path: str) -> str:
+        try:
+            return (repo_root / relative_path).read_text(encoding="utf-8")
+        except Exception:
+            return ""
+
+    def _selector_exists(self, html: str, selector: str) -> bool:
+        selector = selector.strip()
+        if not selector:
+            return False
+        if selector.startswith("#"):
+            return self._id_exists(html, selector[1:])
+        if selector.startswith("."):
+            return self._class_exists(html, selector[1:])
+        data_attr_match = re.fullmatch(r"\[([a-zA-Z0-9_-]+)=['\"]([^'\"]+)['\"]\]", selector)
+        if data_attr_match:
+            attr, value = data_attr_match.groups()
+            return self._attribute_value_exists(html, attr, value)
+        return f"<{selector}" in html
+
+    def _id_exists(self, html: str, element_id: str) -> bool:
+        return self._attribute_value_exists(html, "id", element_id)
+
+    def _class_exists(self, html: str, class_name: str) -> bool:
+        pattern = re.compile(r"class=['\"]([^'\"]*)['\"]")
+        return any(class_name in value.split() for value in pattern.findall(html))
+
+    def _attribute_value_exists(self, html: str, attribute: str, value: str) -> bool:
+        pattern = re.compile(rf"{re.escape(attribute)}=['\"]{re.escape(value)}['\"]")
+        return bool(pattern.search(html))
 
     def _score(self, checks: list[dict[str, Any]]) -> float:
         if not checks:

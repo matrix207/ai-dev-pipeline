@@ -79,6 +79,13 @@ workflows:
       - code_review
       - goal_effect_validation
     human_gate_required: true
+  ui_validation:
+    task_id: ui-validation-001
+    steps:
+      - test_validation
+      - code_review
+      - goal_effect_validation
+    human_gate_required: true
   optimization_execution:
     task_id: planning-003
     steps:
