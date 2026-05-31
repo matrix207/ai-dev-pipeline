@@ -220,3 +220,55 @@ def test_optimization_dispatcher_dispatches_goal_effect_validator(tmp_path: Path
         "workspace/tasks/dispatch-task/final/validation_feedback.json",
         "workspace/tasks/dispatch-task/state.json",
     ]
+
+
+def test_optimization_dispatcher_dispatches_multiple_open_tasks(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": "batch-one",
+                    "title": "Batch One",
+                    "priority": "high",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["生成第一个执行计划。"],
+                    "acceptance_criteria": ["第一个任务完成。"],
+                },
+                {
+                    "id": "batch-two",
+                    "title": "Batch Two",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["生成第二个执行计划。"],
+                    "acceptance_criteria": ["第二个任务完成。"],
+                },
+            ]
+        },
+    )
+
+    result = OptimizationDispatcherAgent().run(
+        {"repo_root": str(tmp_path), "dispatch_all": True}
+    )
+
+    assert result.output["status"] == "dispatched"
+    assert result.output["batch"]["dispatched_count"] == 2
+    assert [item["selected_task"]["id"] for item in result.output["dispatches"]] == [
+        "batch-one",
+        "batch-two",
+    ]
+    assert read_json(tmp_path, "workspace/tasks/batch-one/state.json")["status"] == "waiting_for_validation"
+    assert read_json(tmp_path, "workspace/tasks/batch-two/state.json")["status"] == "waiting_for_validation"

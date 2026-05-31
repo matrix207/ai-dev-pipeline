@@ -1,0 +1,38 @@
+{
+  "task_id": "dispatch-003",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "Batch dispatch option",
+      "result": "pass",
+      "evidence": "optimization_dispatch supports dispatch_all and max_tasks."
+    },
+    {
+      "name": "Multiple child dispatches",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-003/code/dispatch_result.json contains two dispatches."
+    },
+    {
+      "name": "Independent child states",
+      "result": "pass",
+      "evidence": "dispatch-003-batch-one and dispatch-003-batch-two both have state.json."
+    },
+    {
+      "name": "Independent child validation",
+      "result": "pass",
+      "evidence": "Both child tasks have test_validation.json, code_review.json and validation_feedback.json."
+    },
+    {
+      "name": "Parent summary",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-003/review/dispatched_task_validation.json contains dispatched_tasks for both child tasks."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 68 passed."
+    }
+  ],
+  "blocking_issues": []
+}

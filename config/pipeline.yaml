@@ -86,6 +86,17 @@ workflows:
       - code_review
       - goal_effect_validation
     human_gate_required: true
+  dispatch_batch:
+    task_id: dispatch-003
+    steps:
+      - name: optimization_dispatch
+        tasks_path: workspace/tasks/dispatch-003/input/dispatch_tasks.yaml
+        dispatch_all: true
+      - dispatched_task_validation
+      - test_validation
+      - code_review
+      - goal_effect_validation
+    human_gate_required: true
   optimization_execution:
     task_id: planning-003
     steps:

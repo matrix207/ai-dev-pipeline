@@ -496,3 +496,76 @@ def test_run_local_task_validates_dispatched_task(tmp_path: Path) -> None:
     assert dispatched_state["status"] == "waiting_for_human_merge_approval"
     assert dispatched_state["gates"]["tests_passed"] is True
     assert dispatched_state["gates"]["code_review_passed"] is True
+
+
+def test_run_local_task_validates_multiple_dispatched_tasks(tmp_path: Path) -> None:
+    write_config(
+        tmp_path,
+        [
+            {
+                "name": "optimization_dispatch",
+                "dispatch_all": True,
+            },
+            {
+                "name": "dispatched_task_validation",
+                "commands": [[sys.executable, "-c", "print('ok')"]],
+            },
+        ],
+    )
+    write_validation_goal(tmp_path)
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
+        {
+            "tasks": [
+                {
+                    "id": "batch-one",
+                    "title": "Batch One",
+                    "priority": "high",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["生成第一个执行计划。"],
+                    "acceptance_criteria": ["第一个任务完成。"],
+                },
+                {
+                    "id": "batch-two",
+                    "title": "Batch Two",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "medium",
+                    "human_gate": {
+                        "goal_approval_required": True,
+                        "risk_approval_required": False,
+                        "merge_approval_required": True,
+                    },
+                    "scope": ["生成第二个执行计划。"],
+                    "acceptance_criteria": ["第二个任务完成。"],
+                },
+            ]
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="dispatch-003", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    summary = read_json(tmp_path, "workspace/tasks/dispatch-003/review/dispatched_task_validation.json")
+    assert summary["status"] == "passed"
+    assert [item["dispatched_task_id"] for item in summary["dispatched_tasks"]] == [
+        "batch-one",
+        "batch-two",
+    ]
+    dispatch_result = read_json(tmp_path, "workspace/tasks/dispatch-003/code/dispatch_result.json")
+    assert dispatch_result["batch"]["dispatched_count"] == 2
+    assert dispatch_result["dispatched_task_validation"]["status"] == "passed"
+    assert read_json(tmp_path, "workspace/tasks/batch-one/state.json")["status"] == (
+        "waiting_for_human_merge_approval"
+    )
+    assert read_json(tmp_path, "workspace/tasks/batch-two/state.json")["status"] == (
+        "waiting_for_human_merge_approval"
+    )

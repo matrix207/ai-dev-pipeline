@@ -1,0 +1,26 @@
+task_id: dispatch-003
+title: 批量调度后的下一步任务
+status: proposed
+recommended_next_task:
+  id: review-001
+  title: 加强验收标准 evidence 映射
+  recommended_agent: CodeReviewerAgent
+  priority: medium
+  risk_level: low
+  goal: 将 acceptance_criteria 到 evidence 的映射做成结构化报告，而不是只作为文本启发式检查。
+  acceptance_criteria:
+    - CodeReviewerAgent 输出 acceptance_evidence_map。
+    - 每条 acceptance criterion 都有 matched_evidence 或 missing_evidence。
+    - 缺失 evidence 时输出明确 recommendation。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: workflow-001
+    title: 一键运行规划、调度、验证和反馈生成
+    recommended_agent: SystemDesignAgent
+    priority: medium
+    risk_level: medium
+    goal: 将 feedback_planning、dispatch_batch 和 validation 汇总成一个端到端命令。

@@ -1,0 +1,58 @@
+{
+  "task_id": "dispatch-003-batch-two",
+  "status": "passed",
+  "decision": {
+    "approved_for_human_merge_gate": true,
+    "requires_human_review": false
+  },
+  "checks": [
+    {
+      "name": "test_validation_artifact",
+      "result": "pass",
+      "notes": "已读取 workspace/tasks/dispatch-003-batch-two/review/test_validation.json。"
+    },
+    {
+      "name": "tests_passed",
+      "result": "pass",
+      "notes": "测试验证已通过。"
+    },
+    {
+      "name": "task_state_recorded",
+      "result": "pass",
+      "notes": "任务状态产物存在。"
+    },
+    {
+      "name": "state_artifacts_exist",
+      "result": "pass",
+      "notes": "任务状态中的 artifact 路径均存在。"
+    },
+    {
+      "name": "acceptance_criteria_coverage",
+      "result": "pass",
+      "notes": "验收标准均找到 evidence。"
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_issues": [],
+  "recommendations": [],
+  "acceptance_coverage": {
+    "criteria": [
+      "dispatch-003-batch-two 具备 state.json。",
+      "dispatch-003-batch-two 具备 final/validation_feedback.json。",
+      "父任务 dispatch_result 汇总该子任务。"
+    ],
+    "covered": [
+      "dispatch-003-batch-two 具备 state.json。",
+      "dispatch-003-batch-two 具备 final/validation_feedback.json。",
+      "父任务 dispatch_result 汇总该子任务。"
+    ],
+    "missing_evidence": []
+  },
+  "artifact_consistency": {
+    "checked": [
+      "workspace/tasks/dispatch-003-batch-two/code/implementation_plan.json",
+      "workspace/tasks/dispatch-003-batch-two/review/test_validation.json"
+    ],
+    "missing": []
+  }
+}

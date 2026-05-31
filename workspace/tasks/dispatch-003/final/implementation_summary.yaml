@@ -1,0 +1,33 @@
+task_id: dispatch-003
+title: 连续调度同一任务队列中的多个 open tasks
+status: waiting_for_human_merge_approval
+goal: 让 dispatcher 可在一次 workflow 中处理多个 open tasks，并分别生成子任务状态和验证反馈。
+completed_scope:
+  - OptimizationDispatcherAgent 支持 dispatch_all。
+  - OptimizationDispatcherAgent 支持 max_tasks。
+  - dispatched_task_validation 支持批量调度结果。
+  - 父任务 dispatch_result 汇总每个子任务的调度和验证状态。
+  - 每个被调度任务都有独立 state.json。
+  - 每个被调度任务都有独立 test_validation、code_review 和 validation_feedback。
+  - 新增 dispatch_batch workflow。
+  - 真实运行 dispatch_batch，调度 dispatch-003-batch-one 和 dispatch-003-batch-two。
+changed_files:
+  - agents/optimization_dispatcher_agent.py
+  - scripts/run_local_task.py
+  - config/pipeline.yaml
+  - tests/test_optimization_dispatcher_agent.py
+  - tests/test_run_local_task.py
+  - workspace/tasks/dispatch-003/input/dispatch_tasks.yaml
+validation_result:
+  pytest: passed
+  pytest_count: 68
+  workflow: dispatch_batch
+  parent_task: dispatch-003
+  dispatched_tasks:
+    - dispatch-003-batch-one
+    - dispatch-003-batch-two
+  child_validation: passed
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+next_recommended_task: review-001

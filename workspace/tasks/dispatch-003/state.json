@@ -1,0 +1,39 @@
+{
+  "task_id": "dispatch-003",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "agents/optimization_dispatcher_agent.py",
+    "scripts/run_local_task.py",
+    "config/pipeline.yaml",
+    "tests/test_optimization_dispatcher_agent.py",
+    "tests/test_run_local_task.py",
+    "workspace/tasks/dispatch-003/input/dispatch_tasks.yaml",
+    "workspace/tasks/dispatch-003/code/dispatch_result.json",
+    "workspace/tasks/dispatch-003/review/dispatched_task_validation.json",
+    "workspace/tasks/dispatch-003-batch-one/code/implementation_plan.json",
+    "workspace/tasks/dispatch-003-batch-one/review/test_validation.json",
+    "workspace/tasks/dispatch-003-batch-one/review/code_review.json",
+    "workspace/tasks/dispatch-003-batch-one/final/validation_feedback.json",
+    "workspace/tasks/dispatch-003-batch-one/state.json",
+    "workspace/tasks/dispatch-003-batch-two/code/implementation_plan.json",
+    "workspace/tasks/dispatch-003-batch-two/review/test_validation.json",
+    "workspace/tasks/dispatch-003-batch-two/review/code_review.json",
+    "workspace/tasks/dispatch-003-batch-two/final/validation_feedback.json",
+    "workspace/tasks/dispatch-003-batch-two/state.json",
+    "workspace/tasks/dispatch-003/review/test_validation.json",
+    "workspace/tasks/dispatch-003/review/code_review.json",
+    "workspace/tasks/dispatch-003/final/validation_feedback.json",
+    "workspace/tasks/dispatch-003/review/acceptance_check.json",
+    "workspace/tasks/dispatch-003/final/implementation_summary.yaml",
+    "workspace/tasks/dispatch-003/final/next_dev_tasks.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

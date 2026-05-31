@@ -1,0 +1,23 @@
+{
+  "task_id": "dispatch-003-batch-two",
+  "status": "passed",
+  "checked_at": "2026-05-31",
+  "checks": [
+    {
+      "name": "State artifact",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-003-batch-two/state.json exists."
+    },
+    {
+      "name": "Validation feedback",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-003-batch-two/final/validation_feedback.json exists and passed."
+    },
+    {
+      "name": "Parent summary",
+      "result": "pass",
+      "evidence": "workspace/tasks/dispatch-003/review/dispatched_task_validation.json references dispatch-003-batch-two."
+    }
+  ],
+  "blocking_issues": []
+}

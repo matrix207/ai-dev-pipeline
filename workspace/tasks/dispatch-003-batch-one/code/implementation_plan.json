@@ -1,0 +1,56 @@
+{
+  "task_id": "dispatch-003-batch-one",
+  "title": "批量调度第一个优化任务",
+  "priority": "high",
+  "scope": [
+    "生成第一个批量调度任务的结构化执行计划。",
+    "写入独立任务状态。",
+    "完成独立验证反馈。"
+  ],
+  "out_of_scope": [
+    "自动 PR。",
+    "自动 merge。"
+  ],
+  "acceptance_criteria": [
+    "dispatch-003-batch-one 具备 state.json。",
+    "dispatch-003-batch-one 具备 final/validation_feedback.json。",
+    "父任务 dispatch_result 汇总该子任务。"
+  ],
+  "implementation_plan": [
+    {
+      "order": 1,
+      "description": "生成第一个批量调度任务的结构化执行计划。",
+      "expected_artifact": "workspace/tasks/dispatch-003-batch-one/"
+    },
+    {
+      "order": 2,
+      "description": "写入独立任务状态。",
+      "expected_artifact": "workspace/tasks/dispatch-003-batch-one/code/"
+    },
+    {
+      "order": 3,
+      "description": "完成独立验证反馈。",
+      "expected_artifact": "workspace/tasks/dispatch-003-batch-one/code/"
+    }
+  ],
+  "verification": {
+    "required_commands": [
+      "python -m pytest -q"
+    ],
+    "acceptance_criteria": [
+      "dispatch-003-batch-one 具备 state.json。",
+      "dispatch-003-batch-one 具备 final/validation_feedback.json。",
+      "父任务 dispatch_result 汇总该子任务。"
+    ]
+  },
+  "safety": {
+    "external_model_api": "not_used",
+    "pr_or_merge": "not_allowed",
+    "destructive_operations": "not_allowed"
+  },
+  "output_artifacts": [
+    "workspace/tasks/dispatch-003-batch-one/code/implementation_plan.json",
+    "workspace/tasks/dispatch-003-batch-one/review/acceptance_check.json",
+    "workspace/tasks/dispatch-003-batch-one/final/implementation_summary.yaml"
+  ]
+}

@@ -136,6 +136,11 @@ def _run_step(
                     "workspace/tasks/optimization-001/final/next_optimization_tasks.yaml",
                 ),
                 "risk_approved": step_options.get("risk_approved", False),
+                "dispatch_all": step_options.get("dispatch_all", False),
+                "max_tasks": step_options.get(
+                    "max_tasks",
+                    0 if step_options.get("dispatch_all", False) else 1,
+                ),
             }
         )
         return f"workspace/tasks/{task_id}/code/dispatch_result.json", result.output
@@ -240,6 +245,67 @@ def _run_dispatched_task_validation(
         _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
         return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
 
+    if dispatch_result.get("dispatches"):
+        summaries = []
+        artifacts: list[str] = []
+        blocking_issues: list[dict[str, Any]] = []
+        for dispatch in dispatch_result["dispatches"]:
+            summary = _validate_one_dispatched_task(repo_root, parent_task_id, dispatch, step_options)
+            summaries.append(summary)
+            artifacts = _append_unique(artifacts, summary["artifacts"])
+            blocking_issues.extend(summary["blocking_issues"])
+            dispatch["dispatched_task_validation"] = {
+                "status": summary["status"],
+                "dispatched_task_id": summary["dispatched_task_id"],
+                "artifacts": summary["artifacts"],
+                "blocking_issues": summary["blocking_issues"],
+            }
+            dispatch["written_artifacts"] = _append_unique(
+                list(dispatch.get("written_artifacts", [])),
+                summary["artifacts"],
+            )
+
+        summary = {
+            "task_id": parent_task_id,
+            "status": "passed" if not blocking_issues else "blocked",
+            "dispatched_task_id": summaries[0]["dispatched_task_id"] if summaries else "",
+            "dispatched_tasks": summaries,
+            "artifacts": artifacts,
+            "blocking_issues": blocking_issues,
+            "gates": {},
+        }
+        dispatch_result["dispatched_task_validation"] = {
+            "status": summary["status"],
+            "dispatched_tasks": [
+                {
+                    "dispatched_task_id": item["dispatched_task_id"],
+                    "status": item["status"],
+                    "artifacts": item["artifacts"],
+                    "blocking_issues": item["blocking_issues"],
+                }
+                for item in summaries
+            ],
+            "artifacts": artifacts,
+            "blocking_issues": blocking_issues,
+        }
+        dispatch_result["written_artifacts"] = _append_unique(
+            list(dispatch_result.get("written_artifacts", [])),
+            artifacts,
+        )
+        write_json(repo_root, dispatch_result_path, dispatch_result)
+        return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+
+    summary = _validate_one_dispatched_task(repo_root, parent_task_id, dispatch_result, step_options)
+    _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
+    return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+
+
+def _validate_one_dispatched_task(
+    repo_root: str | Path,
+    parent_task_id: str,
+    dispatch_result: dict[str, Any],
+    step_options: dict[str, Any],
+) -> dict[str, Any]:
     selected_task = dispatch_result.get("selected_task") or {}
     dispatched_task_id = selected_task.get("id") or dispatch_result["dispatch_result"]["task_id"]
     task_definition_path = step_options.get(
@@ -284,8 +350,7 @@ def _run_dispatched_task_validation(
             blocking_issues=blocking_issues,
             gates=state.gates,
         )
-        _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
-        return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+        return summary
 
     code_review_path = f"workspace/tasks/{dispatched_task_id}/review/code_review.json"
     state.update(step="code_review", status="running")
@@ -314,8 +379,7 @@ def _run_dispatched_task_validation(
             blocking_issues=blocking_issues,
             gates=state.gates,
         )
-        _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
-        return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+        return summary
 
     validation_feedback_path = f"workspace/tasks/{dispatched_task_id}/final/validation_feedback.json"
     state.update(step="goal_effect_validation", status="running")
@@ -350,8 +414,7 @@ def _run_dispatched_task_validation(
         blocking_issues=blocking_issues,
         gates=state.gates,
     )
-    _persist_dispatched_validation(repo_root, dispatch_result_path, dispatch_result, summary)
-    return f"workspace/tasks/{parent_task_id}/review/dispatched_task_validation.json", summary
+    return summary
 
 
 def run_local_task(

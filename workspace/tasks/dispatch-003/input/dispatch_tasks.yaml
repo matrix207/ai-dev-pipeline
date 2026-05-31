@@ -1,0 +1,48 @@
+task_batch:
+  source_task: ui-validation-001
+  source_tasks:
+    - ui-validation-001
+  source_feedback_paths:
+    - workspace/tasks/ui-validation-001/final/validation_feedback.json
+  goal: 验证 dispatcher 可以在一次 workflow 中连续调度多个 open tasks。
+tasks:
+  - id: dispatch-003-batch-one
+    title: 批量调度第一个优化任务
+    priority: high
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 生成第一个批量调度任务的结构化执行计划。
+      - 写入独立任务状态。
+      - 完成独立验证反馈。
+    out_of_scope:
+      - 自动 PR。
+      - 自动 merge。
+    acceptance_criteria:
+      - dispatch-003-batch-one 具备 state.json。
+      - dispatch-003-batch-one 具备 final/validation_feedback.json。
+      - 父任务 dispatch_result 汇总该子任务。
+  - id: dispatch-003-batch-two
+    title: 批量调度第二个优化任务
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 生成第二个批量调度任务的结构化执行计划。
+      - 写入独立任务状态。
+      - 完成独立验证反馈。
+    out_of_scope:
+      - 自动 PR。
+      - 自动 merge。
+    acceptance_criteria:
+      - dispatch-003-batch-two 具备 state.json。
+      - dispatch-003-batch-two 具备 final/validation_feedback.json。
+      - 父任务 dispatch_result 汇总该子任务。

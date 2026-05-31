@@ -1,0 +1,56 @@
+{
+  "task_id": "dispatch-003-batch-two",
+  "title": "批量调度第二个优化任务",
+  "priority": "medium",
+  "scope": [
+    "生成第二个批量调度任务的结构化执行计划。",
+    "写入独立任务状态。",
+    "完成独立验证反馈。"
+  ],
+  "out_of_scope": [
+    "自动 PR。",
+    "自动 merge。"
+  ],
+  "acceptance_criteria": [
+    "dispatch-003-batch-two 具备 state.json。",
+    "dispatch-003-batch-two 具备 final/validation_feedback.json。",
+    "父任务 dispatch_result 汇总该子任务。"
+  ],
+  "implementation_plan": [
+    {
+      "order": 1,
+      "description": "生成第二个批量调度任务的结构化执行计划。",
+      "expected_artifact": "workspace/tasks/dispatch-003-batch-two/"
+    },
+    {
+      "order": 2,
+      "description": "写入独立任务状态。",
+      "expected_artifact": "workspace/tasks/dispatch-003-batch-two/code/"
+    },
+    {
+      "order": 3,
+      "description": "完成独立验证反馈。",
+      "expected_artifact": "workspace/tasks/dispatch-003-batch-two/code/"
+    }
+  ],
+  "verification": {
+    "required_commands": [
+      "python -m pytest -q"
+    ],
+    "acceptance_criteria": [
+      "dispatch-003-batch-two 具备 state.json。",
+      "dispatch-003-batch-two 具备 final/validation_feedback.json。",
+      "父任务 dispatch_result 汇总该子任务。"
+    ]
+  },
+  "safety": {
+    "external_model_api": "not_used",
+    "pr_or_merge": "not_allowed",
+    "destructive_operations": "not_allowed"
+  },
+  "output_artifacts": [
+    "workspace/tasks/dispatch-003-batch-two/code/implementation_plan.json",
+    "workspace/tasks/dispatch-003-batch-two/review/acceptance_check.json",
+    "workspace/tasks/dispatch-003-batch-two/final/implementation_summary.yaml"
+  ]
+}

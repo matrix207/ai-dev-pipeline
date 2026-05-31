@@ -1,0 +1,53 @@
+{
+  "task_id": "dispatch-003",
+  "status": "passed",
+  "dispatched_task_id": "dispatch-003-batch-one",
+  "dispatched_tasks": [
+    {
+      "task_id": "dispatch-003",
+      "status": "passed",
+      "dispatched_task_id": "dispatch-003-batch-one",
+      "artifacts": [
+        "workspace/tasks/dispatch-003-batch-one/review/test_validation.json",
+        "workspace/tasks/dispatch-003-batch-one/review/code_review.json",
+        "workspace/tasks/dispatch-003-batch-one/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "gates": {
+        "goal_approved": true,
+        "design_review_passed": true,
+        "tests_passed": true,
+        "code_review_passed": true,
+        "human_merge_approved": false
+      }
+    },
+    {
+      "task_id": "dispatch-003",
+      "status": "passed",
+      "dispatched_task_id": "dispatch-003-batch-two",
+      "artifacts": [
+        "workspace/tasks/dispatch-003-batch-two/review/test_validation.json",
+        "workspace/tasks/dispatch-003-batch-two/review/code_review.json",
+        "workspace/tasks/dispatch-003-batch-two/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "gates": {
+        "goal_approved": true,
+        "design_review_passed": true,
+        "tests_passed": true,
+        "code_review_passed": true,
+        "human_merge_approved": false
+      }
+    }
+  ],
+  "artifacts": [
+    "workspace/tasks/dispatch-003-batch-one/review/test_validation.json",
+    "workspace/tasks/dispatch-003-batch-one/review/code_review.json",
+    "workspace/tasks/dispatch-003-batch-one/final/validation_feedback.json",
+    "workspace/tasks/dispatch-003-batch-two/review/test_validation.json",
+    "workspace/tasks/dispatch-003-batch-two/review/code_review.json",
+    "workspace/tasks/dispatch-003-batch-two/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "gates": {}
+}

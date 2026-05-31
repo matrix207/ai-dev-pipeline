@@ -26,7 +26,69 @@ class OptimizationDispatcherAgent(BaseAgent):
         repo_root = Path(payload.get("repo_root", "."))
         tasks_path = payload.get("tasks_path", DEFAULT_OPTIMIZATION_TASKS_PATH)
         risk_approved = bool(payload.get("risk_approved", False))
+        dispatch_all = bool(payload.get("dispatch_all", False))
+        max_tasks = int(payload.get("max_tasks", 0 if dispatch_all else 1))
 
+        if dispatch_all or max_tasks > 1:
+            return self._dispatch_many(repo_root, tasks_path, risk_approved, max_tasks)
+
+        return self._dispatch_one(repo_root, tasks_path, risk_approved)
+
+    def _dispatch_many(
+        self,
+        repo_root: Path,
+        tasks_path: str,
+        risk_approved: bool,
+        max_tasks: int,
+    ) -> Mapping[str, Any]:
+        dispatches: list[dict[str, Any]] = []
+        blocking_issues: list[dict[str, Any]] = []
+        while max_tasks <= 0 or len(dispatches) < max_tasks:
+            dispatch = dict(self._dispatch_one(repo_root, tasks_path, risk_approved))
+            if dispatch["status"] == "no_open_tasks":
+                break
+            if dispatch.get("blocking_issues"):
+                blocking_issues.extend(dispatch["blocking_issues"])
+                break
+            dispatches.append(dispatch)
+
+        if not dispatches:
+            return {
+                "status": "no_open_tasks" if not blocking_issues else "blocked",
+                "selected_task": None,
+                "tasks_path": tasks_path,
+                "task_batch": {},
+                "execution": None,
+                "dispatch_result": None,
+                "dispatches": [],
+                "written_artifacts": [],
+                "blocking_issues": blocking_issues,
+            }
+
+        return {
+            "status": "dispatched",
+            "selected_task": dispatches[0]["selected_task"],
+            "tasks_path": tasks_path,
+            "task_batch": dispatches[0].get("task_batch", {}),
+            "source_tasks": dispatches[0].get("source_tasks", []),
+            "source_feedback_paths": dispatches[0].get("source_feedback_paths", []),
+            "execution": dispatches[0].get("execution"),
+            "dispatch_result": dispatches[0].get("dispatch_result"),
+            "dispatches": dispatches,
+            "written_artifacts": self._flatten_written_artifacts(dispatches),
+            "blocking_issues": blocking_issues,
+            "batch": {
+                "requested": "all" if max_tasks <= 0 else max_tasks,
+                "dispatched_count": len(dispatches),
+            },
+        }
+
+    def _dispatch_one(
+        self,
+        repo_root: Path,
+        tasks_path: str,
+        risk_approved: bool,
+    ) -> Mapping[str, Any]:
         execution = OptimizationExecutorAgent().run(
             {
                 "repo_root": str(repo_root),
@@ -113,6 +175,14 @@ class OptimizationDispatcherAgent(BaseAgent):
             "written_artifacts": written_artifacts,
             "blocking_issues": [],
         }
+
+    def _flatten_written_artifacts(self, dispatches: list[dict[str, Any]]) -> list[str]:
+        artifacts: list[str] = []
+        for dispatch in dispatches:
+            for artifact in dispatch.get("written_artifacts", []):
+                if artifact not in artifacts:
+                    artifacts.append(artifact)
+        return artifacts
 
     def _review_validation_agents(self) -> set[str]:
         return {
