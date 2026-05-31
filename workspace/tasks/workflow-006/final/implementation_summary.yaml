@@ -1,0 +1,35 @@
+task_id: workflow-006
+title: 端到端闭环质量门配置化
+status: waiting_for_human_merge_approval
+goal: 将质量门必需 evidence、阻塞级别和人工审批策略做成可配置规则。
+completed_scope:
+  - config/pipeline.yaml 增加 quality_gate 配置。
+  - 新增 _quality_gate_config，从 pipeline 配置读取质量门规则。
+  - _quality_gate 支持 required_evidence 配置。
+  - missing_evidence 和 failed_evidence 支持 blocking 或 warning。
+  - quality_gate 输出 warnings，并在 CLI 摘要显示 warning/blocking 数量。
+  - run record 保留 quality_gate.config，便于追溯当次运行使用的规则。
+  - 用例先行覆盖默认配置、自定义配置和缺失 evidence warning 路径。
+changed_files:
+  - config/pipeline.yaml
+  - scripts/run_end_to_end.py
+  - tests/test_run_end_to_end.py
+  - workspace/tasks/workflow-006/final/decision_summary.yaml
+  - workspace/tasks/workflow-006/runs/workflow-006-run.yaml
+validation_result:
+  dry_run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-006 --dry-run --rerun-policy skip_completed --run-id workflow-006-dry-run --json
+  run_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-006 --rerun-policy skip_completed --run-id workflow-006-run --json
+  list_runs_command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-006 --list-runs --json
+  pytest: passed
+  pytest_count: 81
+  validation_status: passed
+  alignment_score: 1.0
+  quality_gate_status: waiting_for_human_approval
+  quality_gate_warnings: 0
+  retry_plan_status: not_required
+  next_recommended_task: workflow-007
+out_of_scope_confirmed:
+  - 未自动 PR 或 merge。
+  - 未调用外部服务。
+  - 未删除用户文件。
+next_recommended_task: workflow-007

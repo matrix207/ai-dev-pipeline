@@ -8,6 +8,7 @@ from artifacts import read_yaml, write_yaml
 from scripts.run_end_to_end import (
     _fallback_recommended_task,
     _quality_gate,
+    _quality_gate_config,
     format_end_to_end_summary,
     main,
     run_end_to_end,
@@ -160,6 +161,52 @@ def test_quality_gate_blocks_missing_required_evidence() -> None:
     assert gate["blocking_issues"][0]["id"] == "missing_evidence_tests_passed"
 
 
+def test_quality_gate_can_warn_on_missing_evidence() -> None:
+    summary = {
+        "execution_summary": {"failed": []},
+        "retry_plan": {"status": "not_required"},
+        "evidence_map": [
+            {"decision": "tests_passed", "status": "passed", "evidence": []},
+        ],
+    }
+
+    gate = _quality_gate(
+        summary,
+        {
+            "required_evidence": ["tests_passed"],
+            "missing_evidence": "warning",
+            "failed_evidence": "blocking",
+            "human_approval_required": True,
+        },
+    )
+
+    assert gate["status"] == "waiting_for_human_approval"
+    assert gate["blocking_issues"] == []
+    assert gate["warnings"][0]["id"] == "missing_evidence_tests_passed"
+
+
+def test_quality_gate_config_reads_pipeline_yaml(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "config/pipeline.yaml",
+        {
+            "quality_gate": {
+                "required_evidence": ["tests_passed"],
+                "missing_evidence": "warning",
+                "failed_evidence": "blocking",
+                "human_approval_required": False,
+            }
+        },
+    )
+
+    assert _quality_gate_config(tmp_path) == {
+        "required_evidence": ["tests_passed"],
+        "missing_evidence": "warning",
+        "failed_evidence": "blocking",
+        "human_approval_required": False,
+    }
+
+
 def test_run_end_to_end_uses_unique_dispatch_task_ids_on_rerun(tmp_path: Path) -> None:
     write_end_to_end_config(tmp_path)
     write_validation_goal(tmp_path)
@@ -250,7 +297,7 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
             "failed": [],
         },
         "retry_plan": {"status": "not_required"},
-        "quality_gate": {"status": "waiting_for_human_approval"},
+        "quality_gate": {"status": "waiting_for_human_approval", "warnings": [{"id": "warning"}]},
         "evidence_map": [
             {
                 "decision": "goal_effect_aligned",
@@ -269,6 +316,7 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
     assert "- Skipped:" in output
     assert "Evidence:" in output
     assert "Quality gate: waiting_for_human_approval" in output
+    assert "Quality warnings: 1" in output
     assert "Dispatch state: waiting_for_human_merge_approval" in output
     assert "workflow-002: Next workflow task" in output
 
@@ -340,5 +388,10 @@ def test_fallback_recommended_task_uses_known_workflow_titles() -> None:
     assert _fallback_recommended_task("workflow-005") == {
         "id": "workflow-006",
         "title": "端到端闭环质量门配置化",
+        "priority": "medium",
+    }
+    assert _fallback_recommended_task("workflow-006") == {
+        "id": "workflow-007",
+        "title": "端到端闭环人工审批记录",
         "priority": "medium",
     }

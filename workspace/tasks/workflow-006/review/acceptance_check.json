@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-006",
+  "status": "passed",
+  "checked_at": "2026-06-01",
+  "checks": [
+    {
+      "name": "Quality gate config",
+      "result": "pass",
+      "evidence": "config/pipeline.yaml includes quality_gate.required_evidence, missing_evidence, failed_evidence and human_approval_required."
+    },
+    {
+      "name": "Config reader",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers _quality_gate_config reading pipeline YAML."
+    },
+    {
+      "name": "Warning policy",
+      "result": "pass",
+      "evidence": "tests/test_run_end_to_end.py covers missing evidence configured as warning."
+    },
+    {
+      "name": "CLI summary",
+      "result": "pass",
+      "evidence": "format_end_to_end_summary prints Quality blocking issues and Quality warnings."
+    },
+    {
+      "name": "Run record config",
+      "result": "pass",
+      "evidence": "workspace/tasks/workflow-006/runs/workflow-006-run.yaml includes quality_gate.config."
+    },
+    {
+      "name": "Test suite",
+      "result": "pass",
+      "evidence": "source .venv/bin/activate && python -m pytest -q -> 81 passed."
+    }
+  ],
+  "blocking_issues": []
+}

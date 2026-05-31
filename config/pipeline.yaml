@@ -6,6 +6,17 @@ agent_config:
   max_review_rounds: 3
   human_gate_required: true
 
+quality_gate:
+  required_evidence:
+    - goal_effect_aligned
+    - tests_passed
+    - dispatch_validated
+    - code_review_passed
+    - next_action
+  missing_evidence: blocking
+  failed_evidence: blocking
+  human_approval_required: true
+
 models:
   codex:
     provider: openai

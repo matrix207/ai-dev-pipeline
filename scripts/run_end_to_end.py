@@ -30,6 +30,12 @@ REQUIRED_EVIDENCE_DECISIONS = {
     "code_review_passed",
     "next_action",
 }
+DEFAULT_QUALITY_GATE_CONFIG = {
+    "required_evidence": sorted(REQUIRED_EVIDENCE_DECISIONS),
+    "missing_evidence": "blocking",
+    "failed_evidence": "blocking",
+    "human_approval_required": True,
+}
 SUPPORTED_DISPATCH_AGENTS = {
     "CoderAgent",
     "DesignReviewerAgent",
@@ -181,7 +187,7 @@ def run_end_to_end(
     }
     summary["run_record_artifact"] = _run_record_path(task_id, run_metadata["run_id"])
     summary["evidence_map"] = _evidence_map(summary)
-    summary["quality_gate"] = _quality_gate(summary)
+    summary["quality_gate"] = _quality_gate(summary, _quality_gate_config(repo_root))
     # run record 是不可覆盖的单次运行记录；decision_summary.yaml 保留“最新摘要”入口。
     write_yaml(repo_root, summary["run_record_artifact"], summary)
     write_yaml(repo_root, paths["decision_summary"], summary)
@@ -511,35 +517,64 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def _quality_gate(summary: dict[str, Any]) -> dict[str, Any]:
+def _quality_gate_config(repo_root: str | Path = ".") -> dict[str, Any]:
+    """读取质量门配置；未配置时使用保守默认值。"""
+    config = dict(DEFAULT_QUALITY_GATE_CONFIG)
+    try:
+        pipeline_config = read_yaml(repo_root, "config/pipeline.yaml")
+    except Exception:
+        return config
+    custom_config = pipeline_config.get("quality_gate", {}) or {}
+    if custom_config.get("required_evidence"):
+        config["required_evidence"] = list(custom_config["required_evidence"])
+    if custom_config.get("missing_evidence"):
+        config["missing_evidence"] = str(custom_config["missing_evidence"])
+    if custom_config.get("failed_evidence"):
+        config["failed_evidence"] = str(custom_config["failed_evidence"])
+    if "human_approval_required" in custom_config:
+        config["human_approval_required"] = bool(custom_config["human_approval_required"])
+    return config
+
+
+def _quality_gate(summary: dict[str, Any], config: dict[str, Any] | None = None) -> dict[str, Any]:
     """根据运行状态和 evidence_map 生成进入人工审批前的质量门结论。"""
+    config = config or DEFAULT_QUALITY_GATE_CONFIG
     blocking_issues: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
     evidence_by_decision = {
         item.get("decision"): item
         for item in summary.get("evidence_map", [])
     }
 
-    # 关键 evidence 缺失时直接阻塞，避免没有证据的运行记录进入人工批准阶段。
-    for decision in sorted(REQUIRED_EVIDENCE_DECISIONS):
+    def add_issue(kind: str, issue: dict[str, Any]) -> None:
+        if kind == "warning":
+            warnings.append(issue)
+        else:
+            blocking_issues.append(issue)
+
+    # 必需 evidence 和缺失策略来自配置；默认保持 blocking，保障质量门保守可靠。
+    for decision in sorted(config.get("required_evidence", [])):
         item = evidence_by_decision.get(decision)
         if not item or not item.get("evidence"):
-            blocking_issues.append(
+            add_issue(
+                str(config.get("missing_evidence", "blocking")),
                 {
                     "id": f"missing_evidence_{decision}",
-                    "severity": "high",
+                    "severity": "medium" if config.get("missing_evidence") == "warning" else "high",
                     "description": f"质量门缺少必要 evidence：{decision}。",
                     "recommendation": "补齐对应验证产物后重新运行端到端闭环。",
-                }
+                },
             )
             continue
         if item.get("status") in {"failed", "blocked", "not_passed"}:
-            blocking_issues.append(
+            add_issue(
+                str(config.get("failed_evidence", "blocking")),
                 {
                     "id": f"failed_evidence_{decision}",
-                    "severity": "high",
+                    "severity": "medium" if config.get("failed_evidence") == "warning" else "high",
                     "description": f"质量门 evidence 未通过：{decision}。",
                     "recommendation": "修复失败验证或评审结论后重新运行端到端闭环。",
-                }
+                },
             )
 
     if summary.get("execution_summary", {}).get("failed"):
@@ -566,8 +601,10 @@ def _quality_gate(summary: dict[str, Any]) -> dict[str, Any]:
         "status": status,
         "can_continue": False,
         "blocking_issues": blocking_issues,
+        "warnings": warnings,
+        "config": config,
         "human_approval": {
-            "required": True,
+            "required": bool(config.get("human_approval_required", True)),
             "merge_approved": False,
             "status": "pending" if not blocking_issues else "blocked",
         },
@@ -739,6 +776,7 @@ def _fallback_recommended_task(task_id: str) -> dict[str, Any]:
         "workflow-004": "端到端闭环决策产物可追溯化",
         "workflow-005": "端到端闭环运行记录质量门",
         "workflow-006": "端到端闭环质量门配置化",
+        "workflow-007": "端到端闭环人工审批记录",
     }
     return {
         "id": next_task_id,
@@ -825,6 +863,8 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"Review state: {current['review_state']['status']}",
             f"Retry plan: {retry.get('status', 'not_required')}",
             f"Quality gate: {quality_gate.get('status', 'unknown')}",
+            f"Quality blocking issues: {len(quality_gate.get('blocking_issues', []))}",
+            f"Quality warnings: {len(quality_gate.get('warnings', []))}",
             "",
             "Execution:",
             *_format_execution_group("Completed", execution.get("completed", [])),

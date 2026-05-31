@@ -1,0 +1,27 @@
+task_id: workflow-006
+title: 端到端闭环后的下一步任务
+status: proposed
+recommended_next_task:
+  id: workflow-007
+  title: 端到端闭环人工审批记录
+  recommended_agent: SystemDesignAgent
+  priority: medium
+  risk_level: medium
+  goal: 将人工审批意见、审批人、审批时间和审批结论写入 run record，形成完整闭环决策记录。
+  acceptance_criteria:
+    - run record 支持记录人工审批结论。
+    - CLI 支持写入或更新审批记录。
+    - 审批记录包含 approver、decision、comment、decided_at。
+    - 未审批时质量门保持 waiting_for_human_approval。
+    - python -m pytest -q 通过。
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+alternative_next_tasks:
+  - id: review-002
+    title: 将 evidence 缺口升级为可配置质量门
+    recommended_agent: CodeReviewerAgent
+    priority: medium
+    risk_level: low
+    goal: 允许配置 missing evidence 是 blocking 还是 non-blocking。
