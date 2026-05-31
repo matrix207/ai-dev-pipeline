@@ -1,0 +1,30 @@
+task_id: dev-003
+title: 本地编排脚本
+status: waiting_for_human_merge_approval
+completed_scope:
+  - 创建 scripts/run_local_task.py，本地读取 config/pipeline.yaml。
+  - 按固定 workflow 调用 PlaceholderAgent。
+  - 每一步写入 orchestration JSON artifact。
+  - 持续更新 workspace/tasks/{task_id}/state.json。
+  - 在人工合并质量门停止，不执行 PR、merge 或 release。
+changed_files:
+  - config/pipeline.yaml
+  - scripts/run_local_task.py
+  - tests/test_run_local_task.py
+  - workspace/tasks/dev-003/state.json
+  - workspace/tasks/dev-003/orchestration/load_config.json
+  - workspace/tasks/dev-003/orchestration/run_placeholder_agent.json
+  - workspace/tasks/dev-003/orchestration/write_state.json
+  - workspace/tasks/dev-003/orchestration/human_gate.json
+acceptance_status:
+  read_pipeline_config: passed
+  run_fixed_workflow_with_placeholder_agent: passed
+  write_task_state: passed
+  record_failure_state: passed
+  stop_at_human_gate: passed
+  pytest: passed
+out_of_scope_confirmed:
+  - 未实现并发调度。
+  - 未引入远程队列。
+  - 未自动执行 PR、merge 或 release。
+next_recommended_task: dev-004

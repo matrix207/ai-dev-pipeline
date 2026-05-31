@@ -1,0 +1,6 @@
+{
+  "task_id": "dev-003",
+  "workflow": "local_dev",
+  "step": "run_placeholder_agent",
+  "message": "placeholder agent completed step"
+}

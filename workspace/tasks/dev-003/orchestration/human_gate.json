@@ -1,0 +1,6 @@
+{
+  "task_id": "dev-003",
+  "workflow": "local_dev",
+  "step": "human_gate",
+  "message": "placeholder agent completed step"
+}

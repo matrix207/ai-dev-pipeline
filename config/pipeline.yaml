@@ -21,6 +21,14 @@ workflows:
       - mvp_system_design
       - design_review
       - next_dev_tasks
+  local_dev:
+    task_id: dev-003
+    steps:
+      - load_config
+      - run_placeholder_agent
+      - write_state
+      - human_gate
+    human_gate_required: true
 
 persistence:
   artifact_backend: local_filesystem
