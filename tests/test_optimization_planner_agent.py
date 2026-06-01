@@ -26,6 +26,9 @@ def test_optimization_planner_outputs_enhancement_tasks_when_validation_passes(
         "feedback-002",
         "dispatch-002",
         "ui-validation-001",
+        "roadmap-001",
+        "decision-view-001",
+        "task-library-001",
     ]
     assert all("recommended_agent" in task for task in result.output["tasks"])
     assert all("risk_level" in task for task in result.output["tasks"])
@@ -86,6 +89,9 @@ def test_optimization_planner_prefixes_task_ids_for_reusable_batches(tmp_path: P
         "feedback-002",
         "dispatch-002",
         "ui-validation-001",
+        "roadmap-001",
+        "decision-view-001",
+        "task-library-001",
     ]
 
 

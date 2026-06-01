@@ -1,0 +1,47 @@
+task_id: workflow-021
+status: completed
+summary: >-
+  完成新的持续优化方向选择。OptimizationPlannerAgent 新增持续优化任务模板，
+  使旧三项收敛后能进入 roadmap-001、decision-view-001、task-library-001 等新方向，
+  本轮推荐已选择 roadmap-001。
+implemented_changes:
+  - path: agents/optimization_planner_agent.py
+    change: 新增 roadmap-001、decision-view-001、task-library-001 三个持续优化任务模板。
+  - path: scripts/run_end_to_end.py
+    change: previous_context 推荐排序保留 planner 任务顺序，同优先级时优先选择任务库靠前项。
+  - path: tests/test_optimization_planner_agent.py
+    change: 更新 planner 增强任务列表用例，覆盖新的任务模板。
+  - path: tests/test_run_end_to_end.py
+    change: 更新收敛后推荐用例，验证旧三项完成后进入 roadmap-001。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py tests/test_optimization_planner_agent.py -q
+    result: 32 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-021 --dry-run --rerun-policy skip_completed --run-id workflow-021-dry-run --previous-run-record workspace/tasks/workflow-020/runs/workflow-020-run.yaml --json
+    result: dry_run 通过
+  - command: python scripts/run_end_to_end.py --task-id workflow-021 --rerun-policy new_ids --run-id workflow-021-run --previous-run-record workspace/tasks/workflow-020/runs/workflow-020-run.yaml --json
+    result: ready_for_human_decision，selected_source_task_id=roadmap-001。
+  - command: python scripts/run_end_to_end.py --task-id workflow-021 --approve-run workflow-021-run --approver dennis --decision approved --comment '同意 workflow-021 新持续优化方向选择结果，允许进入路线图产品化阶段。' --decided-at 2026-06-02T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-021 --continue-run workflow-021-run --json
+    result: can_continue=true，recommended_command 指向 workflow-022
+recommendation_result:
+  completed_source_task_ids:
+    - ui-validation-001
+    - feedback-002
+    - dispatch-002
+  candidate_task_ids:
+    - roadmap-001
+    - decision-view-001
+    - task-library-001
+  selected_next_task: workflow-022
+  selected_source_task_id: roadmap-001
+key_artifacts:
+  - workspace/tasks/workflow-021/final/decision_summary.yaml
+  - workspace/tasks/workflow-021/final/target_effect_report.md
+  - workspace/tasks/workflow-021/runs/workflow-021-run.yaml
+  - workspace/tasks/workflow-021/review/acceptance_check.json
+  - workspace/tasks/workflow-021/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-02T00:00:00Z'

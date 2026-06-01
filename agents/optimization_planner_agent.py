@@ -233,4 +233,83 @@ class OptimizationPlannerAgent(BaseAgent):
                     "python -m pytest -q 通过。",
                 ],
             },
+            {
+                "id": "roadmap-001",
+                "title": "持续优化路线图产品化",
+                "priority": "medium",
+                "recommended_agent": "SystemDesignAgent",
+                "risk_level": "low",
+                "human_gate": {
+                    "goal_approval_required": True,
+                    "risk_approval_required": False,
+                    "merge_approval_required": True,
+                },
+                "scope": [
+                    "基于已完成的端到端闭环证据，生成下一阶段持续优化路线图。",
+                    "把候选优化方向、价值、风险和验收方式写入结构化产物。",
+                    "让人工能按路线图选择下一组高价值任务。",
+                ],
+                "out_of_scope": [
+                    "自动创建 PR。",
+                    "自动 merge。",
+                    "引入外部项目管理服务。",
+                ],
+                "acceptance_criteria": [
+                    "路线图产物能解释为何进入新的持续优化阶段。",
+                    "路线图不重复 ui-validation-001、feedback-002、dispatch-002。",
+                    "python -m pytest -q 通过。",
+                ],
+            },
+            {
+                "id": "decision-view-001",
+                "title": "人工决策视图产品化",
+                "priority": "medium",
+                "recommended_agent": "CoderAgent",
+                "risk_level": "low",
+                "human_gate": {
+                    "goal_approval_required": True,
+                    "risk_approval_required": False,
+                    "merge_approval_required": True,
+                },
+                "scope": [
+                    "把目标效果、当前达成、剩余任务和下一步建议汇总为稳定的人读决策视图。",
+                    "让运行记录、目标效果报告和推荐依据可以一屏追溯。",
+                    "保留人工审批质量门。",
+                ],
+                "out_of_scope": [
+                    "重做前端 demo。",
+                    "接入外部 BI 或看板服务。",
+                ],
+                "acceptance_criteria": [
+                    "决策视图能引用 run record、target_effect_report 和 recommendation_basis。",
+                    "视图能清楚展示是否可以进入下一阶段。",
+                    "python -m pytest -q 通过。",
+                ],
+            },
+            {
+                "id": "task-library-001",
+                "title": "优化任务库结构化",
+                "priority": "medium",
+                "recommended_agent": "RequirementAnalysisAgent",
+                "risk_level": "low",
+                "human_gate": {
+                    "goal_approval_required": True,
+                    "risk_approval_required": False,
+                    "merge_approval_required": True,
+                },
+                "scope": [
+                    "整理可复用优化任务模板，区分基础能力、产品化表达和长期演进。",
+                    "为每类任务补充价值、触发条件、推荐 Agent 和验收标准。",
+                    "支持后续 planner 从任务库选择下一组任务。",
+                ],
+                "out_of_scope": [
+                    "引入外部任务系统。",
+                    "自动修改业务代码。",
+                ],
+                "acceptance_criteria": [
+                    "任务库产物包含分类、触发条件和验收标准。",
+                    "任务库不重复旧三项已完成任务。",
+                    "python -m pytest -q 通过。",
+                ],
+            },
         ]

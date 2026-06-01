@@ -1187,6 +1187,7 @@ def _recommended_from_previous_context(
     )
     priority_order = {"high": 0, "medium": 1, "low": 2}
     remaining_order = {remaining_task_id: index for index, remaining_task_id in enumerate(remaining_task_ids)}
+    task_order = {str(task.get("id")): index for index, task in enumerate(tasks)}
     selectable_tasks = [
         task
         for task in tasks
@@ -1206,7 +1207,7 @@ def _recommended_from_previous_context(
             group,
             remaining_order.get(task_id_value, 999),
             priority_order.get(task.get("priority", "low"), 9),
-            task_id_value,
+            task_order.get(task_id_value, 999),
         )
 
     available_tasks = sorted(selectable_tasks, key=recommendation_key)

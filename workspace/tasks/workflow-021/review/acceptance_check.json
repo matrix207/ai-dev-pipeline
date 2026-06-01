@@ -1,0 +1,45 @@
+{
+  "task_id": "workflow-021",
+  "status": "passed",
+  "checked_at": "2026-06-02T00:20:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "new_optimization_candidates_available",
+      "status": "passed",
+      "evidence": [
+        "agents/optimization_planner_agent.py",
+        "workspace/tasks/workflow-021/final/final_next_optimization_tasks.yaml"
+      ],
+      "notes": "planner 已新增 roadmap-001、decision-view-001、task-library-001，旧三项完成后会进入新持续优化方向。"
+    },
+    {
+      "id": "roadmap_selected",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-021/final/decision_summary.yaml",
+        "workspace/tasks/workflow-021/runs/workflow-021-run.yaml"
+      ],
+      "notes": "recommendation_basis.selected_source_task_id=roadmap-001，下一步推荐 workflow-022 / 持续优化路线图产品化。"
+    },
+    {
+      "id": "old_tasks_not_repeated",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py",
+        "workspace/tasks/workflow-021/final/decision_summary.yaml"
+      ],
+      "notes": "ui-validation-001、feedback-002、dispatch-002 继续保留在 completed/deprioritized 状态，没有作为下一步推荐。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-021/final/target_effect_report.md",
+        "workspace/tasks/workflow-021/runs/workflow-021-run.yaml",
+        "workspace/tasks/workflow-021/state.json"
+      ],
+      "notes": "workflow-021 完成正式运行、质量门审批和 continue 检查。"
+    }
+  ],
+  "blocking_issues": []
+}

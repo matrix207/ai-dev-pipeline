@@ -1,0 +1,30 @@
+{
+  "task_id": "workflow-021",
+  "step": "post_approval_action",
+  "status": "completed",
+  "artifacts": [
+    "scripts/run_end_to_end.py",
+    "scripts/run_local_task.py",
+    "config/pipeline.yaml",
+    "tests/test_run_end_to_end.py",
+    "workspace/tasks/workflow-021/input/previous_run_context.yaml",
+    "workspace/tasks/workflow-021/final/initial_next_optimization_tasks.yaml",
+    "workspace/tasks/workflow-021/input/dispatch_tasks.yaml",
+    "workspace/tasks/workflow-021/input/review_tasks.yaml",
+    "workspace/tasks/workflow-021/final/final_next_optimization_tasks.yaml",
+    "workspace/tasks/workflow-021/final/decision_summary.yaml",
+    "workspace/tasks/workflow-021/final/target_effect_report.md",
+    "workspace/tasks/workflow-021/runs/workflow-021-run.yaml",
+    "workspace/tasks/workflow-021/review/acceptance_check.json",
+    "workspace/tasks/workflow-021/final/implementation_summary.yaml",
+    "workspace/tasks/workflow-021/final/next_dev_tasks.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": true
+  }
+}

@@ -412,10 +412,10 @@ def test_run_end_to_end_deprioritizes_completed_previous_source_task(tmp_path: P
     assert summary["recommendation_basis"]["completed_previous_source_task_ids"] == [
         "ui-validation-001"
     ]
-    assert summary["recommendation_basis"]["selected_source_task_id"] is None
-    assert summary["next_recommended_action"].get("source_task_id") is None
-    assert summary["remaining_work"] == ["暂无未完成的自动生成任务。"]
-    assert "已完成" in summary["next_recommended_action"]["reason"]
+    assert summary["recommendation_basis"]["selected_source_task_id"] == "roadmap-001"
+    assert summary["next_recommended_action"]["source_task_id"] == "roadmap-001"
+    assert summary["remaining_work"][0] == "roadmap-001: 持续优化路线图产品化"
+    assert "roadmap-001" in summary["next_recommended_action"]["reason"]
 
 
 def test_completed_template_task_ids_handles_new_id_suffixes() -> None:
@@ -492,10 +492,10 @@ def test_run_end_to_end_carries_completed_tasks_after_remaining_work_converges(t
         "feedback-002",
         "dispatch-002",
     ]
-    assert summary["recommendation_basis"]["selected_source_task_id"] is None
-    assert summary["remaining_work"] == ["暂无未完成的自动生成任务。"]
+    assert summary["recommendation_basis"]["selected_source_task_id"] == "roadmap-001"
+    assert summary["remaining_work"][0] == "roadmap-001: 持续优化路线图产品化"
     assert summary["next_recommended_action"]["task_id"] == "workflow-021"
-    assert "已完成" in summary["next_recommended_action"]["reason"]
+    assert summary["next_recommended_action"]["source_task_id"] == "roadmap-001"
 
 
 def test_quality_gate_blocks_missing_required_evidence() -> None:

@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-021
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 将新的持续优化方向落地为路线图产品化产物，帮助人工选择下一组高价值任务。
+tasks:
+  - id: workflow-022
+    title: 持续优化路线图产品化
+    source_task_id: roadmap-001
+    priority: medium
+    recommended_agent: SystemDesignAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 workflow-021 的 recommendation_basis 和目标效果报告，生成持续优化路线图。
+      - 路线图需包含候选方向、价值、风险、验收方式和推荐执行顺序。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 自动创建 PR 或自动 merge。
+      - 引入外部项目管理服务。
+    acceptance_criteria:
+      - 路线图能解释为何选择 roadmap-001 作为下一阶段。
+      - 路线图不重复 ui-validation-001、feedback-002、dispatch-002。
+      - python -m pytest -q 通过。
