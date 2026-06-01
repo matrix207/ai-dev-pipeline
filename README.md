@@ -40,6 +40,23 @@ tests/                        # 用例验证，新增功能要求用例先行
   -> 人工审批质量门
 ```
 
+## Agent 与现实岗位
+
+| Agent | 现实岗位角色 | 主要职责 |
+| --- | --- | --- |
+| `ProjectAnalysisAgent` | 技术负责人 / 资深工程师 | 分析项目现状、上下文、已有约束和可复用能力。 |
+| `RequirementAnalysisAgent` | 产品经理 / 业务分析师 | 澄清目标、范围、验收标准和非目标。 |
+| `ArchitectAgent` | 架构师 / Tech Lead | 拆分模块边界、识别技术风险、给出架构方向。 |
+| `SystemDesignAgent` | 系统设计工程师 / 方案设计负责人 | 将架构落成可实现的模块、接口和数据流设计。 |
+| `DesignReviewerAgent` | 架构评审委员会 / 资深工程师 | 评审设计完整性、可实现性和是否过度设计。 |
+| `CoderAgent` | 软件工程师 | 实现代码、脚本、配置和结构化实现计划。 |
+| `TestValidatorAgent` | 测试工程师 / QA / 自动化测试工程师 | 运行测试命令并输出可诊断的验证结果。 |
+| `CodeReviewerAgent` | Code Reviewer / 资深工程师 | 审查代码质量、风险、验收标准和 evidence。 |
+| `GoalEffectValidatorAgent` | 验收负责人 / QA Lead / 产品验收 | 验证最终效果是否对齐目标和预期效果。 |
+| `OptimizationPlannerAgent` | 项目经理 / 迭代计划负责人 | 根据验证反馈规划下一轮优化任务。 |
+| `OptimizationExecutorAgent` | 交付经理 / Scrum Master | 判断任务是否可执行、是否命中风险或人工审批门。 |
+| `OptimizationDispatcherAgent` | 工程经理 / 任务调度员 | 将 open 任务分配给合适的本地 Agent 并记录调度产物。 |
+
 ## 自动化验证
 
 运行本地自动化验证闭环：

@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 from agents import OptimizationDispatcherAgent
 from artifacts import read_json, write_json, write_yaml
 
@@ -220,6 +222,64 @@ def test_optimization_dispatcher_dispatches_goal_effect_validator(tmp_path: Path
         "workspace/tasks/dispatch-task/final/validation_feedback.json",
         "workspace/tasks/dispatch-task/state.json",
     ]
+
+
+@pytest.mark.parametrize(
+    ("agent", "expected_artifact", "expected_step"),
+    [
+        (
+            "ProjectAnalysisAgent",
+            "workspace/tasks/dispatch-task/analysis/project_context.json",
+            "project_analysis",
+        ),
+        (
+            "RequirementAnalysisAgent",
+            "workspace/tasks/dispatch-task/requirements/requirements.json",
+            "requirement_analysis",
+        ),
+        (
+            "ArchitectAgent",
+            "workspace/tasks/dispatch-task/architecture/architecture_analysis.json",
+            "architecture_analysis",
+        ),
+        (
+            "SystemDesignAgent",
+            "workspace/tasks/dispatch-task/design/system_design.json",
+            "system_design",
+        ),
+    ],
+)
+def test_optimization_dispatcher_dispatches_generation_agents(
+    tmp_path: Path,
+    agent: str,
+    expected_artifact: str,
+    expected_step: str,
+) -> None:
+    write_tasks(
+        tmp_path,
+        agent=agent,
+        extra={
+            "scope": ["分析本地多 Agent 流水线能力。"],
+            "acceptance_criteria": ["输出结构化产物。"],
+        },
+    )
+    write_yaml(tmp_path, "config/pipeline.yaml", {"workflows": {"local": {"steps": []}}})
+    (tmp_path / "README.md").write_text("# Demo\n\nAI 开发流水线。", encoding="utf-8")
+
+    result = OptimizationDispatcherAgent().run({"repo_root": str(tmp_path)})
+
+    assert result.output["status"] == "dispatched"
+    assert result.output["written_artifacts"] == [
+        expected_artifact,
+        "workspace/tasks/dispatch-task/state.json",
+    ]
+    dispatch_result = read_json(tmp_path, expected_artifact)
+    assert dispatch_result["task_id"] == "dispatch-task"
+    assert dispatch_result["status"] == "passed"
+    state = read_json(tmp_path, "workspace/tasks/dispatch-task/state.json")
+    assert state["step"] == expected_step
+    assert state["status"] == "waiting_for_human_merge_approval"
+    assert state["artifacts"] == [expected_artifact]
 
 
 def test_optimization_dispatcher_dispatches_multiple_open_tasks(tmp_path: Path) -> None:

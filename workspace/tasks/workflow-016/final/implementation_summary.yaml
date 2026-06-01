@@ -1,0 +1,53 @@
+task_id: workflow-016
+status: completed
+summary: >-
+  完成 Agent 与现实岗位矩阵文档补充，并扩展本地生成型 Agent 调度能力。
+  当前 dispatcher 已支持 9 个本地 Agent，其中新增 4 个生成型 Agent。
+implemented_changes:
+  - path: README.md
+    change: 新增 Agent 与现实岗位矩阵表。
+  - path: agents/generation_agents.py
+    change: 新增 ProjectAnalysisAgent、RequirementAnalysisAgent、ArchitectAgent、SystemDesignAgent 的最小本地实现。
+  - path: agents/optimization_dispatcher_agent.py
+    change: 新增生成型 Agent 安全调度表和统一调度写产物逻辑。
+  - path: scripts/run_end_to_end.py
+    change: 端到端 dispatch 白名单加入 4 个生成型 Agent。
+  - path: tests/test_optimization_dispatcher_agent.py
+    change: 增加 4 个生成型 Agent 的调度用例，保留 unsupported_agent 路径。
+supported_agents_after_change:
+  count: 9
+  agents:
+    - CoderAgent
+    - DesignReviewerAgent
+    - TestValidatorAgent
+    - CodeReviewerAgent
+    - GoalEffectValidatorAgent
+    - ProjectAnalysisAgent
+    - RequirementAnalysisAgent
+    - ArchitectAgent
+    - SystemDesignAgent
+verification:
+  - command: python -m pytest tests/test_optimization_dispatcher_agent.py::test_optimization_dispatcher_dispatches_generation_agents -q
+    result: 4 passed
+  - command: python -m pytest tests/test_optimization_dispatcher_agent.py tests/test_run_end_to_end.py -q
+    result: 37 passed
+  - command: python -m pytest -q
+    result: 104 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-016 --dry-run --rerun-policy skip_completed --run-id workflow-016-dry-run --previous-run-record workspace/tasks/workflow-015/runs/workflow-015-run.yaml --json
+    result: dry_run 通过
+  - command: python scripts/run_end_to_end.py --task-id workflow-016 --rerun-policy skip_completed --run-id workflow-016-run --previous-run-record workspace/tasks/workflow-015/runs/workflow-015-run.yaml --json
+    result: ready_for_human_decision，ArchitectAgent 调度和验证通过
+  - command: python scripts/run_end_to_end.py --task-id workflow-016 --approve-run workflow-016-run --approver dennis --decision approved --comment '同意 workflow-016 本地 Agent 调度扩展结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-016 --continue-run workflow-016-run --json
+    result: can_continue=true，recommended_command 指向 workflow-017
+key_artifacts:
+  - workspace/tasks/workflow-016-dispatch-002/architecture/architecture_analysis.json
+  - workspace/tasks/workflow-016/final/decision_summary.yaml
+  - workspace/tasks/workflow-016/runs/workflow-016-run.yaml
+  - workspace/tasks/workflow-016/review/acceptance_check.json
+  - workspace/tasks/workflow-016/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

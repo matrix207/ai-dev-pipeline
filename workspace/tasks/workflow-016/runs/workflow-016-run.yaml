@@ -1,0 +1,284 @@
+task_id: workflow-016
+status: ready_for_human_decision
+run_metadata:
+  run_id: workflow-016-run
+  started_at: '2026-06-01T13:36:21Z'
+run_strategy:
+  dry_run: false
+  rerun_policy: skip_completed
+goal_effect:
+  target: 一个命令运行目标验证、反馈规划、批量调度、验证评审和下一轮任务规划。
+  validation_status: passed
+  alignment_score: 1.0
+  blocking_issues: []
+current_result:
+  validation_state:
+    task_id: workflow-016-validation
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-016-validation/review/test_validation.json
+    - workspace/tasks/workflow-016-validation/review/code_review.json
+    - workspace/tasks/workflow-016-validation/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  dispatch_state:
+    task_id: workflow-016-dispatch
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-016-dispatch/code/dispatch_result.json
+    - workspace/tasks/workflow-016-dispatch/review/dispatched_task_validation.json
+    - workspace/tasks/workflow-016-feedback-002/review/test_validation.json
+    - workspace/tasks/workflow-016-feedback-002/review/code_review.json
+    - workspace/tasks/workflow-016-feedback-002/final/validation_feedback.json
+    - workspace/tasks/workflow-016-dispatch-002/review/test_validation.json
+    - workspace/tasks/workflow-016-dispatch-002/review/code_review.json
+    - workspace/tasks/workflow-016-dispatch-002/final/validation_feedback.json
+    - workspace/tasks/workflow-016-dispatch/review/test_validation.json
+    - workspace/tasks/workflow-016-dispatch/review/code_review.json
+    - workspace/tasks/workflow-016-dispatch/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  review_state:
+    task_id: workflow-016-review
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-016-review/review/test_validation.json
+    - workspace/tasks/workflow-016-review/review/code_review.json
+    - workspace/tasks/workflow-016-review/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  previous_run_context_artifact: workspace/tasks/workflow-016/input/previous_run_context.yaml
+  initial_plan_artifact: workspace/tasks/workflow-016/final/initial_next_optimization_tasks.yaml
+  dispatch_tasks_artifact: workspace/tasks/workflow-016/input/dispatch_tasks.yaml
+  final_plan_artifact: workspace/tasks/workflow-016/final/final_next_optimization_tasks.yaml
+  feedback_artifacts:
+  - workspace/tasks/workflow-016-validation/final/validation_feedback.json
+  - workspace/tasks/workflow-016-dispatch/final/validation_feedback.json
+  - workspace/tasks/workflow-016-review/final/validation_feedback.json
+previous_run_context:
+  available: true
+  source_run_record: workspace/tasks/workflow-015/runs/workflow-015-run.yaml
+  source_task_id: workflow-015
+  source_run_id: workflow-015-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  evidence_decisions:
+  - goal_effect_aligned
+  - tests_passed
+  - dispatch_validated
+  - code_review_passed
+  - retry_required
+  - next_action
+  evidence_summary:
+  - decision: goal_effect_aligned
+    status: passed
+    evidence_count: 3
+    notes: alignment_score=1.0; blocking_issues=0
+  - decision: tests_passed
+    status: passed
+    evidence_count: 3
+    notes: validation_state=waiting_for_human_merge_approval
+  - decision: dispatch_validated
+    status: waiting_for_human_merge_approval
+    evidence_count: 11
+    notes: completed=3; skipped=0
+  - decision: code_review_passed
+    status: passed
+    evidence_count: 3
+    notes: review_state=waiting_for_human_merge_approval
+  - decision: retry_required
+    status: not_required
+    evidence_count: 0
+    notes: 自动化步骤已完成，等待人工质量门决策。
+  - decision: next_action
+    status: medium
+    evidence_count: 1
+    notes: 'workflow-016: 支持更多本地 Agent 调度'
+  remaining_work:
+  - 'feedback-002: 把下一轮优化任务接入调度执行'
+  - 'dispatch-002: 支持更多本地 Agent 调度'
+  - 'ui-validation-001: 增加目标效果图的自动检查'
+  remaining_work_count: 3
+  next_recommended_action:
+    task_id: workflow-016
+    title: 支持更多本地 Agent 调度
+    priority: medium
+    reason: 基于 previous_run_context.remaining_work 和 evidence_summary 选择 dispatch-002。
+      本轮已验证 feedback-002, ui-validation-001，因此降低其重复推荐优先级。
+    source_task_id: dispatch-002
+execution_summary:
+  completed:
+  - step: validation
+    task_id: workflow-016-validation
+    status: completed
+    state_status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-016-validation/review/test_validation.json
+    - workspace/tasks/workflow-016-validation/review/code_review.json
+    - workspace/tasks/workflow-016-validation/final/validation_feedback.json
+    errors: []
+  - step: dispatch
+    task_id: workflow-016-dispatch
+    status: completed
+    state_status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-016-dispatch/code/dispatch_result.json
+    - workspace/tasks/workflow-016-dispatch/review/dispatched_task_validation.json
+    - workspace/tasks/workflow-016-feedback-002/review/test_validation.json
+    - workspace/tasks/workflow-016-feedback-002/review/code_review.json
+    - workspace/tasks/workflow-016-feedback-002/final/validation_feedback.json
+    - workspace/tasks/workflow-016-dispatch-002/review/test_validation.json
+    - workspace/tasks/workflow-016-dispatch-002/review/code_review.json
+    - workspace/tasks/workflow-016-dispatch-002/final/validation_feedback.json
+    - workspace/tasks/workflow-016-dispatch/review/test_validation.json
+    - workspace/tasks/workflow-016-dispatch/review/code_review.json
+    - workspace/tasks/workflow-016-dispatch/final/validation_feedback.json
+    errors: []
+  - step: review
+    task_id: workflow-016-review
+    status: completed
+    state_status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-016-review/review/test_validation.json
+    - workspace/tasks/workflow-016-review/review/code_review.json
+    - workspace/tasks/workflow-016-review/final/validation_feedback.json
+    errors: []
+  skipped: []
+  failed: []
+  next:
+  - task_id: workflow-017
+    title: 增加目标效果图的自动检查
+    priority: medium
+recommendation_basis:
+  strategy: previous_run_context
+  previous_remaining_task_ids:
+  - feedback-002
+  - dispatch-002
+  - ui-validation-001
+  completed_this_run_task_ids:
+  - feedback-002
+  - dispatch-002
+  deprioritized_task_ids:
+  - feedback-002
+  - dispatch-002
+  candidate_task_ids:
+  - ui-validation-001
+  - feedback-002
+  - dispatch-002
+  selected_source_task_id: ui-validation-001
+  selected_task_id: workflow-017
+  source_task_state_exists: true
+retry_plan:
+  status: not_required
+  reason: 自动化步骤已完成，等待人工质量门决策。
+  recommended_command: null
+remaining_work:
+- 'feedback-002: 把下一轮优化任务接入调度执行'
+- 'dispatch-002: 支持更多本地 Agent 调度'
+- 'ui-validation-001: 增加目标效果图的自动检查'
+next_recommended_action:
+  task_id: workflow-017
+  title: 增加目标效果图的自动检查
+  priority: medium
+  reason: 基于 previous_run_context.remaining_work 和 evidence_summary 选择 ui-validation-001。
+    本轮已验证 feedback-002, dispatch-002，因此降低其重复推荐优先级。
+  source_task_id: ui-validation-001
+run_record_artifact: workspace/tasks/workflow-016/runs/workflow-016-run.yaml
+evidence_map:
+- decision: goal_effect_aligned
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-016-validation/final/validation_feedback.json
+  - workspace/tasks/workflow-016-dispatch/final/validation_feedback.json
+  - workspace/tasks/workflow-016-review/final/validation_feedback.json
+  notes: alignment_score=1.0; blocking_issues=0
+- decision: tests_passed
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-016-validation/review/test_validation.json
+  - workspace/tasks/workflow-016-validation/review/code_review.json
+  - workspace/tasks/workflow-016-validation/final/validation_feedback.json
+  notes: validation_state=waiting_for_human_merge_approval
+- decision: dispatch_validated
+  status: waiting_for_human_merge_approval
+  evidence:
+  - workspace/tasks/workflow-016-dispatch/code/dispatch_result.json
+  - workspace/tasks/workflow-016-dispatch/review/dispatched_task_validation.json
+  - workspace/tasks/workflow-016-feedback-002/review/test_validation.json
+  - workspace/tasks/workflow-016-feedback-002/review/code_review.json
+  - workspace/tasks/workflow-016-feedback-002/final/validation_feedback.json
+  - workspace/tasks/workflow-016-dispatch-002/review/test_validation.json
+  - workspace/tasks/workflow-016-dispatch-002/review/code_review.json
+  - workspace/tasks/workflow-016-dispatch-002/final/validation_feedback.json
+  - workspace/tasks/workflow-016-dispatch/review/test_validation.json
+  - workspace/tasks/workflow-016-dispatch/review/code_review.json
+  - workspace/tasks/workflow-016-dispatch/final/validation_feedback.json
+  notes: completed=3; skipped=0
+- decision: code_review_passed
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-016-review/review/test_validation.json
+  - workspace/tasks/workflow-016-review/review/code_review.json
+  - workspace/tasks/workflow-016-review/final/validation_feedback.json
+  notes: review_state=waiting_for_human_merge_approval
+- decision: retry_required
+  status: not_required
+  evidence: []
+  notes: 自动化步骤已完成，等待人工质量门决策。
+- decision: next_action
+  status: medium
+  evidence:
+  - workspace/tasks/workflow-016/final/final_next_optimization_tasks.yaml
+  notes: 'workflow-017: 增加目标效果图的自动检查'
+quality_gate:
+  status: approved
+  can_continue: true
+  blocking_issues: []
+  warnings: []
+  config:
+    required_evidence:
+    - goal_effect_aligned
+    - tests_passed
+    - dispatch_validated
+    - code_review_passed
+    - next_action
+    missing_evidence: blocking
+    failed_evidence: blocking
+    human_approval_required: true
+  human_approval:
+    required: true
+    merge_approved: true
+    status: approved
+  next_allowed_action: 人工审批已通过，可以继续后续动作。
+post_approval_action:
+  status: allowed
+  can_continue: true
+  allowed_actions:
+  - continue_next_stage
+  - view_run_record
+  blocked_actions: []
+  recommended_action: 继续执行下一阶段任务。
+  reason: 人工审批已通过。
+approval_record:
+  approver: dennis
+  decision: approved
+  comment: 同意 workflow-016 本地 Agent 调度扩展结果，允许进入下一阶段。
+  decided_at: '2026-06-01T00:00:00Z'

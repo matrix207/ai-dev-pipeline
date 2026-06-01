@@ -37,11 +37,15 @@ DEFAULT_QUALITY_GATE_CONFIG = {
     "human_approval_required": True,
 }
 SUPPORTED_DISPATCH_AGENTS = {
+    "ArchitectAgent",
     "CoderAgent",
     "DesignReviewerAgent",
     "TestValidatorAgent",
     "CodeReviewerAgent",
     "GoalEffectValidatorAgent",
+    "ProjectAnalysisAgent",
+    "RequirementAnalysisAgent",
+    "SystemDesignAgent",
 }
 
 

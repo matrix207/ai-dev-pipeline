@@ -1,0 +1,36 @@
+{
+  "task_id": "workflow-016",
+  "status": "passed",
+  "checked_at": "2026-06-01T13:38:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "agent_role_matrix_documented",
+      "status": "passed",
+      "evidence": [
+        "README.md"
+      ],
+      "notes": "README 已补充 Agent 与现实岗位矩阵，包含 12 个 Agent 的岗位类比和职责。"
+    },
+    {
+      "id": "generation_agents_supported",
+      "status": "passed",
+      "evidence": [
+        "agents/generation_agents.py",
+        "agents/optimization_dispatcher_agent.py",
+        "tests/test_optimization_dispatcher_agent.py"
+      ],
+      "notes": "新增并调度 ProjectAnalysisAgent、RequirementAnalysisAgent、ArchitectAgent、SystemDesignAgent。"
+    },
+    {
+      "id": "workflow_validated_architect_dispatch",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-016-dispatch/code/dispatch_result.json",
+        "workspace/tasks/workflow-016-dispatch-002/architecture/architecture_analysis.json",
+        "workspace/tasks/workflow-016/runs/workflow-016-run.yaml"
+      ],
+      "notes": "workflow-016 正式运行中调度并验证了 ArchitectAgent 路径，下一步推荐转向 ui-validation-001。"
+    }
+  ],
+  "blocking_issues": []
+}

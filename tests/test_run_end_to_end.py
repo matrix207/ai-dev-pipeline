@@ -247,18 +247,18 @@ def test_run_end_to_end_recommends_unvalidated_previous_remaining_work(tmp_path:
     )
 
     assert summary["next_recommended_action"]["task_id"] == "workflow-016"
-    assert summary["next_recommended_action"]["source_task_id"] == "dispatch-002"
-    assert "dispatch-002" in summary["next_recommended_action"]["reason"]
+    assert summary["next_recommended_action"]["source_task_id"] == "ui-validation-001"
+    assert "ui-validation-001" in summary["next_recommended_action"]["reason"]
     basis = summary["recommendation_basis"]
     assert basis["strategy"] == "previous_run_context"
-    assert basis["selected_source_task_id"] == "dispatch-002"
+    assert basis["selected_source_task_id"] == "ui-validation-001"
     assert basis["completed_this_run_task_ids"] == [
         "feedback-002",
-        "ui-validation-001",
+        "dispatch-002",
     ]
     assert basis["deprioritized_task_ids"] == [
         "feedback-002",
-        "ui-validation-001",
+        "dispatch-002",
     ]
     saved = read_yaml(tmp_path, "workspace/tasks/workflow-015/final/decision_summary.yaml")
     assert saved["recommendation_basis"] == basis

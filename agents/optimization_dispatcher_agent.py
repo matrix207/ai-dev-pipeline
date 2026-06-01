@@ -9,6 +9,12 @@ from agents.base_agent import BaseAgent
 from agents.code_reviewer_agent import CodeReviewerAgent
 from agents.coder_agent import CoderAgent
 from agents.design_reviewer_agent import DesignReviewerAgent
+from agents.generation_agents import (
+    ArchitectAgent,
+    ProjectAnalysisAgent,
+    RequirementAnalysisAgent,
+    SystemDesignAgent,
+)
 from agents.goal_effect_validator_agent import GoalEffectValidatorAgent
 from agents.optimization_executor_agent import DEFAULT_OPTIMIZATION_TASKS_PATH, OptimizationExecutorAgent
 from agents.test_validator_agent import TestValidatorAgent
@@ -147,6 +153,12 @@ class OptimizationDispatcherAgent(BaseAgent):
                 recommended_agent,
                 tasks_path,
             )
+        elif recommended_agent in self._generation_agents():
+            dispatch_result, written_artifacts = self._dispatch_generation_agent(
+                repo_root,
+                selected_task,
+                recommended_agent,
+            )
         else:
             return {
                 "status": "blocked",
@@ -191,6 +203,9 @@ class OptimizationDispatcherAgent(BaseAgent):
             "CodeReviewerAgent",
             "GoalEffectValidatorAgent",
         }
+
+    def _generation_agents(self) -> set[str]:
+        return set(self._generation_agent_specs())
 
     def _dispatch_review_validation_agent(
         self,
@@ -274,6 +289,55 @@ class OptimizationDispatcherAgent(BaseAgent):
                 else "blocked_by_goal_effect_validation",
             )
 
+        state.set_gate("goal_approved", True)
+        write_json(repo_root, artifact_path, result)
+        save_state(repo_root, state)
+        return result, [artifact_path, f"workspace/tasks/{task_id}/state.json"]
+
+    def _generation_agent_specs(self) -> dict[str, dict[str, Any]]:
+        return {
+            "ProjectAnalysisAgent": {
+                "agent": ProjectAnalysisAgent,
+                "step": "project_analysis",
+                "artifact_path": "workspace/tasks/{task_id}/analysis/project_context.json",
+            },
+            "RequirementAnalysisAgent": {
+                "agent": RequirementAnalysisAgent,
+                "step": "requirement_analysis",
+                "artifact_path": "workspace/tasks/{task_id}/requirements/requirements.json",
+            },
+            "ArchitectAgent": {
+                "agent": ArchitectAgent,
+                "step": "architecture_analysis",
+                "artifact_path": "workspace/tasks/{task_id}/architecture/architecture_analysis.json",
+            },
+            "SystemDesignAgent": {
+                "agent": SystemDesignAgent,
+                "step": "system_design",
+                "artifact_path": "workspace/tasks/{task_id}/design/system_design.json",
+            },
+        }
+
+    def _dispatch_generation_agent(
+        self,
+        repo_root: Path,
+        selected_task: dict[str, Any],
+        recommended_agent: str,
+    ) -> tuple[dict[str, Any], list[str]]:
+        spec = self._generation_agent_specs()[recommended_agent]
+        task_id = selected_task["id"]
+        artifact_path = spec["artifact_path"].format(task_id=task_id)
+        agent_class = spec["agent"]
+        result = agent_class().run(
+            {
+                "repo_root": str(repo_root),
+                "task_id": task_id,
+                "selected_task": selected_task,
+            }
+        ).output
+
+        state = self._state_for_agent_result(repo_root, task_id, artifact_path)
+        state.update(step=spec["step"], status="waiting_for_human_merge_approval")
         state.set_gate("goal_approved", True)
         write_json(repo_root, artifact_path, result)
         save_state(repo_root, state)

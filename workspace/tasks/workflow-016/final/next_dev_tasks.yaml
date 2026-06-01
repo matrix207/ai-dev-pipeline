@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-016
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 继续强化目标效果图自动检查，让验证反馈更贴近用户可见效果。
+tasks:
+  - id: workflow-017
+    title: 增加目标效果图的自动检查
+    source_task_id: ui-validation-001
+    priority: medium
+    recommended_agent: TestValidatorAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 ui-validation-001，继续增强目标效果图和实际渲染结果的自动比对证据。
+      - 将页面结构、截图、关键 DOM 和验收结论稳定写入 validation_feedback。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 引入浏览器云服务。
+      - 重做前端 demo。
+    acceptance_criteria:
+      - 目标效果图检查产物能支持人工判断目标和效果是否对齐。
+      - validation_feedback 能引用截图、DOM 检查和阻塞项。
+      - python -m pytest -q 通过。
