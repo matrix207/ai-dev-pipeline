@@ -1,0 +1,56 @@
+{
+  "task_id": "workflow-011",
+  "title": "目标效果图视觉信号自动检查",
+  "status": "passed",
+  "checked_at": "2026-06-01T16:18:00+08:00",
+  "acceptance_criteria": [
+    {
+      "criterion": "目标效果验证报告输出 demo_visual_checks。",
+      "status": "passed",
+      "evidence": [
+        "agents/goal_effect_validator_agent.py",
+        "tests/test_validation_agents.py::test_goal_effect_validator_agent_checks_demo_visual_signals",
+        "workspace/tasks/ui-validation-001/final/validation_feedback.json"
+      ],
+      "notes": "GoalEffectValidatorAgent 已输出 demo_visual_checks，并记录 required_css_terms、required_script_terms 和 missing。"
+    },
+    {
+      "criterion": "缺失关键视觉或交互信号时阻塞目标效果验证。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_validation_agents.py::test_goal_effect_validator_agent_blocks_missing_demo_visual_signals"
+      ],
+      "notes": "缺失 CSS 或脚本信号会产生 demo_visual_check:* blocking issue。"
+    },
+    {
+      "criterion": "真实目标 demo 的视觉信号检查通过。",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        "workspace/tasks/ui-validation-001/final/validation_feedback.json",
+        "workspace/tasks/workflow-011-validation/final/validation_feedback.json"
+      ],
+      "notes": "demo_visual_layout_and_motion 与 demo_visual_agent_state_feedback 均通过，missing 为空。"
+    },
+    {
+      "criterion": "python -m pytest -q 通过。",
+      "status": "passed",
+      "evidence": [
+        "92 passed in 12.91s"
+      ],
+      "notes": "新增视觉信号检查后已执行全量测试。"
+    },
+    {
+      "criterion": "端到端闭环运行通过并允许推进下一阶段。",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-011/runs/workflow-011-run.yaml",
+        "workspace/tasks/workflow-011/final/decision_summary.yaml"
+      ],
+      "notes": "workflow-011-run 审批通过，--continue-run 返回 allowed，下一阶段为 workflow-012。"
+    }
+  ],
+  "residual_risks": [
+    "当前视觉检查基于静态 HTML/CSS/JS 信号，不执行真实浏览器渲染和截图像素比较。"
+  ]
+}

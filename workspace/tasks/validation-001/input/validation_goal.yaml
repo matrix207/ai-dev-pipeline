@@ -155,6 +155,37 @@ demo_effect_checks:
       - ".artifact-list"
       - "#prCard"
       - ".approval-card"
+demo_visual_checks:
+  - id: demo_visual_layout_and_motion
+    demo_path: docs/demos/ai_dev_pipeline_demo.html
+    expected_effect: 页面保留响应式布局、进度条、状态色和关键动效。
+    required_css_terms:
+      - "grid-template-columns"
+      - ".progress-bar"
+      - "@keyframes pulse"
+      - "@keyframes flow"
+      - "--ok:"
+      - "@media"
+    required_script_terms:
+      - "document.querySelectorAll('.node')"
+      - "playBtn.addEventListener('click', play)"
+      - "resetBtn.addEventListener('click', reset)"
+      - "progress.style.width"
+      - "phaseValue.textContent"
+  - id: demo_visual_agent_state_feedback
+    demo_path: docs/demos/ai_dev_pipeline_demo.html
+    expected_effect: 页面保留 Agent 节点状态、日志流和 PR 预览的动态反馈。
+    required_css_terms:
+      - ".node.done"
+      - ".step.done"
+      - ".log-line.ok"
+      - ".artifact-list"
+      - ".approval-card"
+    required_script_terms:
+      - "setNodeStatus"
+      - "addLog"
+      - "prCard"
+      - "deliveryValue.textContent"
 feedback_policy:
   on_pass: 可以进入人工合并门，并基于反馈规划下一轮优化。
   on_block: 修复 blocking issue 后重新运行 automated_validation workflow。

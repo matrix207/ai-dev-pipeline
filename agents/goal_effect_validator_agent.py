@@ -45,6 +45,7 @@ class GoalEffectValidatorAgent(BaseAgent):
 
         mapping_results = self._check_target_effect_mappings(repo_root, goal_spec, checks, blocking_issues)
         demo_check_results = self._check_demo_effects(repo_root, goal_spec, checks, blocking_issues)
+        demo_visual_results = self._check_demo_visuals(repo_root, goal_spec, checks, blocking_issues)
 
         validation = self._read_optional_json(
             repo_root,
@@ -87,6 +88,7 @@ class GoalEffectValidatorAgent(BaseAgent):
             "checks": checks,
             "target_effect_mappings": mapping_results,
             "demo_effect_checks": demo_check_results,
+            "demo_visual_checks": demo_visual_results,
             "blocking_issues": blocking_issues,
             "feedback": feedback,
         }
@@ -234,11 +236,66 @@ class GoalEffectValidatorAgent(BaseAgent):
                 )
         return results
 
+    def _check_demo_visuals(
+        self,
+        repo_root: Path,
+        goal_spec: dict[str, Any],
+        checks: list[dict[str, Any]],
+        blocking_issues: list[dict[str, str]],
+    ) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        for visual_check in goal_spec.get("demo_visual_checks", []):
+            demo_path = visual_check.get("demo_path", "docs/demos/ai_dev_pipeline_demo.html")
+            html = self._read_optional_text(repo_root, demo_path)
+            css_text = self._extract_tag_content(html, "style")
+            script_text = self._extract_tag_content(html, "script")
+            missing = {
+                "css_terms": [
+                    term for term in visual_check.get("required_css_terms", []) if term not in css_text
+                ],
+                "script_terms": [
+                    term for term in visual_check.get("required_script_terms", []) if term not in script_text
+                ],
+            }
+            passed = not any(missing.values())
+            result = {
+                "id": visual_check["id"],
+                "demo_path": demo_path,
+                "expected_effect": visual_check.get("expected_effect", ""),
+                "result": "pass" if passed else "fail",
+                "missing": missing,
+                "required_css_terms": list(visual_check.get("required_css_terms", [])),
+                "required_script_terms": list(visual_check.get("required_script_terms", [])),
+            }
+            results.append(result)
+            checks.append(
+                {
+                    "name": visual_check["id"],
+                    "type": "demo_visual_check",
+                    "result": result["result"],
+                }
+            )
+            if not passed:
+                blocking_issues.append(
+                    {
+                        "id": f"demo_visual_check:{visual_check['id']}",
+                        "severity": "high",
+                        "description": f"目标效果视觉信号检查未通过：{visual_check['id']}",
+                        "recommendation": "补齐 demo 的关键布局、状态色、动效或交互脚本信号后重新验证。",
+                    }
+                )
+        return results
+
     def _read_optional_text(self, repo_root: Path, relative_path: str) -> str:
         try:
             return (repo_root / relative_path).read_text(encoding="utf-8")
         except Exception:
             return ""
+
+    def _extract_tag_content(self, html: str, tag_name: str) -> str:
+        # 目标效果图检查只需要静态 HTML 中的内联 style/script 信号，保持本地快速可运行。
+        pattern = re.compile(rf"<{tag_name}\b[^>]*>(.*?)</{tag_name}>", re.IGNORECASE | re.DOTALL)
+        return "\n".join(match.group(1) for match in pattern.finditer(html))
 
     def _selector_exists(self, html: str, selector: str) -> bool:
         selector = selector.strip()

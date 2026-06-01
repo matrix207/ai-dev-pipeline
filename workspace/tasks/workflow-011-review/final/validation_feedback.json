@@ -1,5 +1,5 @@
 {
-  "task_id": "ui-validation-001",
+  "task_id": "workflow-011-review",
   "status": "passed",
   "goal": "项目可以执行本地自动化验证闭环，并基于目标对齐和效果验证输出反馈， 为后续优化提供结构化依据。\n",
   "alignment_score": 1.0,

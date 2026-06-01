@@ -1,0 +1,41 @@
+task_id: workflow-011
+title: 目标效果图视觉信号自动检查
+status: completed
+completed_at: "2026-06-01T16:18:00+08:00"
+goal_effect:
+  target: 让目标效果验证不仅检查 demo 文案和 DOM 选择器，还能检查关键视觉布局、状态色、动效和交互脚本信号。
+  achieved:
+    - GoalEffectValidatorAgent 新增 demo_visual_checks。
+    - demo_visual_checks 支持 required_css_terms 和 required_script_terms。
+    - 缺失视觉或脚本信号会产生 blocking issue，防止目标效果图能力退化。
+    - validation_goal.yaml 新增 demo_visual_layout_and_motion 和 demo_visual_agent_state_feedback。
+    - ui_validation 和 workflow-011 validation 均生成 demo_visual_checks，结果全部通过。
+current_result:
+  run_id: workflow-011-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  can_continue: true
+  next_task_id: workflow-012
+  recommended_command: python scripts/run_end_to_end.py --task-id workflow-012 --rerun-policy skip_completed
+  run_record_artifact: workspace/tasks/workflow-011/runs/workflow-011-run.yaml
+  decision_summary_artifact: workspace/tasks/workflow-011/final/decision_summary.yaml
+verification:
+  - command: source .venv/bin/activate && python -m pytest tests/test_validation_agents.py -q
+    result: 14 passed
+  - command: source .venv/bin/activate && python scripts/run_local_task.py --workflow ui_validation --goal-approved
+    result: demo_visual_checks passed
+  - command: source .venv/bin/activate && python -m pytest -q
+    result: 92 passed
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-011 --rerun-policy skip_completed --run-id workflow-011-run --json
+    result: ready_for_human_decision
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-011 --continue-run workflow-011-run --json
+    result: status=allowed
+remaining_work:
+  - 继续推进目标效果图自动检查，可选引入本地浏览器截图验证。
+  - 扩展本地 Agent 调度覆盖，提升自动执行能力。
+  - 把反馈规划结果更直接接入调度执行队列。
+next_recommended_task:
+  id: workflow-012
+  title: 端到端闭环持续优化
+  priority: medium
+  reason: workflow-011 已强化静态目标效果验证，下一步可继续选择浏览器截图验证或调度能力增强。

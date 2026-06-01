@@ -174,6 +174,7 @@ def test_goal_effect_validator_agent_outputs_feedback(tmp_path: Path) -> None:
     assert result.output["feedback"] == ["目标对齐和效果验证通过，可以进入人工合并门。"]
     assert result.output["target_effect_mappings"] == []
     assert result.output["demo_effect_checks"] == []
+    assert result.output["demo_visual_checks"] == []
 
 
 def test_goal_effect_validator_agent_blocks_missing_effect(tmp_path: Path) -> None:
@@ -342,3 +343,91 @@ def test_goal_effect_validator_agent_blocks_missing_demo_effects(tmp_path: Path)
         "selectors": [".missing-card"],
     }
     assert result.output["blocking_issues"][0]["id"] == "demo_effect_check:demo_controls"
+
+
+def test_goal_effect_validator_agent_checks_demo_visual_signals(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果视觉信号可验证。",
+            "demo_visual_checks": [
+                {
+                    "id": "demo_visual_contract",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "expected_effect": "演示页面保留关键视觉布局和交互信号。",
+                    "required_css_terms": [
+                        "grid-template-columns",
+                        "@keyframes pulse",
+                        "--ok:",
+                    ],
+                    "required_script_terms": [
+                        "addEventListener('click', play)",
+                        "document.querySelectorAll('.node')",
+                    ],
+                }
+            ],
+        },
+    )
+    (tmp_path / "docs/demos").mkdir(parents=True)
+    (tmp_path / "docs/demos/ai_dev_pipeline_demo.html").write_text(
+        """
+        <style>
+          :root { --ok: #30e394; }
+          .grid { grid-template-columns: 1fr 2fr; }
+          @keyframes pulse { from { opacity: .5; } to { opacity: 1; } }
+        </style>
+        <script>
+          const nodes = document.querySelectorAll('.node');
+          playBtn.addEventListener('click', play);
+        </script>
+        """,
+        encoding="utf-8",
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    assert result.output["status"] == "passed"
+    assert result.output["demo_visual_checks"][0]["result"] == "pass"
+    assert result.output["demo_visual_checks"][0]["missing"] == {
+        "css_terms": [],
+        "script_terms": [],
+    }
+
+
+def test_goal_effect_validator_agent_blocks_missing_demo_visual_signals(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果视觉信号可验证。",
+            "demo_visual_checks": [
+                {
+                    "id": "demo_visual_contract",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "expected_effect": "演示页面保留关键视觉布局和交互信号。",
+                    "required_css_terms": ["grid-template-columns"],
+                    "required_script_terms": ["addEventListener('click', play)"],
+                }
+            ],
+        },
+    )
+    (tmp_path / "docs/demos").mkdir(parents=True)
+    (tmp_path / "docs/demos/ai_dev_pipeline_demo.html").write_text(
+        "<style>.grid { display: grid; }</style><script>reset();</script>",
+        encoding="utf-8",
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    assert result.output["status"] == "blocked"
+    assert result.output["demo_visual_checks"][0]["result"] == "fail"
+    assert result.output["demo_visual_checks"][0]["missing"] == {
+        "css_terms": ["grid-template-columns"],
+        "script_terms": ["addEventListener('click', play)"],
+    }
+    assert result.output["blocking_issues"][0]["id"] == "demo_visual_check:demo_visual_contract"
