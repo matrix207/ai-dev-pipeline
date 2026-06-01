@@ -1003,6 +1003,42 @@ def list_run_records(repo_root: str | Path = ".", *, task_id: str = DEFAULT_TASK
     return sorted(records, key=lambda item: item.get("started_at") or "", reverse=True)
 
 
+def continue_run_record(
+    repo_root: str | Path = ".",
+    *,
+    task_id: str = DEFAULT_TASK_ID,
+    run_id: str,
+) -> dict[str, Any]:
+    """读取审批后动作控制结果，判断指定运行记录是否允许推进下一阶段。"""
+    repo_root = Path(repo_root)
+    record_path = _run_record_path(task_id, run_id)
+    record = read_yaml(repo_root, record_path)
+    action = record.get("post_approval_action") or _post_approval_action(record)
+    can_continue = action.get("status") == "allowed" and action.get("can_continue") is True
+    next_action = record.get("next_recommended_action") or {}
+    next_task_id = next_action.get("task_id")
+
+    result = {
+        "task_id": task_id,
+        "run_id": run_id,
+        "status": "allowed" if can_continue else "blocked",
+        "can_continue": can_continue,
+        "post_approval_action_status": action.get("status"),
+        "allowed_actions": list(action.get("allowed_actions", [])),
+        "blocked_actions": list(action.get("blocked_actions", [])),
+        "reason": action.get("reason"),
+        "recommended_action": action.get("recommended_action"),
+        "next_recommended_action": next_action,
+        "run_record_artifact": record_path,
+        "recommended_command": None,
+    }
+    if can_continue and next_task_id:
+        result["recommended_command"] = (
+            f"python scripts/run_end_to_end.py --task-id {next_task_id} --rerun-policy skip_completed"
+        )
+    return result
+
+
 def approve_run_record(
     repo_root: str | Path = ".",
     *,
@@ -1095,6 +1131,27 @@ def format_run_records(records: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def format_continue_result(result: dict[str, Any]) -> str:
+    next_action = result.get("next_recommended_action") or {}
+    lines = [
+        "AI Dev Pipeline Continue Check",
+        "",
+        f"Status: {result.get('status')}",
+        f"Run id: {result.get('run_id')}",
+        f"Can continue: {result.get('can_continue')}",
+        f"Post approval action: {result.get('post_approval_action_status')}",
+        f"Reason: {result.get('reason')}",
+        f"Recommended action: {result.get('recommended_action')}",
+    ]
+    if next_action:
+        lines.append(
+            f"Next task: {next_action.get('task_id')}: {next_action.get('title')} ({next_action.get('priority')})"
+        )
+    if result.get("recommended_command"):
+        lines.append(f"Command: {result['recommended_command']}")
+    return "\n".join(lines)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the local end-to-end AI dev pipeline loop.")
     parser.add_argument("--repo-root", default=".", help="Repository root. Defaults to cwd.")
@@ -1103,6 +1160,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dry-run", action="store_true", help="Preview the run plan without writing artifacts.")
     parser.add_argument("--list-runs", action="store_true", help="List persisted run records for the task.")
     parser.add_argument("--approve-run", help="Run id to approve or reject.")
+    parser.add_argument("--continue-run", help="Run id to check before continuing to the next task.")
     parser.add_argument("--approver", help="Human approver name for --approve-run.")
     parser.add_argument("--decision", choices=["approved", "rejected"], help="Approval decision for --approve-run.")
     parser.add_argument("--comment", default="", help="Approval comment for --approve-run.")
@@ -1144,6 +1202,18 @@ def main() -> int:
         else:
             print(format_run_records(records))
         return 0
+
+    if args.continue_run:
+        result = continue_run_record(
+            args.repo_root,
+            task_id=args.task_id,
+            run_id=args.continue_run,
+        )
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print(format_continue_result(result))
+        return 0 if result.get("can_continue") else 1
 
     summary = run_end_to_end(
         args.repo_root,

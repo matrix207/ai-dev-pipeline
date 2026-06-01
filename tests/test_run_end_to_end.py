@@ -11,6 +11,8 @@ from scripts.run_end_to_end import (
     _quality_gate,
     _quality_gate_config,
     approve_run_record,
+    continue_run_record,
+    format_continue_result,
     format_end_to_end_summary,
     main,
     run_end_to_end,
@@ -502,6 +504,140 @@ def test_run_end_to_end_cli_approves_run_record(tmp_path: Path, capsys) -> None:
     state = load_state(tmp_path, "workflow-007")
     assert state.status == "blocked_by_human_approval"
     assert state.gates["human_merge_approved"] is False
+
+
+def test_continue_run_record_allows_approved_run(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    run_end_to_end(tmp_path, task_id="workflow-008", run_id="continue-approved-run")
+    approve_run_record(
+        tmp_path,
+        task_id="workflow-008",
+        run_id="continue-approved-run",
+        approver="dennis",
+        decision="approved",
+        comment="同意继续。",
+        decided_at="2026-06-01T00:00:00Z",
+    )
+
+    result = continue_run_record(tmp_path, task_id="workflow-008", run_id="continue-approved-run")
+
+    assert result["status"] == "allowed"
+    assert result["can_continue"] is True
+    next_task_id = result["next_recommended_action"]["task_id"]
+    assert next_task_id
+    assert result["recommended_command"] == (
+        f"python scripts/run_end_to_end.py --task-id {next_task_id} --rerun-policy skip_completed"
+    )
+
+
+def test_continue_run_record_blocks_rejected_or_pending_runs(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    run_end_to_end(tmp_path, task_id="workflow-008", run_id="continue-pending-run")
+    run_end_to_end(tmp_path, task_id="workflow-008", run_id="continue-rejected-run")
+    approve_run_record(
+        tmp_path,
+        task_id="workflow-008",
+        run_id="continue-rejected-run",
+        approver="dennis",
+        decision="rejected",
+        comment="证据不足。",
+        decided_at="2026-06-01T00:00:00Z",
+    )
+
+    pending = continue_run_record(tmp_path, task_id="workflow-008", run_id="continue-pending-run")
+    rejected = continue_run_record(tmp_path, task_id="workflow-008", run_id="continue-rejected-run")
+
+    assert pending["status"] == "blocked"
+    assert pending["can_continue"] is False
+    assert pending["post_approval_action_status"] == "approval_required"
+    assert "补充人工审批记录" in pending["recommended_action"]
+    assert rejected["status"] == "blocked"
+    assert rejected["can_continue"] is False
+    assert rejected["post_approval_action_status"] == "blocked"
+    assert "证据不足" in rejected["reason"]
+
+
+def test_continue_run_record_blocks_dry_run_record(tmp_path: Path) -> None:
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-008",
+        dry_run=True,
+        run_id="continue-dry-run",
+    )
+    write_yaml(tmp_path, "workspace/tasks/workflow-008/runs/continue-dry-run.yaml", summary)
+
+    result = continue_run_record(tmp_path, task_id="workflow-008", run_id="continue-dry-run")
+
+    assert result["status"] == "blocked"
+    assert result["can_continue"] is False
+    assert result["post_approval_action_status"] == "not_applicable"
+    assert "正式运行端到端闭环" in result["recommended_action"]
+
+
+def test_run_end_to_end_cli_continue_run_returns_status_code(tmp_path: Path, capsys) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    run_end_to_end(tmp_path, task_id="workflow-008", run_id="cli-continue-run")
+    approve_run_record(
+        tmp_path,
+        task_id="workflow-008",
+        run_id="cli-continue-run",
+        approver="dennis",
+        decision="approved",
+        comment="同意继续。",
+        decided_at="2026-06-01T00:00:00Z",
+    )
+
+    old_argv = sys.argv
+    sys.argv = [
+        "run_end_to_end.py",
+        "--repo-root",
+        str(tmp_path),
+        "--task-id",
+        "workflow-008",
+        "--continue-run",
+        "cli-continue-run",
+        "--json",
+    ]
+    try:
+        exit_code = main()
+    finally:
+        sys.argv = old_argv
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "allowed"
+    assert output["can_continue"] is True
+    assert output["next_recommended_action"]["task_id"]
+
+
+def test_format_continue_result_is_human_readable() -> None:
+    output = format_continue_result(
+        {
+            "status": "allowed",
+            "run_id": "continue-run",
+            "can_continue": True,
+            "post_approval_action_status": "allowed",
+            "reason": "人工审批已通过。",
+            "recommended_action": "继续执行下一阶段任务。",
+            "next_recommended_action": {
+                "task_id": "workflow-010",
+                "title": "端到端闭环持续优化",
+                "priority": "medium",
+            },
+            "recommended_command": (
+                "python scripts/run_end_to_end.py --task-id workflow-010 --rerun-policy skip_completed"
+            ),
+        }
+    )
+
+    assert "AI Dev Pipeline Continue Check" in output
+    assert "Status: allowed" in output
+    assert "Can continue: True" in output
+    assert "workflow-010: 端到端闭环持续优化" in output
+    assert "python scripts/run_end_to_end.py --task-id workflow-010 --rerun-policy skip_completed" in output
 
 
 def test_fallback_recommended_task_uses_known_workflow_titles() -> None:

@@ -1,0 +1,53 @@
+{
+  "task_id": "workflow-009",
+  "title": "端到端闭环任务推进命令",
+  "status": "passed",
+  "checked_at": "2026-06-01T08:54:00+08:00",
+  "acceptance_criteria": [
+    {
+      "criterion": "approved 状态下 continue 命令返回 0，并输出下一阶段任务。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_continue_run_record_allows_approved_run",
+        "tests/test_run_end_to_end.py::test_run_end_to_end_cli_continue_run_returns_status_code",
+        "workspace/tasks/workflow-009/runs/workflow-009-run.yaml"
+      ],
+      "notes": "workflow-009-run 审批通过后 --continue-run 返回 allowed，输出 workflow-010 和推荐命令。"
+    },
+    {
+      "criterion": "rejected 状态下 continue 命令返回非 0，并输出审批意见或修正建议。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_continue_run_record_blocks_rejected_or_pending_runs"
+      ],
+      "notes": "rejected 运行被阻止，reason 中保留审批意见。"
+    },
+    {
+      "criterion": "approval_required 状态下 continue 命令返回非 0，并提示补充审批记录。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_continue_run_record_blocks_rejected_or_pending_runs"
+      ],
+      "notes": "未审批运行被阻止，recommended_action 提示补充人工审批记录。"
+    },
+    {
+      "criterion": "dry-run 记录不能被 continue。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_end_to_end.py::test_continue_run_record_blocks_dry_run_record"
+      ],
+      "notes": "dry-run 运行被标记为 not_applicable，必须先正式运行端到端闭环。"
+    },
+    {
+      "criterion": "python -m pytest -q 通过。",
+      "status": "passed",
+      "evidence": [
+        "88 passed in 11.74s"
+      ],
+      "notes": "代码实现后已执行全量测试。"
+    }
+  ],
+  "residual_risks": [
+    "continue 命令当前只做推进前检查并输出推荐命令，不自动执行下一阶段。"
+  ]
+}

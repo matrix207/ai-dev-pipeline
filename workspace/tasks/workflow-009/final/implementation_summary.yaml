@@ -1,0 +1,39 @@
+task_id: workflow-009
+title: 端到端闭环任务推进命令
+status: completed
+completed_at: "2026-06-01T08:54:00+08:00"
+goal_effect:
+  target: 提供一个明确的继续执行命令，读取审批后动作控制结果，在 allowed 时推进下一阶段，在 blocked 或 approval_required 时给出可执行修正建议。
+  achieved:
+    - 新增 continue_run_record，用于读取指定 run record 并判断是否允许继续。
+    - 新增 --continue-run CLI 参数，支持 JSON 输出和人类可读摘要。
+    - approved 且 can_continue=true 时返回 0，并输出下一阶段任务和推荐命令。
+    - rejected、approval_required、blocked、dry_run 状态返回非 0，并输出阻塞原因和修正建议。
+    - 新增 format_continue_result，非 JSON 输出也包含状态、原因、下一任务和推荐命令。
+current_result:
+  run_id: workflow-009-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  can_continue: true
+  next_task_id: workflow-010
+  recommended_command: python scripts/run_end_to_end.py --task-id workflow-010 --rerun-policy skip_completed
+  run_record_artifact: workspace/tasks/workflow-009/runs/workflow-009-run.yaml
+  decision_summary_artifact: workspace/tasks/workflow-009/final/decision_summary.yaml
+verification:
+  - command: source .venv/bin/activate && python -m pytest tests/test_run_end_to_end.py -q
+    result: 21 passed
+  - command: source .venv/bin/activate && python -m pytest -q
+    result: 88 passed
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-009 --rerun-policy skip_completed --run-id workflow-009-run --json
+    result: ready_for_human_decision
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-009 --continue-run workflow-009-run --json
+    result: status=allowed
+remaining_work:
+  - 执行 workflow-010，继续端到端闭环持续优化。
+  - 把 continue 命令和审批命令补充到使用说明文档中，降低人工操作成本。
+  - 继续推进目标效果图自动验证和本地 Agent 调度覆盖。
+next_recommended_task:
+  id: workflow-010
+  title: 端到端闭环持续优化
+  priority: medium
+  reason: workflow-009 已提供可执行推进检查，下一步可继续使用闭环推进后续优化。

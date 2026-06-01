@@ -1,0 +1,34 @@
+source_task: workflow-009
+recommended_next_task:
+  id: workflow-010
+  title: 端到端闭环持续优化
+  recommended_agent: CoderAgent
+  priority: medium
+  risk_level: medium
+  goal: 继续基于端到端反馈闭环推进自动化验证与使用体验优化。
+  scope:
+    - 选择一个当前高价值缺口继续实现。
+    - 优先补充端到端命令使用说明，覆盖 run、approve、continue、list-runs。
+    - 保持用例先行，确保 python -m pytest -q 通过。
+    - 更新对应任务产物和下一步建议。
+  out_of_scope:
+    - 自动 merge。
+    - 引入外部服务。
+    - 大规模重构流水线架构。
+  acceptance_criteria:
+    - 新任务有明确目标效果、当前达成、剩余任务和下一步建议。
+    - 新增或修改功能有测试覆盖。
+    - python -m pytest -q 通过。
+alternative_tasks:
+  - id: docs-001
+    title: 端到端闭环命令使用说明
+    recommended_agent: SystemDesignAgent
+    priority: medium
+    risk_level: low
+    reason: 当前 run、approve、continue、list-runs 已具备，补齐使用说明能降低人工协作成本。
+  - id: ui-validation-001
+    title: 增加目标效果图的自动检查
+    recommended_agent: TestValidatorAgent
+    priority: medium
+    risk_level: medium
+    reason: 继续强化目标对齐和效果验证反馈优化能力。
