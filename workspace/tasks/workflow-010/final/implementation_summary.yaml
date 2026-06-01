@@ -1,0 +1,39 @@
+task_id: workflow-010
+title: 端到端闭环命令使用说明
+status: completed
+completed_at: "2026-06-01T15:49:00+08:00"
+goal_effect:
+  target: 补齐端到端闭环命令使用说明，让人工和 Agent 能清晰执行 run、approve、continue、list-runs。
+  achieved:
+    - README 使用说明新增历史运行记录查询命令。
+    - README 使用说明新增人工审批通过和拒绝示例。
+    - README 使用说明新增审批后 continue 推进检查命令。
+    - README 明确 continue 退出码语义，便于自动化脚本判断是否允许推进。
+    - 新增 README 文档回归测试，防止关键闭环命令从文档中丢失。
+current_result:
+  run_id: workflow-010-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  can_continue: true
+  next_task_id: workflow-011
+  recommended_command: python scripts/run_end_to_end.py --task-id workflow-011 --rerun-policy skip_completed
+  run_record_artifact: workspace/tasks/workflow-010/runs/workflow-010-run.yaml
+  decision_summary_artifact: workspace/tasks/workflow-010/final/decision_summary.yaml
+verification:
+  - command: source .venv/bin/activate && python -m pytest tests/test_readme_usage.py -q
+    result: 1 passed
+  - command: source .venv/bin/activate && python -m pytest -q
+    result: 90 passed
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-010 --rerun-policy skip_completed --run-id workflow-010-run --json
+    result: ready_for_human_decision
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-010 --continue-run workflow-010-run --json
+    result: status=allowed
+remaining_work:
+  - 执行 workflow-011，继续端到端闭环持续优化。
+  - 增加目标效果图自动检查，减少人工判断目标 UI 效果差异。
+  - 扩展本地 Agent 调度覆盖，提升自动执行能力。
+next_recommended_task:
+  id: workflow-011
+  title: 端到端闭环持续优化
+  priority: medium
+  reason: workflow-010 已补齐核心命令使用说明，下一步继续选择高价值缺口推进。

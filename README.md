@@ -115,6 +115,47 @@ python scripts/run_end_to_end.py --task-id workflow-004 --rerun-policy skip_comp
 python scripts/run_end_to_end.py --task-id workflow-004 --rerun-policy skip_completed --run-id workflow-004-run --json
 ```
 
+查看指定任务的历史运行记录：
+
+```bash
+python scripts/run_end_to_end.py --task-id workflow-009 --list-runs
+python scripts/run_end_to_end.py --task-id workflow-009 --list-runs --json
+```
+
+人工审批运行记录。审批通过会把质量门状态改为 `approved`，并允许后续推进；审批拒绝会把状态改为 `rejected`，后续推进命令会返回阻塞：
+
+```bash
+python scripts/run_end_to_end.py \
+  --task-id workflow-009 \
+  --approve-run workflow-009-run \
+  --approver dennis \
+  --decision approved \
+  --comment "同意进入下一阶段。"
+```
+
+拒绝审批示例：
+
+```bash
+python scripts/run_end_to_end.py \
+  --task-id workflow-009 \
+  --approve-run workflow-009-run \
+  --approver dennis \
+  --decision rejected \
+  --comment "证据不足，需补充验证。"
+```
+
+审批后检查是否允许继续。`--continue-run` 只做推进前检查，不自动 merge，也不调用外部服务；通过时输出下一任务和推荐命令，阻塞时输出修正建议：
+
+```bash
+python scripts/run_end_to_end.py --task-id workflow-009 --continue-run workflow-009-run
+python scripts/run_end_to_end.py --task-id workflow-009 --continue-run workflow-009-run --json
+```
+
+退出码语义：
+
+- `0`：当前运行已审批通过，允许按推荐命令进入下一阶段。
+- `1`：当前运行未审批、审批拒绝、质量门阻塞或 dry-run，不允许继续。
+
 生成下一阶段优化任务执行计划：
 
 ```bash

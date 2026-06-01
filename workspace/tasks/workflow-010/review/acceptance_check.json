@@ -1,0 +1,54 @@
+{
+  "task_id": "workflow-010",
+  "title": "端到端闭环命令使用说明",
+  "status": "passed",
+  "checked_at": "2026-06-01T15:49:00+08:00",
+  "acceptance_criteria": [
+    {
+      "criterion": "README 覆盖 run、list-runs、approve、continue 的端到端命令。",
+      "status": "passed",
+      "evidence": [
+        "README.md",
+        "tests/test_readme_usage.py::test_readme_documents_end_to_end_approval_commands"
+      ],
+      "notes": "使用说明已包含 --list-runs、--approve-run、--continue-run 和审批决策示例。"
+    },
+    {
+      "criterion": "文档明确 continue 命令的退出码语义。",
+      "status": "passed",
+      "evidence": [
+        "README.md",
+        "tests/test_readme_usage.py::test_readme_documents_end_to_end_approval_commands"
+      ],
+      "notes": "README 已说明退出码 0 表示允许继续，退出码 1 表示未审批、拒绝、质量门阻塞或 dry-run。"
+    },
+    {
+      "criterion": "新增或修改功能有测试覆盖。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_readme_usage.py"
+      ],
+      "notes": "新增 README 使用说明回归测试，防止关键命令从文档中丢失。"
+    },
+    {
+      "criterion": "python -m pytest -q 通过。",
+      "status": "passed",
+      "evidence": [
+        "90 passed in 13.52s"
+      ],
+      "notes": "文档修改后已执行全量测试。"
+    },
+    {
+      "criterion": "端到端闭环运行通过并允许推进下一阶段。",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-010/runs/workflow-010-run.yaml",
+        "workspace/tasks/workflow-010/final/decision_summary.yaml"
+      ],
+      "notes": "workflow-010-run 审批通过，--continue-run 返回 allowed，下一阶段为 workflow-011。"
+    }
+  ],
+  "residual_risks": [
+    "README 已覆盖核心命令，但还没有独立的长篇操作手册或故障排查章节。"
+  ]
+}
