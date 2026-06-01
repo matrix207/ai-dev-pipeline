@@ -1,0 +1,26 @@
+{
+  "task_id": "workflow-014-dispatch",
+  "step": "human_merge_gate",
+  "status": "waiting_for_human_merge_approval",
+  "artifacts": [
+    "workspace/tasks/workflow-014-dispatch/code/dispatch_result.json",
+    "workspace/tasks/workflow-014-dispatch/review/dispatched_task_validation.json",
+    "workspace/tasks/workflow-014-feedback-002/review/test_validation.json",
+    "workspace/tasks/workflow-014-feedback-002/review/code_review.json",
+    "workspace/tasks/workflow-014-feedback-002/final/validation_feedback.json",
+    "workspace/tasks/workflow-014-ui-validation-001/review/test_validation.json",
+    "workspace/tasks/workflow-014-ui-validation-001/review/code_review.json",
+    "workspace/tasks/workflow-014-ui-validation-001/final/validation_feedback.json",
+    "workspace/tasks/workflow-014-dispatch/review/test_validation.json",
+    "workspace/tasks/workflow-014-dispatch/review/code_review.json",
+    "workspace/tasks/workflow-014-dispatch/final/validation_feedback.json"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": false,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": false
+  }
+}

@@ -147,6 +147,70 @@ def test_run_end_to_end_writes_run_record(tmp_path: Path) -> None:
     assert latest_summary["run_record_artifact"] == summary["run_record_artifact"]
 
 
+def test_run_end_to_end_uses_previous_run_record_as_decision_input(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-013/runs/workflow-013-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-013",
+            "run_metadata": {"run_id": "workflow-013-run"},
+            "remaining_work": [
+                "feedback-002: 把下一轮优化任务接入调度执行",
+                "dispatch-002: 支持更多本地 Agent 调度",
+            ],
+            "next_recommended_action": {
+                "task_id": "workflow-014",
+                "title": "端到端闭环持续优化",
+                "priority": "medium",
+            },
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "goal_effect_aligned",
+                    "status": "passed",
+                    "evidence": ["goal.json"],
+                    "notes": "alignment_score=1.0",
+                },
+                {
+                    "decision": "next_action",
+                    "status": "medium",
+                    "evidence": ["next.yaml"],
+                    "notes": "workflow-014",
+                },
+            ],
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-014",
+        run_id="workflow-014-run",
+        previous_run_record=previous_record_path,
+    )
+
+    assert summary["previous_run_context"]["source_run_record"] == previous_record_path
+    assert summary["previous_run_context"]["evidence_decisions"] == [
+        "goal_effect_aligned",
+        "next_action",
+    ]
+    assert summary["previous_run_context"]["remaining_work_count"] == 2
+    assert summary["current_result"]["previous_run_context_artifact"] == (
+        "workspace/tasks/workflow-014/input/previous_run_context.yaml"
+    )
+    persisted_context = read_yaml(tmp_path, summary["current_result"]["previous_run_context_artifact"])
+    assert persisted_context == summary["previous_run_context"]
+    final_plan = read_yaml(tmp_path, "workspace/tasks/workflow-014/final/final_next_optimization_tasks.yaml")
+    assert final_plan["task_batch"]["previous_run_record"] == previous_record_path
+    assert final_plan["task_batch"]["previous_evidence_decisions"] == [
+        "goal_effect_aligned",
+        "next_action",
+    ]
+
+
 def test_quality_gate_blocks_missing_required_evidence() -> None:
     summary = {
         "execution_summary": {"failed": []},
@@ -401,6 +465,51 @@ def test_run_end_to_end_cli_json_output(tmp_path: Path, capsys) -> None:
     assert output["task_id"] == "workflow-001"
     assert output["run_metadata"]["run_id"] == "cli-run"
     assert output["run_strategy"]["rerun_policy"] == "skip_completed"
+
+
+def test_run_end_to_end_cli_accepts_previous_run_record(tmp_path: Path, capsys) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-013/runs/workflow-013-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-013",
+            "run_metadata": {"run_id": "workflow-013-run"},
+            "evidence_map": [
+                {"decision": "next_action", "status": "medium", "evidence": ["next.yaml"]}
+            ],
+            "remaining_work": ["feedback-002: 把下一轮优化任务接入调度执行"],
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+        },
+    )
+
+    old_argv = sys.argv
+    sys.argv = [
+        "run_end_to_end.py",
+        "--repo-root",
+        str(tmp_path),
+        "--task-id",
+        "workflow-014",
+        "--run-id",
+        "cli-previous-run",
+        "--previous-run-record",
+        previous_record_path,
+        "--json",
+    ]
+    try:
+        exit_code = main()
+    finally:
+        sys.argv = old_argv
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["previous_run_context"]["source_run_record"] == previous_record_path
+    assert output["current_result"]["previous_run_context_artifact"] == (
+        "workspace/tasks/workflow-014/input/previous_run_context.yaml"
+    )
 
 
 def test_run_end_to_end_cli_lists_run_records(tmp_path: Path, capsys) -> None:

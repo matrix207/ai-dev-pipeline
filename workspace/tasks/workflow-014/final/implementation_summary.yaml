@@ -1,0 +1,39 @@
+task_id: workflow-014
+status: completed
+summary: >-
+  完成上一轮运行记录接入端到端闭环。workflow-014 可以读取 workflow-013 的 run record，
+  抽取 evidence map、remaining_work、quality gate 和 next action，生成本轮 previous_run_context 输入产物。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: 增加 previous_run_record 参数和 --previous-run-record CLI 选项。
+  - path: scripts/run_end_to_end.py
+    change: 新增 previous_run_context 生成逻辑，并把上下文写入 workspace/tasks/{task_id}/input/previous_run_context.yaml。
+  - path: scripts/run_end_to_end.py
+    change: initial/final plan 的 task_batch 会标注 previous_run_record、previous_evidence_decisions 和 previous_remaining_work_count。
+  - path: tests/test_run_end_to_end.py
+    change: 增加上一轮 run record 作为决策输入的用例，验证产物落盘和计划标注。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py::test_run_end_to_end_uses_previous_run_record_as_decision_input -q
+    result: 1 passed
+  - command: python -m pytest tests/test_run_end_to_end.py -q
+    result: 22 passed
+  - command: python -m pytest -q
+    result: 98 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-014 --dry-run --rerun-policy skip_completed --run-id workflow-014-dry-run --previous-run-record workspace/tasks/workflow-013/runs/workflow-013-run.yaml --json
+    result: dry_run 通过，previous_run_context 可用
+  - command: python scripts/run_end_to_end.py --task-id workflow-014 --rerun-policy skip_completed --run-id workflow-014-run --previous-run-record workspace/tasks/workflow-013/runs/workflow-013-run.yaml --json
+    result: ready_for_human_decision，alignment_score=1.0，blocking_issues=0
+  - command: python scripts/run_end_to_end.py --task-id workflow-014 --approve-run workflow-014-run --approver dennis --decision approved --comment '同意 workflow-014 端到端闭环结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-014 --continue-run workflow-014-run --json
+    result: can_continue=true，recommended_command 指向 workflow-015
+key_artifacts:
+  - workspace/tasks/workflow-014/input/previous_run_context.yaml
+  - workspace/tasks/workflow-014/final/decision_summary.yaml
+  - workspace/tasks/workflow-014/runs/workflow-014-run.yaml
+  - workspace/tasks/workflow-014/review/acceptance_check.json
+  - workspace/tasks/workflow-014/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

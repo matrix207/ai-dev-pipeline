@@ -1,0 +1,53 @@
+{
+  "task_id": "workflow-014-dispatch",
+  "status": "passed",
+  "dispatched_task_id": "workflow-014-feedback-002",
+  "dispatched_tasks": [
+    {
+      "task_id": "workflow-014-dispatch",
+      "status": "passed",
+      "dispatched_task_id": "workflow-014-feedback-002",
+      "artifacts": [
+        "workspace/tasks/workflow-014-feedback-002/review/test_validation.json",
+        "workspace/tasks/workflow-014-feedback-002/review/code_review.json",
+        "workspace/tasks/workflow-014-feedback-002/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "gates": {
+        "goal_approved": true,
+        "design_review_passed": true,
+        "tests_passed": true,
+        "code_review_passed": true,
+        "human_merge_approved": false
+      }
+    },
+    {
+      "task_id": "workflow-014-dispatch",
+      "status": "passed",
+      "dispatched_task_id": "workflow-014-ui-validation-001",
+      "artifacts": [
+        "workspace/tasks/workflow-014-ui-validation-001/review/test_validation.json",
+        "workspace/tasks/workflow-014-ui-validation-001/review/code_review.json",
+        "workspace/tasks/workflow-014-ui-validation-001/final/validation_feedback.json"
+      ],
+      "blocking_issues": [],
+      "gates": {
+        "goal_approved": true,
+        "design_review_passed": true,
+        "tests_passed": true,
+        "code_review_passed": true,
+        "human_merge_approved": false
+      }
+    }
+  ],
+  "artifacts": [
+    "workspace/tasks/workflow-014-feedback-002/review/test_validation.json",
+    "workspace/tasks/workflow-014-feedback-002/review/code_review.json",
+    "workspace/tasks/workflow-014-feedback-002/final/validation_feedback.json",
+    "workspace/tasks/workflow-014-ui-validation-001/review/test_validation.json",
+    "workspace/tasks/workflow-014-ui-validation-001/review/code_review.json",
+    "workspace/tasks/workflow-014-ui-validation-001/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "gates": {}
+}

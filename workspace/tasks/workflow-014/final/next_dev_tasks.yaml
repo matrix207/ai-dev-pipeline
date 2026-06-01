@@ -1,0 +1,26 @@
+task_batch:
+  source_task: workflow-014
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 继续把上一轮 evidence 输入转化为更具体的下一步任务选择策略。
+tasks:
+  - id: workflow-015
+    title: evidence 驱动的下一任务选择
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 previous_run_context.remaining_work 和 evidence_summary 调整 next_recommended_action 的选择依据。
+      - 对已在本轮完成验证的模板任务降低重复推荐优先级。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 接入外部代码托管平台 API。
+      - 自动创建或合并 PR。
+    acceptance_criteria:
+      - workflow-015 的 next_recommended_action 能体现 previous_run_context 的 remaining_work 和 evidence 状态。
+      - decision_summary 中能追溯任务选择依据。
+      - python -m pytest -q 通过。

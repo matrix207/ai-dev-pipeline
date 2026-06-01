@@ -52,6 +52,7 @@ def run_end_to_end(
     dry_run: bool = False,
     rerun_policy: str = "new_ids",
     run_id: str | None = None,
+    previous_run_record: str | None = None,
 ) -> dict[str, Any]:
     """Run a complete local feedback loop and persist a decision summary."""
     if rerun_policy not in RERUN_POLICIES:
@@ -60,6 +61,7 @@ def run_end_to_end(
     repo_root = Path(repo_root)
     paths = _workflow_paths(task_id)
     run_metadata = _run_metadata(run_id)
+    previous_context = _previous_run_context(repo_root, previous_run_record)
 
     validation_task_id = f"{task_id}-validation"
     dispatch_task_id = f"{task_id}-dispatch"
@@ -73,6 +75,7 @@ def run_end_to_end(
             paths=paths,
             run_metadata=run_metadata,
             rerun_policy=rerun_policy,
+            previous_context=previous_context,
             validation_task_id=validation_task_id,
             dispatch_task_id=dispatch_task_id,
             review_task_id=review_task_id,
@@ -99,7 +102,10 @@ def run_end_to_end(
             "feedback_paths": [validation_feedback_path],
         }
     ).output
+    _annotate_plan_with_previous_context(initial_plan, previous_context)
     write_yaml(repo_root, paths["initial_plan"], initial_plan)
+    if previous_context["available"]:
+        write_yaml(repo_root, paths["previous_run_context"], previous_context)
 
     dispatch_tasks = _dispatchable_task_batch(
         repo_root,
@@ -148,6 +154,7 @@ def run_end_to_end(
             "feedback_paths": feedback_paths,
         }
     ).output
+    _annotate_plan_with_previous_context(final_plan, previous_context)
     write_yaml(repo_root, paths["final_plan"], final_plan)
 
     recommended_task = _recommended_task(repo_root, task_id, [final_plan])
@@ -170,11 +177,15 @@ def run_end_to_end(
             "validation_state": validation_state.to_dict(),
             "dispatch_state": dispatch_state.to_dict(),
             "review_state": review_state.to_dict(),
+            "previous_run_context_artifact": (
+                paths["previous_run_context"] if previous_context["available"] else None
+            ),
             "initial_plan_artifact": paths["initial_plan"],
             "dispatch_tasks_artifact": paths["dispatch_tasks"],
             "final_plan_artifact": paths["final_plan"],
             "feedback_artifacts": feedback_paths,
         },
+        "previous_run_context": previous_context,
         "execution_summary": execution_summary,
         "retry_plan": _retry_plan(execution_summary),
         "remaining_work": _remaining_work(final_plan),
@@ -199,6 +210,7 @@ def run_end_to_end(
 def _workflow_paths(task_id: str) -> dict[str, str]:
     base = f"workspace/tasks/{task_id}"
     return {
+        "previous_run_context": f"{base}/input/previous_run_context.yaml",
         "initial_plan": f"{base}/final/initial_next_optimization_tasks.yaml",
         "dispatch_tasks": f"{base}/input/dispatch_tasks.yaml",
         "review_tasks": f"{base}/input/review_tasks.yaml",
@@ -221,6 +233,66 @@ def _safe_run_id(run_id: str) -> str:
 
 def _run_record_path(task_id: str, run_id: str) -> str:
     return f"workspace/tasks/{task_id}/runs/{_safe_run_id(run_id)}.yaml"
+
+
+def _previous_run_context(repo_root: Path, previous_run_record: str | None) -> dict[str, Any]:
+    if not previous_run_record:
+        return {
+            "available": False,
+            "source_run_record": None,
+            "source_task_id": None,
+            "source_run_id": None,
+            "quality_gate_status": None,
+            "post_approval_action_status": None,
+            "evidence_decisions": [],
+            "evidence_summary": [],
+            "remaining_work": [],
+            "remaining_work_count": 0,
+            "next_recommended_action": None,
+        }
+
+    record = read_yaml(repo_root, previous_run_record)
+    evidence_map = list(record.get("evidence_map", []))
+    remaining_work = list(record.get("remaining_work", []))
+    # 上一轮上下文只保留决策所需索引，完整证据仍通过 source_run_record 追溯。
+    return {
+        "available": True,
+        "source_run_record": previous_run_record,
+        "source_task_id": record.get("task_id"),
+        "source_run_id": (record.get("run_metadata") or {}).get("run_id"),
+        "quality_gate_status": (record.get("quality_gate") or {}).get("status"),
+        "post_approval_action_status": (record.get("post_approval_action") or {}).get("status"),
+        "evidence_decisions": [
+            str(item.get("decision"))
+            for item in evidence_map
+            if item.get("decision")
+        ],
+        "evidence_summary": [
+            {
+                "decision": item.get("decision"),
+                "status": item.get("status"),
+                "evidence_count": len(item.get("evidence", [])),
+                "notes": item.get("notes"),
+            }
+            for item in evidence_map
+        ],
+        "remaining_work": remaining_work,
+        "remaining_work_count": len(remaining_work),
+        "next_recommended_action": record.get("next_recommended_action"),
+    }
+
+
+def _annotate_plan_with_previous_context(
+    plan: dict[str, Any],
+    previous_context: dict[str, Any],
+) -> None:
+    if not previous_context.get("available"):
+        return
+    task_batch = dict(plan.get("task_batch", {}))
+    task_batch["previous_run_record"] = previous_context["source_run_record"]
+    task_batch["previous_evidence_decisions"] = list(previous_context["evidence_decisions"])
+    task_batch["previous_remaining_work_count"] = previous_context["remaining_work_count"]
+    plan["task_batch"] = task_batch
 
 
 def _task_succeeded(state: TaskState, required_artifacts: list[str], repo_root: Path) -> bool:
@@ -712,6 +784,7 @@ def _dry_run_summary(
     paths: dict[str, str],
     run_metadata: dict[str, str],
     rerun_policy: str,
+    previous_context: dict[str, Any],
     validation_task_id: str,
     dispatch_task_id: str,
     review_task_id: str,
@@ -779,11 +852,15 @@ def _dry_run_summary(
             "validation_state": {"task_id": validation_task_id, "status": "planned"},
             "dispatch_state": {"task_id": dispatch_task_id, "status": "planned"},
             "review_state": {"task_id": review_task_id, "status": "planned"},
+            "previous_run_context_artifact": (
+                paths["previous_run_context"] if previous_context["available"] else None
+            ),
             "initial_plan_artifact": paths["initial_plan"],
             "dispatch_tasks_artifact": paths["dispatch_tasks"],
             "final_plan_artifact": paths["final_plan"],
             "feedback_artifacts": [],
         },
+        "previous_run_context": previous_context,
         "execution_summary": execution_summary,
         "retry_plan": {
             "status": "not_required",
@@ -880,6 +957,9 @@ def _save_parent_state(
         paths["final_plan"],
         paths["decision_summary"],
     ]
+    previous_context_artifact = summary.get("current_result", {}).get("previous_run_context_artifact")
+    if previous_context_artifact:
+        artifacts.insert(4, previous_context_artifact)
     if summary.get("run_record_artifact"):
         artifacts.append(summary["run_record_artifact"])
     state = TaskState(
@@ -914,6 +994,7 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
     retry = summary.get("retry_plan", {})
     run_metadata = summary.get("run_metadata", {})
     quality_gate = summary.get("quality_gate", {})
+    previous_context = summary.get("previous_run_context") or {}
     return "\n".join(
         [
             "AI Dev Pipeline End-to-End Summary",
@@ -930,6 +1011,7 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"Quality gate: {quality_gate.get('status', 'unknown')}",
             f"Quality blocking issues: {len(quality_gate.get('blocking_issues', []))}",
             f"Quality warnings: {len(quality_gate.get('warnings', []))}",
+            f"Previous run record: {previous_context.get('source_run_record') or 'none'}",
             f"Post approval action: {summary.get('post_approval_action', {}).get('status', 'unknown')}",
             f"Can continue: {summary.get('post_approval_action', {}).get('can_continue', False)}",
             f"Allowed next action: {summary.get('post_approval_action', {}).get('recommended_action', 'unknown')}",
@@ -1167,6 +1249,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--decided-at", help="Approval timestamp for --approve-run.")
     parser.add_argument("--run-id", help="Optional stable id to record for this run.")
     parser.add_argument(
+        "--previous-run-record",
+        help="Previous run record artifact to use as decision input for this run.",
+    )
+    parser.add_argument(
         "--rerun-policy",
         choices=sorted(RERUN_POLICIES),
         default="new_ids",
@@ -1221,6 +1307,7 @@ def main() -> int:
         dry_run=args.dry_run,
         rerun_policy=args.rerun_policy,
         run_id=args.run_id,
+        previous_run_record=args.previous_run_record,
     )
     if args.json:
         print(json.dumps(summary, ensure_ascii=False, indent=2))

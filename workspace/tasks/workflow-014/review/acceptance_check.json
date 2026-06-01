@@ -1,0 +1,37 @@
+{
+  "task_id": "workflow-014",
+  "status": "passed",
+  "checked_at": "2026-06-01T12:30:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "previous_run_record_input",
+      "status": "passed",
+      "evidence": [
+        "scripts/run_end_to_end.py",
+        "tests/test_run_end_to_end.py",
+        "workspace/tasks/workflow-014/input/previous_run_context.yaml"
+      ],
+      "notes": "run_end_to_end 支持 previous_run_record 输入，并把上一轮 run record 提炼为可复用的 previous_run_context。"
+    },
+    {
+      "id": "plan_annotated_with_previous_evidence",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-014/final/initial_next_optimization_tasks.yaml",
+        "workspace/tasks/workflow-014/final/final_next_optimization_tasks.yaml"
+      ],
+      "notes": "本轮 initial/final plan 均记录 previous_run_record、previous_evidence_decisions 和 previous_remaining_work_count。"
+    },
+    {
+      "id": "end_to_end_validation",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-014/final/decision_summary.yaml",
+        "workspace/tasks/workflow-014/runs/workflow-014-run.yaml",
+        "workspace/tasks/workflow-014/state.json"
+      ],
+      "notes": "workflow-014 完成 validation、dispatch、review、final planning，质量门已审批并允许继续 workflow-015。"
+    }
+  ],
+  "blocking_issues": []
+}
