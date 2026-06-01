@@ -1,0 +1,44 @@
+task_id: workflow-020
+status: completed
+summary: >-
+  完成持续优化收敛状态延续。端到端运行现在会把上一轮
+  recommendation_basis.completed_this_run_task_ids 继承为 completed_source_task_ids，
+  并忽略“暂无未完成的自动生成任务”这类哨兵文本，避免下一轮重新推荐已完成旧任务。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: _completed_source_task_ids 继承 recommendation_basis.completed_this_run_task_ids。
+  - path: scripts/run_end_to_end.py
+    change: _previous_remaining_task_ids 忽略“暂无未完成...”哨兵文本。
+  - path: scripts/run_end_to_end.py
+    change: 推荐器过滤所有 completed_task_ids 中的任务，不再只过滤 previous_remaining_work 中的任务。
+  - path: tests/test_run_end_to_end.py
+    change: 增加已收敛 remaining_work 的下一轮继承回归用例。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py -q
+    result: 28 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-020 --dry-run --rerun-policy skip_completed --run-id workflow-020-dry-run --previous-run-record workspace/tasks/workflow-019/runs/workflow-019-run.yaml --json
+    result: dry_run 通过，previous_run_context 继承 completed_source_task_ids 三项。
+  - command: python scripts/run_end_to_end.py --task-id workflow-020 --rerun-policy new_ids --run-id workflow-020-run --previous-run-record workspace/tasks/workflow-019/runs/workflow-019-run.yaml --json
+    result: ready_for_human_decision，selected_source_task_id=null，remaining_work 无开放自动任务。
+  - command: python scripts/run_end_to_end.py --task-id workflow-020 --approve-run workflow-020-run --approver dennis --decision approved --comment '同意 workflow-020 持续优化收敛结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-020 --continue-run workflow-020-run --json
+    result: can_continue=true，recommended_command 指向 workflow-021
+recommendation_result:
+  completed_source_task_ids:
+    - ui-validation-001
+    - feedback-002
+    - dispatch-002
+  remaining_open_task_ids: []
+  selected_next_task: workflow-021
+  selected_source_task_id: null
+key_artifacts:
+  - workspace/tasks/workflow-020/final/decision_summary.yaml
+  - workspace/tasks/workflow-020/final/target_effect_report.md
+  - workspace/tasks/workflow-020/runs/workflow-020-run.yaml
+  - workspace/tasks/workflow-020/review/acceptance_check.json
+  - workspace/tasks/workflow-020/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

@@ -1,0 +1,44 @@
+{
+  "task_id": "workflow-020",
+  "status": "passed",
+  "checked_at": "2026-06-01T15:20:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "completed_tasks_carried_forward",
+      "status": "passed",
+      "evidence": [
+        "scripts/run_end_to_end.py",
+        "workspace/tasks/workflow-020/input/previous_run_context.yaml"
+      ],
+      "notes": "workflow-020 从 workflow-019 的 recommendation_basis 继承 completed_source_task_ids：ui-validation-001、feedback-002、dispatch-002。"
+    },
+    {
+      "id": "old_tasks_not_recommended",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-020/final/decision_summary.yaml",
+        "workspace/tasks/workflow-020/runs/workflow-020-run.yaml"
+      ],
+      "notes": "recommendation_basis.selected_source_task_id 为 null，未重复推荐旧三项，下一步为 workflow-021 持续优化。"
+    },
+    {
+      "id": "remaining_work_converged",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-020/final/decision_summary.yaml"
+      ],
+      "notes": "remaining_work 保持为暂无未完成的自动生成任务。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-020/final/target_effect_report.md",
+        "workspace/tasks/workflow-020/runs/workflow-020-run.yaml",
+        "workspace/tasks/workflow-020/state.json"
+      ],
+      "notes": "workflow-020 完成正式运行、质量门审批和 continue 检查。"
+    }
+  ],
+  "blocking_issues": []
+}

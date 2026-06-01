@@ -437,6 +437,67 @@ def test_completed_template_task_ids_handles_new_id_suffixes() -> None:
     assert completed == ["feedback-002", "dispatch-002"]
 
 
+def test_run_end_to_end_carries_completed_tasks_after_remaining_work_converges(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-019/runs/workflow-019-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-019",
+            "run_metadata": {"run_id": "workflow-019-run"},
+            "remaining_work": ["暂无未完成的自动生成任务。"],
+            "recommendation_basis": {
+                "completed_this_run_task_ids": [
+                    "ui-validation-001",
+                    "feedback-002",
+                    "dispatch-002",
+                ],
+                "remaining_open_task_ids": [],
+                "selected_source_task_id": None,
+            },
+            "next_recommended_action": {
+                "task_id": "workflow-020",
+                "title": "端到端闭环持续优化",
+                "priority": "medium",
+            },
+            "target_effect_report": {
+                "artifact": "workspace/tasks/workflow-019/final/target_effect_report.md",
+                "status": "passed",
+                "blocking_issue_count": 0,
+            },
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "goal_effect_aligned",
+                    "status": "passed",
+                    "evidence": ["workspace/tasks/workflow-019/final/target_effect_report.md"],
+                    "notes": "alignment_score=1.0; blocking_issues=0",
+                }
+            ],
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-020",
+        run_id="workflow-020-run",
+        previous_run_record=previous_record_path,
+    )
+
+    assert summary["previous_run_context"]["completed_source_task_ids"] == [
+        "ui-validation-001",
+        "feedback-002",
+        "dispatch-002",
+    ]
+    assert summary["recommendation_basis"]["selected_source_task_id"] is None
+    assert summary["remaining_work"] == ["暂无未完成的自动生成任务。"]
+    assert summary["next_recommended_action"]["task_id"] == "workflow-021"
+    assert "已完成" in summary["next_recommended_action"]["reason"]
+
+
 def test_quality_gate_blocks_missing_required_evidence() -> None:
     summary = {
         "execution_summary": {"failed": []},

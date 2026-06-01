@@ -331,6 +331,11 @@ def _completed_source_task_ids(record: dict[str, Any]) -> list[str]:
         task_id_text = str(task_id_value)
         if task_id_text not in completed:
             completed.append(task_id_text)
+    recommendation_basis = record.get("recommendation_basis") or {}
+    for task_id_value in recommendation_basis.get("completed_this_run_task_ids", []):
+        task_id_text = str(task_id_value)
+        if task_id_text not in completed:
+            completed.append(task_id_text)
     return completed
 
 
@@ -1185,10 +1190,7 @@ def _recommended_from_previous_context(
     selectable_tasks = [
         task
         for task in tasks
-        if not (
-            str(task.get("id")) in remaining_order
-            and str(task.get("id")) in completed_task_ids
-        )
+        if str(task.get("id")) not in completed_task_ids
     ]
 
     def recommendation_key(task: dict[str, Any]) -> tuple[int, int, int, str]:
@@ -1265,6 +1267,8 @@ def _previous_remaining_task_ids(previous_context: dict[str, Any]) -> list[str]:
     task_ids = []
     for item in previous_context.get("remaining_work", []):
         task_id_value = str(item).split(":", 1)[0].strip()
+        if task_id_value.startswith("暂无"):
+            continue
         if task_id_value and task_id_value not in task_ids:
             task_ids.append(task_id_value)
     return task_ids

@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-020
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 在自动生成任务已收敛后，定义下一阶段新的高价值持续优化方向。
+tasks:
+  - id: workflow-021
+    title: 端到端闭环持续优化
+    source_task_id: null
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 workflow-020 的收敛结果，选择新的优化方向，而不是重复旧三项。
+      - 优先考虑优化任务库、长期路线图或人工决策视图的产品化表达。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 自动创建 PR 或自动 merge。
+      - 引入外部服务。
+    acceptance_criteria:
+      - 下一轮任务能明确说明为何进入新的持续优化阶段。
+      - 不重复推荐 ui-validation-001、feedback-002、dispatch-002。
+      - python -m pytest -q 通过。
