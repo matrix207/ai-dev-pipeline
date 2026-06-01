@@ -1,0 +1,100 @@
+{
+  "task_id": "workflow-017-feedback-002",
+  "status": "passed",
+  "decision": {
+    "approved_for_human_merge_gate": true,
+    "requires_human_review": false
+  },
+  "checks": [
+    {
+      "name": "test_validation_artifact",
+      "result": "pass",
+      "notes": "已读取 workspace/tasks/workflow-017-feedback-002/review/test_validation.json。"
+    },
+    {
+      "name": "tests_passed",
+      "result": "pass",
+      "notes": "测试验证已通过。"
+    },
+    {
+      "name": "task_state_recorded",
+      "result": "pass",
+      "notes": "任务状态产物存在。"
+    },
+    {
+      "name": "state_artifacts_exist",
+      "result": "pass",
+      "notes": "任务状态中的 artifact 路径均存在。"
+    },
+    {
+      "name": "acceptance_criteria_coverage",
+      "result": "pass",
+      "notes": "验收标准均找到 evidence。"
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_issues": [],
+  "recommendations": [],
+  "acceptance_coverage": {
+    "criteria": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ],
+    "covered": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ],
+    "missing_evidence": [],
+    "acceptance_evidence_map": [
+      {
+        "criterion": "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+        "status": "matched",
+        "matched_evidence": [
+          {
+            "path": "workspace/tasks/workflow-017-feedback-002/code/implementation_plan.json",
+            "match": "exact_text"
+          }
+        ],
+        "missing_evidence": [],
+        "recommendation": ""
+      },
+      {
+        "criterion": "调度产物能引用来源 validation_feedback。",
+        "status": "matched",
+        "matched_evidence": [
+          {
+            "path": "workspace/tasks/workflow-017-feedback-002/code/implementation_plan.json",
+            "match": "exact_text"
+          }
+        ],
+        "missing_evidence": [],
+        "recommendation": ""
+      },
+      {
+        "criterion": "python -m pytest -q 通过。",
+        "status": "matched",
+        "matched_evidence": [
+          {
+            "path": "workspace/tasks/workflow-017-feedback-002/review/test_validation.json",
+            "match": "keyword_coverage"
+          },
+          {
+            "path": "workspace/tasks/workflow-017-feedback-002/code/implementation_plan.json",
+            "match": "exact_text"
+          }
+        ],
+        "missing_evidence": [],
+        "recommendation": ""
+      }
+    ]
+  },
+  "artifact_consistency": {
+    "checked": [
+      "workspace/tasks/workflow-017-feedback-002/code/implementation_plan.json",
+      "workspace/tasks/workflow-017-feedback-002/review/test_validation.json"
+    ],
+    "missing": []
+  }
+}

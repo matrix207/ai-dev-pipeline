@@ -318,7 +318,7 @@ class GoalEffectValidatorAgent(BaseAgent):
             height = int(viewport.get("height", 720))
             min_screenshot_bytes = int(render_check.get("min_screenshot_bytes", 2048))
             browser_path = self._resolve_browser_path(render_check.get("browser_path"))
-            missing = {"browser": [], "screenshot": [], "dom_terms": []}
+            missing = {"browser": [], "screenshot": [], "dom_terms": [], "dom_selectors": []}
             screenshot_bytes = 0
             dom_output = ""
 
@@ -345,8 +345,22 @@ class GoalEffectValidatorAgent(BaseAgent):
                 missing["dom_terms"] = [
                     term for term in render_check.get("required_dom_terms", []) if term not in dom_output
                 ]
+                missing["dom_selectors"] = [
+                    selector
+                    for selector in render_check.get("required_dom_selectors", [])
+                    if not self._selector_exists(dom_output, selector)
+                ]
 
             passed = not any(missing.values())
+            evidence = self._render_evidence(
+                dom_output=dom_output,
+                screenshot_artifact=screenshot_artifact,
+                screenshot_bytes=screenshot_bytes,
+                min_screenshot_bytes=min_screenshot_bytes,
+                required_dom_terms=list(render_check.get("required_dom_terms", [])),
+                required_dom_selectors=list(render_check.get("required_dom_selectors", [])),
+                missing=missing,
+            )
             result = {
                 "id": check_id,
                 "demo_path": demo_path,
@@ -359,6 +373,13 @@ class GoalEffectValidatorAgent(BaseAgent):
                 "screenshot_bytes": screenshot_bytes,
                 "min_screenshot_bytes": min_screenshot_bytes,
                 "required_dom_terms": list(render_check.get("required_dom_terms", [])),
+                "required_dom_selectors": list(render_check.get("required_dom_selectors", [])),
+                "evidence": evidence,
+                "acceptance_conclusion": {
+                    "passed": passed,
+                    "summary": "目标效果渲染证据通过。" if passed else "目标效果渲染证据存在缺口。",
+                    "missing": missing,
+                },
             }
             results.append(result)
             checks.append(
@@ -378,6 +399,41 @@ class GoalEffectValidatorAgent(BaseAgent):
                     }
                 )
         return results
+
+    def _render_evidence(
+        self,
+        *,
+        dom_output: str,
+        screenshot_artifact: str,
+        screenshot_bytes: int,
+        min_screenshot_bytes: int,
+        required_dom_terms: list[str],
+        required_dom_selectors: list[str],
+        missing: dict[str, list[str]],
+    ) -> dict[str, Any]:
+        # evidence 面向人工判断，显式列出每类目标效果证据是否命中。
+        return {
+            "screenshot": {
+                "artifact": screenshot_artifact,
+                "exists": screenshot_bytes > 0,
+                "bytes": screenshot_bytes,
+                "min_bytes": min_screenshot_bytes,
+                "passed": screenshot_bytes >= min_screenshot_bytes,
+            },
+            "dom_terms": [
+                {"term": term, "present": term not in missing["dom_terms"]}
+                for term in required_dom_terms
+            ],
+            "dom_selectors": [
+                {"selector": selector, "present": selector not in missing["dom_selectors"]}
+                for selector in required_dom_selectors
+            ],
+            "page_structure": {
+                "has_html": "<html" in dom_output.lower(),
+                "has_body": "<body" in dom_output.lower(),
+                "title": self._first_tag_content(dom_output, "title"),
+            },
+        }
 
     def _resolve_browser_path(self, configured_path: str | None) -> str | None:
         if configured_path:
@@ -480,6 +536,11 @@ class GoalEffectValidatorAgent(BaseAgent):
         # 目标效果图检查只需要静态 HTML 中的内联 style/script 信号，保持本地快速可运行。
         pattern = re.compile(rf"<{tag_name}\b[^>]*>(.*?)</{tag_name}>", re.IGNORECASE | re.DOTALL)
         return "\n".join(match.group(1) for match in pattern.finditer(html))
+
+    def _first_tag_content(self, html: str, tag_name: str) -> str:
+        pattern = re.compile(rf"<{tag_name}\b[^>]*>(.*?)</{tag_name}>", re.IGNORECASE | re.DOTALL)
+        match = pattern.search(html)
+        return match.group(1).strip() if match else ""
 
     def _selector_exists(self, html: str, selector: str) -> bool:
         selector = selector.strip()

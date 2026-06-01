@@ -201,6 +201,13 @@ demo_render_checks:
       - 当前阶段
       - 多Agent协作流
       - 人工Gate
+    required_dom_selectors:
+      - "#playBtn"
+      - "#resetBtn"
+      - "#phaseValue"
+      - "[data-node=\"ra\"]"
+      - "[data-node=\"qa\"]"
+      - "[data-node=\"hg\"]"
 feedback_policy:
   on_pass: 可以进入人工合并门，并基于反馈规划下一轮优化。
   on_block: 修复 blocking issue 后重新运行 automated_validation workflow。

@@ -1,0 +1,43 @@
+task_id: workflow-017
+status: completed
+summary: >-
+  完成目标效果图自动检查增强。GoalEffectValidatorAgent 现在会在 demo_render_checks
+  中输出截图证据、DOM 文本命中、DOM selector 命中、页面结构摘要和验收结论。
+implemented_changes:
+  - path: agents/goal_effect_validator_agent.py
+    change: demo_render_checks 新增 required_dom_selectors、evidence 和 acceptance_conclusion。
+  - path: tests/test_validation_agents.py
+    change: 增加渲染证据结构和缺失 selector 的用例覆盖。
+  - path: workspace/tasks/validation-001/input/validation_goal.yaml
+    change: 真实目标验证配置新增关键 DOM selector 检查。
+verification:
+  - command: python -m pytest tests/test_validation_agents.py -q
+    result: 17 passed
+  - command: python -m pytest -q
+    result: 104 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-017 --dry-run --rerun-policy skip_completed --run-id workflow-017-dry-run --previous-run-record workspace/tasks/workflow-016/runs/workflow-016-run.yaml --json
+    result: dry_run 通过
+  - command: python scripts/run_end_to_end.py --task-id workflow-017 --rerun-policy skip_completed --run-id workflow-017-run --previous-run-record workspace/tasks/workflow-016/runs/workflow-016-run.yaml --json
+    result: ready_for_human_decision，alignment_score=1.0，blocking_issues=0
+  - command: python scripts/run_end_to_end.py --task-id workflow-017 --approve-run workflow-017-run --approver dennis --decision approved --comment '同意 workflow-017 目标效果图自动检查增强结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-017 --continue-run workflow-017-run --json
+    result: can_continue=true，recommended_command 指向 workflow-018
+render_evidence:
+  artifact: workspace/tasks/workflow-017-validation/review/demo_render_main_view.png
+  screenshot_bytes: 625004
+  dom_terms_passed: true
+  dom_selectors_passed: true
+  page_structure_passed: true
+  acceptance_conclusion: 目标效果渲染证据通过。
+key_artifacts:
+  - workspace/tasks/workflow-017-validation/final/validation_feedback.json
+  - workspace/tasks/workflow-017-validation/review/demo_render_main_view.png
+  - workspace/tasks/workflow-017/final/decision_summary.yaml
+  - workspace/tasks/workflow-017/runs/workflow-017-run.yaml
+  - workspace/tasks/workflow-017/review/acceptance_check.json
+  - workspace/tasks/workflow-017/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

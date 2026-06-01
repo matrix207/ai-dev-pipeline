@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-017
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 继续提升目标效果验证的产品化表达，让人工决策更快定位差异和下一步。
+tasks:
+  - id: workflow-018
+    title: 目标效果验证报告产品化
+    source_task_id: ui-validation-001
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 workflow-017 的 render evidence，生成更易读的目标效果验证摘要。
+      - 将截图路径、DOM 命中、页面结构和阻塞项汇总为人工决策友好的报告。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 引入浏览器云服务。
+      - 重做前端 demo。
+    acceptance_criteria:
+      - decision_summary 或独立报告能快速展示目标效果是否达成。
+      - 报告能引用截图和 validation_feedback 的结构化证据。
+      - python -m pytest -q 通过。

@@ -1,0 +1,37 @@
+{
+  "task_id": "workflow-017",
+  "status": "passed",
+  "checked_at": "2026-06-01T14:00:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "render_evidence_summary",
+      "status": "passed",
+      "evidence": [
+        "agents/goal_effect_validator_agent.py",
+        "tests/test_validation_agents.py",
+        "workspace/tasks/workflow-017-validation/final/validation_feedback.json"
+      ],
+      "notes": "demo_render_checks 已包含 screenshot、dom_terms、dom_selectors、page_structure 和 acceptance_conclusion。"
+    },
+    {
+      "id": "goal_spec_dom_selectors",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        "workspace/tasks/workflow-017-validation/final/validation_feedback.json"
+      ],
+      "notes": "目标配置已要求 #playBtn、#resetBtn、#phaseValue 和关键 data-node 选择器，正式验证全部命中。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-017/final/decision_summary.yaml",
+        "workspace/tasks/workflow-017/runs/workflow-017-run.yaml",
+        "workspace/tasks/workflow-017/state.json"
+      ],
+      "notes": "workflow-017 完成 validation、dispatch、review、final planning，质量门已审批并允许进入 workflow-018。"
+    }
+  ],
+  "blocking_issues": []
+}

@@ -460,7 +460,15 @@ raise SystemExit(0)
 
 
 def test_goal_effect_validator_agent_checks_demo_rendering(tmp_path: Path) -> None:
-    browser = write_fake_browser(tmp_path, dom="<html><body>运行演示 当前阶段</body></html>")
+    browser = write_fake_browser(
+        tmp_path,
+        dom=(
+            "<html><head><title>AI开发流水线效果展示</title></head>"
+            "<body><button id='playBtn'>运行演示</button>"
+            "<div id='phaseValue'>当前阶段</div>"
+            "<div data-node='ra'></div></body></html>"
+        ),
+    )
     write_yaml(
         tmp_path,
         "workspace/tasks/validation-001/input/validation_goal.yaml",
@@ -475,6 +483,7 @@ def test_goal_effect_validator_agent_checks_demo_rendering(tmp_path: Path) -> No
                     "viewport": {"width": 960, "height": 640},
                     "min_screenshot_bytes": 128,
                     "required_dom_terms": ["运行演示", "当前阶段"],
+                    "required_dom_selectors": ["#playBtn", "#phaseValue", "[data-node=\"ra\"]"],
                 }
             ],
         },
@@ -494,7 +503,25 @@ def test_goal_effect_validator_agent_checks_demo_rendering(tmp_path: Path) -> No
     assert render_check["result"] == "pass"
     assert render_check["screenshot_artifact"] == "workspace/tasks/validation-001/review/demo_render.png"
     assert render_check["screenshot_bytes"] >= 128
-    assert render_check["missing"] == {"browser": [], "screenshot": [], "dom_terms": []}
+    assert render_check["missing"] == {
+        "browser": [],
+        "screenshot": [],
+        "dom_terms": [],
+        "dom_selectors": [],
+    }
+    assert render_check["evidence"]["screenshot"]["passed"] is True
+    assert render_check["evidence"]["dom_terms"] == [
+        {"term": "运行演示", "present": True},
+        {"term": "当前阶段", "present": True},
+    ]
+    assert render_check["evidence"]["dom_selectors"] == [
+        {"selector": "#playBtn", "present": True},
+        {"selector": "#phaseValue", "present": True},
+        {"selector": "[data-node=\"ra\"]", "present": True},
+    ]
+    assert render_check["evidence"]["page_structure"]["has_html"] is True
+    assert render_check["evidence"]["page_structure"]["title"] == "AI开发流水线效果展示"
+    assert render_check["acceptance_conclusion"]["passed"] is True
 
 
 def test_goal_effect_validator_agent_blocks_missing_demo_rendering(tmp_path: Path) -> None:
@@ -512,6 +539,7 @@ def test_goal_effect_validator_agent_blocks_missing_demo_rendering(tmp_path: Pat
                     "screenshot_artifact": "workspace/tasks/validation-001/review/demo_render.png",
                     "min_screenshot_bytes": 128,
                     "required_dom_terms": ["运行演示"],
+                    "required_dom_selectors": ["#playBtn"],
                 }
             ],
         },
@@ -531,6 +559,8 @@ def test_goal_effect_validator_agent_blocks_missing_demo_rendering(tmp_path: Pat
     assert render_check["result"] == "fail"
     assert render_check["missing"]["screenshot"] == ["workspace/tasks/validation-001/review/demo_render.png"]
     assert render_check["missing"]["dom_terms"] == ["运行演示"]
+    assert render_check["missing"]["dom_selectors"] == ["#playBtn"]
+    assert render_check["acceptance_conclusion"]["passed"] is False
     assert result.output["blocking_issues"][0]["id"] == "demo_render_check:demo_render_main"
 
 
