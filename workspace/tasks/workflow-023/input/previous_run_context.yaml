@@ -1,0 +1,65 @@
+available: true
+source_run_record: workspace/tasks/workflow-022/runs/workflow-022-run.yaml
+source_task_id: workflow-022
+source_run_id: workflow-022-run
+quality_gate_status: approved
+post_approval_action_status: allowed
+evidence_decisions:
+- goal_effect_aligned
+- tests_passed
+- dispatch_validated
+- code_review_passed
+- retry_required
+- next_action
+evidence_summary:
+- decision: goal_effect_aligned
+  status: passed
+  evidence_count: 4
+  notes: alignment_score=1.0; blocking_issues=0
+- decision: tests_passed
+  status: passed
+  evidence_count: 3
+  notes: validation_state=waiting_for_human_merge_approval
+- decision: dispatch_validated
+  status: waiting_for_human_merge_approval
+  evidence_count: 11
+  notes: completed=3; skipped=0
+- decision: code_review_passed
+  status: passed
+  evidence_count: 3
+  notes: review_state=waiting_for_human_merge_approval
+- decision: retry_required
+  status: not_required
+  evidence_count: 0
+  notes: 自动化步骤已完成，等待人工质量门决策。
+- decision: next_action
+  status: human_decision
+  evidence_count: 2
+  notes: 'None: 等待人工选择路线图任务'
+remaining_work:
+- 'roadmap-001: 持续优化路线图产品化'
+- 'decision-view-001: 人工决策视图产品化'
+- 'task-library-001: 优化任务库结构化'
+remaining_work_count: 3
+completed_source_task_ids:
+- ui-validation-001
+- feedback-002
+- dispatch-002
+- roadmap-001
+- decision-view-001
+- task-library-001
+next_recommended_action:
+  task_id: null
+  title: 等待人工选择路线图任务
+  priority: human_decision
+  reason: roadmap-001 已产出持续优化路线图，需由人工选择哪些任务进入下一阶段。
+human_roadmap_selection:
+  artifact: workspace/tasks/workflow-023/input/human_roadmap_selection.yaml
+  decision: select_tasks
+  decision_owner: human
+  selected_at: '2026-06-01T17:27:40Z'
+  selected_task_ids:
+  - decision-view-001
+  - task-library-001
+  source_run_record: workspace/tasks/workflow-022/runs/workflow-022-run.yaml
+  source_roadmap: workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml

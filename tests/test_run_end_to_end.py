@@ -577,6 +577,136 @@ def test_run_end_to_end_builds_roadmap_and_waits_for_human_selection(tmp_path: P
     ]
 
 
+def test_run_end_to_end_consumes_selected_roadmap_tasks(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-022/runs/workflow-022-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-022",
+            "run_metadata": {"run_id": "workflow-022-run"},
+            "remaining_work": [
+                "roadmap-001: 持续优化路线图产品化",
+                "decision-view-001: 人工决策视图产品化",
+                "task-library-001: 优化任务库结构化",
+            ],
+            "completed_source_task_ids": [
+                "ui-validation-001",
+                "feedback-002",
+                "dispatch-002",
+            ],
+            "next_recommended_action": {
+                "task_id": None,
+                "title": "等待人工选择路线图任务",
+                "priority": "human_decision",
+                "reason": "roadmap-001 已产出持续优化路线图，需由人工选择哪些任务进入下一阶段。",
+            },
+            "target_effect_report": {
+                "artifact": "workspace/tasks/workflow-022/final/target_effect_report.md",
+                "status": "passed",
+                "blocking_issue_count": 0,
+            },
+            "continuous_optimization_roadmap": {
+                "artifact": "workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml",
+                "status": "waiting_for_human_selection",
+                "candidate_count": 2,
+                "candidate_task_ids": [
+                    "decision-view-001",
+                    "task-library-001",
+                ],
+                "requires_human_selection": True,
+            },
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "next_action",
+                    "status": "human_decision",
+                    "evidence": [
+                        "workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml"
+                    ],
+                    "notes": "等待人工选择路线图任务。",
+                }
+            ],
+        },
+    )
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml",
+        {
+            "task_id": "workflow-022",
+            "source_task_id": "roadmap-001",
+            "candidate_tasks": [
+                {
+                    "id": "decision-view-001",
+                    "title": "人工决策视图产品化",
+                    "priority": "medium",
+                    "recommended_agent": "CoderAgent",
+                    "risk_level": "low",
+                    "value": "把目标效果、当前达成、剩余任务和下一步建议汇总为稳定的人读决策视图。",
+                    "risk": "低风险，主要影响结构化产物和人工决策表达。",
+                    "acceptance_criteria": [
+                        "决策视图能引用 run record、target_effect_report 和 recommendation_basis。",
+                        "视图能清楚展示是否可以进入下一阶段。",
+                        "python -m pytest -q 通过。",
+                    ],
+                },
+                {
+                    "id": "task-library-001",
+                    "title": "优化任务库结构化",
+                    "priority": "medium",
+                    "recommended_agent": "RequirementAnalysisAgent",
+                    "risk_level": "low",
+                    "value": "整理可复用优化任务模板，区分基础能力、产品化表达和长期演进。",
+                    "risk": "低风险，主要影响结构化产物和人工决策表达。",
+                    "acceptance_criteria": [
+                        "任务库产物包含分类、触发条件和验收标准。",
+                        "任务库不重复旧三项已完成任务。",
+                        "python -m pytest -q 通过。",
+                    ],
+                },
+            ],
+            "decision_gate": {"required": True, "decision_owner": "human"},
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-023",
+        run_id="workflow-023-run",
+        previous_run_record=previous_record_path,
+        selected_roadmap_tasks=["decision-view-001", "task-library-001"],
+    )
+
+    selection = summary["human_roadmap_selection"]
+    assert selection["selected_task_ids"] == ["decision-view-001", "task-library-001"]
+    assert selection["artifact"] == "workspace/tasks/workflow-023/input/human_roadmap_selection.yaml"
+    assert summary["decision_view"]["artifact"] == (
+        "workspace/tasks/workflow-023/final/human_decision_view.md"
+    )
+    assert summary["optimization_task_library"]["artifact"] == (
+        "workspace/tasks/workflow-023/final/optimization_task_library.yaml"
+    )
+    completed = summary["recommendation_basis"]["completed_this_run_task_ids"]
+    assert "roadmap-001" in completed
+    assert "decision-view-001" in completed
+    assert "task-library-001" in completed
+    assert summary["next_recommended_action"]["task_id"] == "workflow-024"
+    view = read_text(tmp_path, "workspace/tasks/workflow-023/final/human_decision_view.md")
+    assert "## 目标效果" in view
+    assert "workflow-022/runs/workflow-022-run.yaml" in view
+    library = read_yaml(tmp_path, "workspace/tasks/workflow-023/final/optimization_task_library.yaml")
+    assert [task["id"] for task in library["tasks"]] == [
+        "decision-view-001",
+        "task-library-001",
+    ]
+    assert not {"feedback-002", "dispatch-002", "ui-validation-001"} & {
+        task["id"] for task in library["tasks"]
+    }
+
+
 def test_quality_gate_blocks_missing_required_evidence() -> None:
     summary = {
         "execution_summary": {"failed": []},

@@ -1,0 +1,40 @@
+task_id: workflow-023
+status: waiting_for_human_approval
+summary: >-
+  已按人工决策同时执行 decision-view-001 和 task-library-001。系统现在能把
+  workflow-022 的路线图人工选择落成结构化输入，并在下一轮生成稳定的人工决策视图
+  与优化任务库。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: 增加 --selected-roadmap-tasks 参数，用于消费人工选择的路线图候选任务。
+  - path: scripts/run_end_to_end.py
+    change: 新增 human_roadmap_selection.yaml、human_decision_view.md 和 optimization_task_library.yaml 产物生成逻辑。
+  - path: scripts/run_end_to_end.py
+    change: 人工选择的路线图任务会计入 completed_source_task_ids，避免下一轮重复推荐。
+  - path: tests/test_run_end_to_end.py
+    change: 增加同时选择 decision-view-001 和 task-library-001 的端到端回归用例。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py::test_run_end_to_end_consumes_selected_roadmap_tasks -q
+    result: 1 passed
+  - command: python -m pytest tests/test_run_end_to_end.py tests/test_optimization_planner_agent.py -q
+    result: 34 passed
+  - command: python -m pytest -q
+    result: 110 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-023 --dry-run --rerun-policy skip_completed --run-id workflow-023-dry-run --previous-run-record workspace/tasks/workflow-022/runs/workflow-022-run.yaml --selected-roadmap-tasks decision-view-001,task-library-001 --json
+    result: dry_run 通过，计划包含人工选择、决策视图和任务库产物。
+  - command: python scripts/run_end_to_end.py --task-id workflow-023 --rerun-policy new_ids --run-id workflow-023-run --previous-run-record workspace/tasks/workflow-022/runs/workflow-022-run.yaml --selected-roadmap-tasks decision-view-001,task-library-001 --json
+    result: ready_for_human_decision，alignment_score=1.0，blocking_issues=0。
+selected_roadmap_tasks:
+  - decision-view-001
+  - task-library-001
+key_artifacts:
+  - workspace/tasks/workflow-023/input/human_roadmap_selection.yaml
+  - workspace/tasks/workflow-023/final/human_decision_view.md
+  - workspace/tasks/workflow-023/final/optimization_task_library.yaml
+  - workspace/tasks/workflow-023/final/target_effect_report.md
+  - workspace/tasks/workflow-023/runs/workflow-023-run.yaml
+next_recommended_action:
+  task_id: workflow-024
+  title: 端到端闭环持续优化
+  status: waiting_for_human_approval
+  reason: workflow-023 当前等待人工质量门审批，审批后才继续 workflow-024。

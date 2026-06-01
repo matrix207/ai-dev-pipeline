@@ -1,0 +1,50 @@
+task_id: workflow-023
+status: ready_for_reuse
+source_roadmap: workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml
+source_run_record: workspace/tasks/workflow-022/runs/workflow-022-run.yaml
+goal: 沉淀人工已选择的持续优化任务模板，供后续 planner 复用。
+excluded_completed_task_ids:
+- feedback-002
+- dispatch-002
+- ui-validation-001
+- roadmap-001
+categories:
+- id: productized_decision_support
+  title: 产品化决策支持
+  trigger_conditions:
+  - 人工需要稳定查看目标效果、当前达成、剩余任务和下一步建议。
+- id: planning_foundation
+  title: 规划基础能力
+  trigger_conditions:
+  - 后续 planner 需要从可复用任务库中选择优化方向。
+tasks:
+- id: decision-view-001
+  title: 人工决策视图产品化
+  category: productized_decision_support
+  priority: medium
+  recommended_agent: CoderAgent
+  risk_level: low
+  value: 把目标效果、当前达成、剩余任务和下一步建议汇总为稳定的人读决策视图。
+  risk: 低风险，主要影响结构化产物和人工决策表达。
+  trigger_conditions:
+  - 每轮完成后需要人工判断是否进入下一阶段。
+  acceptance_criteria:
+  - 决策视图能引用 run record、target_effect_report 和 recommendation_basis。
+  - 视图能清楚展示是否可以进入下一阶段。
+  - python -m pytest -q 通过。
+  source_roadmap: workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml
+- id: task-library-001
+  title: 优化任务库结构化
+  category: planning_foundation
+  priority: medium
+  recommended_agent: RequirementAnalysisAgent
+  risk_level: low
+  value: 整理可复用优化任务模板，区分基础能力、产品化表达和长期演进。
+  risk: 低风险，主要影响结构化产物和人工决策表达。
+  trigger_conditions:
+  - 持续优化候选任务增多，需要按类别、价值、风险和验收方式复用。
+  acceptance_criteria:
+  - 任务库产物包含分类、触发条件和验收标准。
+  - 任务库不重复旧三项已完成任务。
+  - python -m pytest -q 通过。
+  source_roadmap: workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml

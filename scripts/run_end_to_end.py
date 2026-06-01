@@ -58,6 +58,7 @@ def run_end_to_end(
     rerun_policy: str = "new_ids",
     run_id: str | None = None,
     previous_run_record: str | None = None,
+    selected_roadmap_tasks: list[str] | None = None,
 ) -> dict[str, Any]:
     """Run a complete local feedback loop and persist a decision summary."""
     if rerun_policy not in RERUN_POLICIES:
@@ -67,6 +68,20 @@ def run_end_to_end(
     paths = _workflow_paths(task_id)
     run_metadata = _run_metadata(run_id)
     previous_context = _previous_run_context(repo_root, previous_run_record)
+    roadmap_selection = _build_human_roadmap_selection(
+        repo_root,
+        task_id,
+        previous_context,
+        selected_roadmap_tasks or [],
+        paths["human_roadmap_selection"],
+        selected_at=run_metadata["started_at"],
+        write_artifact=not dry_run,
+    )
+    if roadmap_selection:
+        previous_context = _previous_context_with_roadmap_selection(
+            previous_context,
+            roadmap_selection,
+        )
 
     validation_task_id = f"{task_id}-validation"
     dispatch_task_id = f"{task_id}-dispatch"
@@ -81,6 +96,7 @@ def run_end_to_end(
             run_metadata=run_metadata,
             rerun_policy=rerun_policy,
             previous_context=previous_context,
+            roadmap_selection=roadmap_selection,
             validation_task_id=validation_task_id,
             dispatch_task_id=dispatch_task_id,
             review_task_id=review_task_id,
@@ -221,6 +237,15 @@ def run_end_to_end(
         summary,
         paths["target_effect_report"],
     )
+    if roadmap_selection:
+        summary["human_roadmap_selection"] = _selection_summary(roadmap_selection)
+        products = _build_selected_roadmap_products(
+            repo_root,
+            summary,
+            roadmap_selection,
+            paths,
+        )
+        summary.update(products)
     roadmap = _build_continuous_optimization_roadmap(
         repo_root,
         summary,
@@ -245,6 +270,13 @@ def run_end_to_end(
     summary["evidence_map"] = _evidence_map(summary)
     summary["quality_gate"] = _quality_gate(summary, _quality_gate_config(repo_root))
     summary["post_approval_action"] = _post_approval_action(summary)
+    if summary.get("decision_view"):
+        _write_human_decision_view(
+            repo_root,
+            summary,
+            roadmap_selection or {},
+            summary["decision_view"]["artifact"],
+        )
     # run record 是不可覆盖的单次运行记录；decision_summary.yaml 保留“最新摘要”入口。
     write_yaml(repo_root, summary["run_record_artifact"], summary)
     write_yaml(repo_root, paths["decision_summary"], summary)
@@ -263,6 +295,9 @@ def _workflow_paths(task_id: str) -> dict[str, str]:
         "decision_summary": f"{base}/final/decision_summary.yaml",
         "target_effect_report": f"{base}/final/target_effect_report.md",
         "continuous_optimization_roadmap": f"{base}/final/continuous_optimization_roadmap.yaml",
+        "human_roadmap_selection": f"{base}/input/human_roadmap_selection.yaml",
+        "human_decision_view": f"{base}/final/human_decision_view.md",
+        "optimization_task_library": f"{base}/final/optimization_task_library.yaml",
     }
 
 
@@ -641,7 +676,7 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
     next_action_evidence = [current["final_plan_artifact"]]
     if roadmap.get("artifact"):
         next_action_evidence.append(roadmap["artifact"])
-    return [
+    evidence = [
         _evidence_item(
             decision="goal_effect_aligned",
             status=str(goal.get("validation_status")),
@@ -683,6 +718,37 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
             notes=f"{summary['next_recommended_action'].get('task_id')}: {summary['next_recommended_action'].get('title')}",
         ),
     ]
+    selection = summary.get("human_roadmap_selection") or {}
+    if selection.get("artifact"):
+        evidence.append(
+            _evidence_item(
+                decision="human_roadmap_selection",
+                status="selected",
+                evidence=[selection["artifact"]],
+                notes=f"selected={', '.join(selection.get('selected_task_ids', []))}",
+            )
+        )
+    decision_view = summary.get("decision_view") or {}
+    if decision_view.get("artifact"):
+        evidence.append(
+            _evidence_item(
+                decision="decision_view_productized",
+                status=decision_view.get("status", "ready"),
+                evidence=[decision_view["artifact"]],
+                notes="人工决策视图已生成。",
+            )
+        )
+    task_library = summary.get("optimization_task_library") or {}
+    if task_library.get("artifact"):
+        evidence.append(
+            _evidence_item(
+                decision="task_library_productized",
+                status=task_library.get("status", "ready"),
+                evidence=[task_library["artifact"]],
+                notes=f"task_count={task_library.get('task_count', 0)}",
+            )
+        )
+    return evidence
 
 
 def _build_target_effect_report(
@@ -833,6 +899,237 @@ def _format_presence_items(label: str, items: list[dict[str, Any]], key: str) ->
     if missing:
         lines.append(f"  - {label}缺失：{', '.join(missing)}")
     return lines
+
+
+def _build_human_roadmap_selection(
+    repo_root: str | Path,
+    task_id: str,
+    previous_context: dict[str, Any],
+    selected_task_ids: list[str],
+    selection_artifact: str,
+    *,
+    selected_at: str,
+    write_artifact: bool,
+) -> dict[str, Any] | None:
+    """把人工选择的路线图任务落成结构化输入，供下一轮确定执行范围。"""
+    selected_task_ids = _normalize_selected_task_ids(selected_task_ids)
+    if not selected_task_ids:
+        return None
+    if not previous_context.get("available"):
+        raise ValueError("selected roadmap tasks require --previous-run-record.")
+
+    repo_root = Path(repo_root)
+    source_record_path = previous_context["source_run_record"]
+    source_record = read_yaml(repo_root, source_record_path)
+    roadmap_ref = source_record.get("continuous_optimization_roadmap") or {}
+    roadmap_path = roadmap_ref.get("artifact")
+    if not roadmap_path:
+        raise ValueError("previous run record does not reference a continuous optimization roadmap.")
+
+    roadmap = read_yaml(repo_root, roadmap_path)
+    candidates = {str(task.get("id")): dict(task) for task in roadmap.get("candidate_tasks", [])}
+    unknown = [task_id_value for task_id_value in selected_task_ids if task_id_value not in candidates]
+    if unknown:
+        raise ValueError(f"selected roadmap tasks are not candidates: {', '.join(unknown)}")
+
+    selection = {
+        "artifact": selection_artifact,
+        "task_id": task_id,
+        "source_run_record": source_record_path,
+        "source_roadmap": roadmap_path,
+        "source_task_id": roadmap.get("source_task_id", "roadmap-001"),
+        "decision": "select_tasks",
+        "decision_owner": "human",
+        "selected_at": selected_at,
+        "selected_task_ids": selected_task_ids,
+        "selected_tasks": [candidates[task_id_value] for task_id_value in selected_task_ids],
+        "notes": "人工明确选择这些路线图候选任务进入下一阶段。",
+    }
+    if write_artifact:
+        write_yaml(repo_root, selection_artifact, selection)
+    return selection
+
+
+def _normalize_selected_task_ids(selected_task_ids: list[str]) -> list[str]:
+    normalized: list[str] = []
+    for task_id_value in selected_task_ids:
+        for part in str(task_id_value).split(","):
+            candidate = part.strip()
+            if candidate and candidate not in normalized:
+                normalized.append(candidate)
+    return normalized
+
+
+def _previous_context_with_roadmap_selection(
+    previous_context: dict[str, Any],
+    roadmap_selection: dict[str, Any],
+) -> dict[str, Any]:
+    updated = dict(previous_context)
+    updated["human_roadmap_selection"] = _selection_summary(roadmap_selection)
+    updated["completed_source_task_ids"] = _merge_unique(
+        list(previous_context.get("completed_source_task_ids", [])),
+        [str(roadmap_selection.get("source_task_id", "roadmap-001"))],
+        list(roadmap_selection.get("selected_task_ids", [])),
+    )
+    return updated
+
+
+def _selection_summary(roadmap_selection: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "artifact": roadmap_selection.get("artifact"),
+        "decision": roadmap_selection.get("decision"),
+        "decision_owner": roadmap_selection.get("decision_owner"),
+        "selected_at": roadmap_selection.get("selected_at"),
+        "selected_task_ids": list(roadmap_selection.get("selected_task_ids", [])),
+        "source_run_record": roadmap_selection.get("source_run_record"),
+        "source_roadmap": roadmap_selection.get("source_roadmap"),
+    }
+
+
+def _build_selected_roadmap_products(
+    repo_root: str | Path,
+    summary: dict[str, Any],
+    roadmap_selection: dict[str, Any],
+    paths: dict[str, str],
+) -> dict[str, Any]:
+    selected_ids = set(roadmap_selection.get("selected_task_ids", []))
+    products: dict[str, Any] = {}
+    if "task-library-001" in selected_ids:
+        products["optimization_task_library"] = _write_optimization_task_library(
+            repo_root,
+            summary,
+            roadmap_selection,
+            paths["optimization_task_library"],
+        )
+    if "decision-view-001" in selected_ids:
+        products["decision_view"] = {
+            "artifact": paths["human_decision_view"],
+            "status": "ready",
+            "source_run_record": roadmap_selection.get("source_run_record"),
+            "target_effect_report": summary.get("target_effect_report", {}).get("artifact"),
+            "recommendation_basis": "recommendation_basis",
+        }
+    return products
+
+
+def _write_optimization_task_library(
+    repo_root: str | Path,
+    summary: dict[str, Any],
+    roadmap_selection: dict[str, Any],
+    artifact: str,
+) -> dict[str, Any]:
+    selected_tasks = list(roadmap_selection.get("selected_tasks", []))
+    excluded_completed = _merge_unique(
+        ["feedback-002", "dispatch-002", "ui-validation-001"],
+        [str(roadmap_selection.get("source_task_id", "roadmap-001"))],
+    )
+    library = {
+        "task_id": summary.get("task_id"),
+        "status": "ready_for_reuse",
+        "source_roadmap": roadmap_selection.get("source_roadmap"),
+        "source_run_record": roadmap_selection.get("source_run_record"),
+        "goal": "沉淀人工已选择的持续优化任务模板，供后续 planner 复用。",
+        "excluded_completed_task_ids": excluded_completed,
+        "categories": [
+            {
+                "id": "productized_decision_support",
+                "title": "产品化决策支持",
+                "trigger_conditions": ["人工需要稳定查看目标效果、当前达成、剩余任务和下一步建议。"],
+            },
+            {
+                "id": "planning_foundation",
+                "title": "规划基础能力",
+                "trigger_conditions": ["后续 planner 需要从可复用任务库中选择优化方向。"],
+            },
+        ],
+        "tasks": [
+            {
+                "id": task.get("id"),
+                "title": task.get("title"),
+                "category": _task_library_category(str(task.get("id"))),
+                "priority": task.get("priority"),
+                "recommended_agent": task.get("recommended_agent"),
+                "risk_level": task.get("risk_level"),
+                "value": task.get("value"),
+                "risk": task.get("risk"),
+                "trigger_conditions": _task_trigger_conditions(str(task.get("id"))),
+                "acceptance_criteria": list(task.get("acceptance_criteria", [])),
+                "source_roadmap": roadmap_selection.get("source_roadmap"),
+            }
+            for task in selected_tasks
+            if str(task.get("id")) not in excluded_completed
+        ],
+    }
+    write_yaml(repo_root, artifact, library)
+    return {
+        "artifact": artifact,
+        "status": library["status"],
+        "task_count": len(library["tasks"]),
+        "task_ids": [task["id"] for task in library["tasks"]],
+    }
+
+
+def _task_library_category(task_id: str) -> str:
+    if task_id == "decision-view-001":
+        return "productized_decision_support"
+    return "planning_foundation"
+
+
+def _task_trigger_conditions(task_id: str) -> list[str]:
+    if task_id == "decision-view-001":
+        return ["每轮完成后需要人工判断是否进入下一阶段。"]
+    return ["持续优化候选任务增多，需要按类别、价值、风险和验收方式复用。"]
+
+
+def _write_human_decision_view(
+    repo_root: str | Path,
+    summary: dict[str, Any],
+    roadmap_selection: dict[str, Any],
+    artifact: str,
+) -> None:
+    next_action = summary.get("next_recommended_action") or {}
+    quality_gate = summary.get("quality_gate") or {}
+    recommendation_basis = summary.get("recommendation_basis") or {}
+    selected_task_ids = roadmap_selection.get("selected_task_ids", [])
+    can_enter_next_stage = (
+        quality_gate.get("status") == "approved"
+        and summary.get("post_approval_action", {}).get("can_continue") is True
+    )
+    lines = [
+        "# 人工决策视图",
+        "",
+        "## 目标效果",
+        "- 人工可以一屏查看目标效果、当前达成、剩余任务和下一步建议。",
+        "- 决策视图引用 run record、target_effect_report 和 recommendation_basis，方便追溯。",
+        "",
+        "## 当前达成",
+        f"- 本轮任务：{summary.get('task_id')}",
+        f"- 来源运行记录：{roadmap_selection.get('source_run_record')}",
+        f"- 目标效果报告：{summary.get('target_effect_report', {}).get('artifact')}",
+        f"- 人工选择：{', '.join(selected_task_ids)}",
+        f"- 质量门状态：{quality_gate.get('status')}",
+        f"- 是否可以进入下一阶段：{'是' if can_enter_next_stage else '待人工审批'}",
+        "",
+        "## 剩余任务",
+        *[f"- {item}" for item in summary.get("remaining_work", [])],
+        "",
+        "## 下一步建议",
+        f"- 任务：{next_action.get('task_id')}",
+        f"- 标题：{next_action.get('title')}",
+        f"- 优先级：{next_action.get('priority')}",
+        f"- 原因：{next_action.get('reason')}",
+        "",
+        "## 推荐依据",
+        f"- 策略：{recommendation_basis.get('strategy')}",
+        f"- 已完成源任务：{', '.join(recommendation_basis.get('completed_this_run_task_ids', []))}",
+        f"- 剩余开放任务：{', '.join(recommendation_basis.get('remaining_open_task_ids', []))}",
+        "",
+        "## 关键证据",
+        f"- run_record: {summary.get('run_record_artifact')}",
+        f"- recommendation_basis: {summary.get('run_record_artifact')}#recommendation_basis",
+        f"- target_effect_report: {summary.get('target_effect_report', {}).get('artifact')}",
+    ]
+    write_text(repo_root, artifact, "\n".join(lines) + "\n")
 
 
 def _build_continuous_optimization_roadmap(
@@ -1105,6 +1402,7 @@ def _dry_run_summary(
     run_metadata: dict[str, str],
     rerun_policy: str,
     previous_context: dict[str, Any],
+    roadmap_selection: dict[str, Any] | None,
     validation_task_id: str,
     dispatch_task_id: str,
     review_task_id: str,
@@ -1149,6 +1447,9 @@ def _dry_run_summary(
                 paths["decision_summary"],
                 paths["target_effect_report"],
                 paths["continuous_optimization_roadmap"],
+                paths["human_roadmap_selection"],
+                paths["human_decision_view"],
+                paths["optimization_task_library"],
             ],
             "errors": [],
         },
@@ -1186,6 +1487,9 @@ def _dry_run_summary(
             "feedback_artifacts": [],
         },
         "previous_run_context": previous_context,
+        "human_roadmap_selection": (
+            _selection_summary(roadmap_selection) if roadmap_selection else None
+        ),
         "execution_summary": execution_summary,
         "retry_plan": {
             "status": "not_required",
@@ -1211,6 +1515,9 @@ def _dry_run_summary(
                     paths["decision_summary"],
                     paths["target_effect_report"],
                     paths["continuous_optimization_roadmap"],
+                    paths["human_roadmap_selection"],
+                    paths["human_decision_view"],
+                    paths["optimization_task_library"],
                 ],
                 notes="dry-run 仅预览计划，不写入产物。",
             )
@@ -1458,6 +1765,15 @@ def _save_parent_state(
     roadmap = summary.get("continuous_optimization_roadmap") or {}
     if roadmap.get("artifact"):
         artifacts.append(roadmap["artifact"])
+    selection = summary.get("human_roadmap_selection") or {}
+    if selection.get("artifact"):
+        artifacts.append(selection["artifact"])
+    decision_view = summary.get("decision_view") or {}
+    if decision_view.get("artifact"):
+        artifacts.append(decision_view["artifact"])
+    task_library = summary.get("optimization_task_library") or {}
+    if task_library.get("artifact"):
+        artifacts.append(task_library["artifact"])
     state = TaskState(
         task_id=task_id,
         step="retry_plan" if failed_steps else "human_merge_gate",
@@ -1527,6 +1843,9 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"- Final plan: {current['final_plan_artifact']}",
             f"- Target effect report: {(summary.get('target_effect_report') or {}).get('artifact', 'none')}",
             f"- Continuous optimization roadmap: {(summary.get('continuous_optimization_roadmap') or {}).get('artifact', 'none')}",
+            f"- Human roadmap selection: {(summary.get('human_roadmap_selection') or {}).get('artifact', 'none')}",
+            f"- Human decision view: {(summary.get('decision_view') or {}).get('artifact', 'none')}",
+            f"- Optimization task library: {(summary.get('optimization_task_library') or {}).get('artifact', 'none')}",
             "",
             "Next recommended action:",
             f"- {next_action['task_id']}: {next_action['title']} ({next_action['priority']})",
@@ -1751,6 +2070,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Previous run record artifact to use as decision input for this run.",
     )
     parser.add_argument(
+        "--selected-roadmap-tasks",
+        help="Comma-separated roadmap candidate task ids approved by the human decision gate.",
+    )
+    parser.add_argument(
         "--rerun-policy",
         choices=sorted(RERUN_POLICIES),
         default="new_ids",
@@ -1806,6 +2129,11 @@ def main() -> int:
         rerun_policy=args.rerun_policy,
         run_id=args.run_id,
         previous_run_record=args.previous_run_record,
+        selected_roadmap_tasks=(
+            _normalize_selected_task_ids([args.selected_roadmap_tasks])
+            if args.selected_roadmap_tasks
+            else None
+        ),
     )
     if args.json:
         print(json.dumps(summary, ensure_ascii=False, indent=2))

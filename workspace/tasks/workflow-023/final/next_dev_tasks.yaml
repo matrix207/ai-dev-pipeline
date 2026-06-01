@@ -1,0 +1,25 @@
+task_batch:
+  source_task: workflow-023
+  language: zh-CN
+  status: waiting_for_human_approval
+  goal: 人工审批 workflow-023 产物后，再决定是否进入 workflow-024 持续优化。
+completed_tasks:
+  - id: decision-view-001
+    title: 人工决策视图产品化
+    artifact: workspace/tasks/workflow-023/final/human_decision_view.md
+  - id: task-library-001
+    title: 优化任务库结构化
+    artifact: workspace/tasks/workflow-023/final/optimization_task_library.yaml
+pending_human_decision:
+  required: true
+  decision_owner: human
+  run_record: workspace/tasks/workflow-023/runs/workflow-023-run.yaml
+  options:
+    - approve workflow-023 and continue workflow-024
+    - reject workflow-023 and revise artifacts
+    - stop after workflow-023
+next_recommended_action:
+  id: workflow-024
+  title: 端到端闭环持续优化
+  priority: medium
+  condition: 仅在 workflow-023 人工审批通过后执行。

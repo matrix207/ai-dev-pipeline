@@ -1,0 +1,42 @@
+{
+  "task_id": "workflow-023",
+  "status": "passed",
+  "checked_at": "2026-06-01T17:30:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "human_selection_recorded",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-023/input/human_roadmap_selection.yaml"
+      ],
+      "notes": "已记录人工选择 decision-view-001 和 task-library-001，并追溯到 workflow-022 路线图。"
+    },
+    {
+      "id": "decision_view_productized",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-023/final/human_decision_view.md"
+      ],
+      "notes": "决策视图包含目标效果、当前达成、剩余任务、下一步建议、run record、target_effect_report 和 recommendation_basis。"
+    },
+    {
+      "id": "task_library_structured",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-023/final/optimization_task_library.yaml"
+      ],
+      "notes": "任务库包含分类、触发条件、推荐 Agent、价值、风险和验收标准，且未重复旧三项任务。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-023/final/target_effect_report.md",
+        "workspace/tasks/workflow-023/runs/workflow-023-run.yaml",
+        "workspace/tasks/workflow-023/state.json"
+      ],
+      "notes": "workflow-023 正式运行完成，目标效果验证通过，当前等待人工质量门审批。"
+    }
+  ],
+  "blocking_issues": []
+}
