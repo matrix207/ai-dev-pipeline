@@ -246,6 +246,28 @@ def run_end_to_end(
             paths,
         )
         summary.update(products)
+    usable_acceptance = _build_usable_version_acceptance(
+        repo_root,
+        summary,
+        paths["usable_version_acceptance"],
+        paths["usable_version_report"],
+    )
+    if usable_acceptance:
+        summary["usable_version_acceptance"] = usable_acceptance
+        summary["status"] = "ready_for_final_acceptance"
+        summary["next_recommended_action"] = {
+            "task_id": None,
+            "title": "等待人工最终验收",
+            "priority": "final_acceptance",
+            "reason": "ai-dev-pipeline 可用版验收标准已全部通过，等待人工确认是否结束当前开发链路。",
+        }
+        summary["execution_summary"]["next"] = [
+            {
+                "task_id": None,
+                "title": "等待人工最终验收",
+                "priority": "final_acceptance",
+            }
+        ]
     roadmap = _build_continuous_optimization_roadmap(
         repo_root,
         summary,
@@ -298,6 +320,8 @@ def _workflow_paths(task_id: str) -> dict[str, str]:
         "human_roadmap_selection": f"{base}/input/human_roadmap_selection.yaml",
         "human_decision_view": f"{base}/final/human_decision_view.md",
         "optimization_task_library": f"{base}/final/optimization_task_library.yaml",
+        "usable_version_acceptance": f"{base}/final/usable_version_acceptance.yaml",
+        "usable_version_report": f"{base}/final/usable_version_report.md",
     }
 
 
@@ -748,6 +772,22 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
                 notes=f"task_count={task_library.get('task_count', 0)}",
             )
         )
+    usable_acceptance = summary.get("usable_version_acceptance") or {}
+    if usable_acceptance.get("artifact"):
+        evidence.append(
+            _evidence_item(
+                decision="usable_version_acceptance",
+                status=usable_acceptance.get("status", "unknown"),
+                evidence=[
+                    usable_acceptance["artifact"],
+                    usable_acceptance.get("report_artifact"),
+                ],
+                notes=(
+                    f"passed={usable_acceptance.get('passed_count', 0)}/"
+                    f"{usable_acceptance.get('criteria_count', 0)}"
+                ),
+            )
+        )
     return evidence
 
 
@@ -1132,6 +1172,186 @@ def _write_human_decision_view(
     write_text(repo_root, artifact, "\n".join(lines) + "\n")
 
 
+def _build_usable_version_acceptance(
+    repo_root: str | Path,
+    summary: dict[str, Any],
+    acceptance_artifact: str,
+    report_artifact: str,
+) -> dict[str, Any] | None:
+    """当持续优化候选任务已收敛时，生成可用版验收标准和达成报告。"""
+    previous_context = summary.get("previous_run_context") or {}
+    previous_next_action = previous_context.get("next_recommended_action") or {}
+    if previous_next_action.get("task_id") != summary.get("task_id"):
+        return None
+    if summary.get("recommendation_basis", {}).get("remaining_open_task_ids"):
+        return None
+
+    repo_root = Path(repo_root)
+    previous_record = _read_previous_record(repo_root, previous_context)
+    if not previous_record:
+        return None
+    # 只有已经产出人工决策视图和任务库后，才进入“可用版终验”分支。
+    if not previous_record.get("decision_view") or not previous_record.get("optimization_task_library"):
+        return None
+
+    criteria = _usable_version_criteria(summary, previous_context, previous_record)
+    passed_count = len([item for item in criteria if item["status"] == "passed"])
+    acceptance = {
+        "task_id": summary.get("task_id"),
+        "status": "passed" if passed_count == len(criteria) else "blocked",
+        "goal": "确认 ai-dev-pipeline 已达到可用版验收标准，可以结束当前开发链路或进入新目标规划。",
+        "source_run_record": previous_context.get("source_run_record"),
+        "artifact": acceptance_artifact,
+        "report_artifact": report_artifact,
+        "criteria_count": len(criteria),
+        "passed_count": passed_count,
+        "criteria": criteria,
+        "final_decision_gate": {
+            "required": True,
+            "decision_owner": "human",
+            "allowed_decisions": ["accept_usable_version", "request_changes", "continue_optimization"],
+            "notes": "系统只给出可用版验收证据，是否结束当前开发链路由人工决定。",
+        },
+    }
+    write_yaml(repo_root, acceptance_artifact, acceptance)
+    _write_usable_version_report(repo_root, acceptance, report_artifact)
+    return {
+        "artifact": acceptance_artifact,
+        "report_artifact": report_artifact,
+        "status": acceptance["status"],
+        "criteria_count": acceptance["criteria_count"],
+        "passed_count": acceptance["passed_count"],
+        "requires_human_final_acceptance": True,
+    }
+
+
+def _read_previous_record(repo_root: Path, previous_context: dict[str, Any]) -> dict[str, Any] | None:
+    record_path = previous_context.get("source_run_record")
+    if not record_path:
+        return None
+    try:
+        return read_yaml(repo_root, record_path)
+    except FileNotFoundError:
+        return None
+
+
+def _usable_version_criteria(
+    summary: dict[str, Any],
+    previous_context: dict[str, Any],
+    previous_record: dict[str, Any],
+) -> list[dict[str, Any]]:
+    current = summary.get("current_result") or {}
+    validation_state = current.get("validation_state") or {}
+    dispatch_state = current.get("dispatch_state") or {}
+    review_state = current.get("review_state") or {}
+    target_effect_report = summary.get("target_effect_report") or {}
+    previous_quality_gate = previous_record.get("quality_gate") or {}
+    previous_post_action = previous_record.get("post_approval_action") or {}
+    recommendation_basis = summary.get("recommendation_basis") or {}
+
+    return [
+        {
+            "id": "local_end_to_end_loop",
+            "title": "本地端到端闭环可运行",
+            "status": _passed(
+                target_effect_report.get("status") == "passed"
+                and not summary.get("execution_summary", {}).get("failed")
+            ),
+            "evidence": [
+                current.get("initial_plan_artifact"),
+                current.get("dispatch_tasks_artifact"),
+                current.get("final_plan_artifact"),
+                target_effect_report.get("artifact"),
+            ],
+            "notes": "端到端运行包含验证、规划、调度、评审和下一步决策摘要。",
+        },
+        {
+            "id": "human_quality_gate",
+            "title": "人工审批质量门有效",
+            "status": _passed(
+                previous_quality_gate.get("status") == "approved"
+                and previous_post_action.get("status") == "allowed"
+            ),
+            "evidence": [previous_context.get("source_run_record")],
+            "notes": "上一轮必须经人工审批后，当前轮才消费其运行记录继续推进。",
+        },
+        {
+            "id": "decision_artifacts",
+            "title": "决策产物完整",
+            "status": _passed(
+                bool(previous_record.get("decision_view"))
+                and bool(previous_record.get("optimization_task_library"))
+                and bool(target_effect_report.get("artifact"))
+            ),
+            "evidence": [
+                (previous_record.get("decision_view") or {}).get("artifact"),
+                (previous_record.get("optimization_task_library") or {}).get("artifact"),
+                target_effect_report.get("artifact"),
+            ],
+            "notes": "人工决策视图、任务库和目标效果报告均已结构化持久化。",
+        },
+        {
+            "id": "automation_verification",
+            "title": "自动化验证通过",
+            "status": _passed(
+                validation_state.get("gates", {}).get("tests_passed") is True
+                and review_state.get("gates", {}).get("code_review_passed") is True
+                and dispatch_state.get("status") in SUCCESS_STATUSES
+            ),
+            "evidence": list(validation_state.get("artifacts", []))
+            + list(review_state.get("artifacts", []))
+            + list(dispatch_state.get("artifacts", [])),
+            "notes": "测试验证、代码评审和调度验证均有结构化证据。",
+        },
+        {
+            "id": "finite_task_boundary",
+            "title": "当前开发链路有明确终点",
+            "status": _passed(not recommendation_basis.get("remaining_open_task_ids")),
+            "evidence": [summary.get("run_record_artifact")],
+            "notes": "上一轮路线图候选任务已完成，本轮停在最终人工验收，不再自动扩展任务。",
+        },
+    ]
+
+
+def _passed(condition: bool) -> str:
+    return "passed" if condition else "blocked"
+
+
+def _write_usable_version_report(
+    repo_root: str | Path,
+    acceptance: dict[str, Any],
+    report_artifact: str,
+) -> None:
+    passed = [item for item in acceptance["criteria"] if item["status"] == "passed"]
+    blocked = [item for item in acceptance["criteria"] if item["status"] != "passed"]
+    lines = [
+        "# ai-dev-pipeline 可用版验收报告",
+        "",
+        "## 结论",
+        f"- 状态：{acceptance['status']}",
+        f"- 通过项：{len(passed)}/{acceptance['criteria_count']}",
+        f"- 来源运行记录：{acceptance.get('source_run_record')}",
+        "",
+        "## 验收标准",
+    ]
+    for item in acceptance["criteria"]:
+        lines.extend(
+            [
+                f"- {item['id']}：{item['title']}（{item['status']}）",
+                f"  - 说明：{item['notes']}",
+            ]
+        )
+        evidence = [path for path in item.get("evidence", []) if path]
+        if evidence:
+            lines.append(f"  - 证据：{', '.join(evidence)}")
+    lines.extend(["", "## 最终人工决策"])
+    if blocked:
+        lines.append("- 仍有阻塞项，建议按验收标准修正后重新运行。")
+    else:
+        lines.append("- 可用版验收标准已全部通过，等待人工确认接受、修正或继续优化。")
+    write_text(repo_root, report_artifact, "\n".join(lines) + "\n")
+
+
 def _build_continuous_optimization_roadmap(
     repo_root: str | Path,
     summary: dict[str, Any],
@@ -1450,6 +1670,8 @@ def _dry_run_summary(
                 paths["human_roadmap_selection"],
                 paths["human_decision_view"],
                 paths["optimization_task_library"],
+                paths["usable_version_acceptance"],
+                paths["usable_version_report"],
             ],
             "errors": [],
         },
@@ -1518,6 +1740,8 @@ def _dry_run_summary(
                     paths["human_roadmap_selection"],
                     paths["human_decision_view"],
                     paths["optimization_task_library"],
+                    paths["usable_version_acceptance"],
+                    paths["usable_version_report"],
                 ],
                 notes="dry-run 仅预览计划，不写入产物。",
             )
@@ -1774,6 +1998,11 @@ def _save_parent_state(
     task_library = summary.get("optimization_task_library") or {}
     if task_library.get("artifact"):
         artifacts.append(task_library["artifact"])
+    usable_acceptance = summary.get("usable_version_acceptance") or {}
+    if usable_acceptance.get("artifact"):
+        artifacts.append(usable_acceptance["artifact"])
+    if usable_acceptance.get("report_artifact"):
+        artifacts.append(usable_acceptance["report_artifact"])
     state = TaskState(
         task_id=task_id,
         step="retry_plan" if failed_steps else "human_merge_gate",
@@ -1846,6 +2075,7 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"- Human roadmap selection: {(summary.get('human_roadmap_selection') or {}).get('artifact', 'none')}",
             f"- Human decision view: {(summary.get('decision_view') or {}).get('artifact', 'none')}",
             f"- Optimization task library: {(summary.get('optimization_task_library') or {}).get('artifact', 'none')}",
+            f"- Usable version acceptance: {(summary.get('usable_version_acceptance') or {}).get('artifact', 'none')}",
             "",
             "Next recommended action:",
             f"- {next_action['task_id']}: {next_action['title']} ({next_action['priority']})",

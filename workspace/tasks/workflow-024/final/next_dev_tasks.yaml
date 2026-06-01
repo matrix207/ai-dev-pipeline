@@ -1,0 +1,24 @@
+task_batch:
+  source_task: workflow-024
+  language: zh-CN
+  status: waiting_for_final_acceptance
+  goal: 人工最终验收 ai-dev-pipeline 可用版。
+completed_acceptance:
+  artifact: workspace/tasks/workflow-024/final/usable_version_acceptance.yaml
+  report_artifact: workspace/tasks/workflow-024/final/usable_version_report.md
+  status: passed
+  passed_count: 5
+  criteria_count: 5
+pending_human_decision:
+  required: true
+  decision_owner: human
+  run_record: workspace/tasks/workflow-024/runs/workflow-024-run.yaml
+  options:
+    - accept usable version and end current development chain
+    - request changes with specific acceptance gaps
+    - continue optimization with a new explicit goal
+next_recommended_action:
+  id: null
+  title: 等待人工最终验收
+  priority: final_acceptance
+  condition: 不自动进入 workflow-025，除非人工指定新的优化目标。

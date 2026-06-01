@@ -320,8 +320,8 @@ evidence_map:
   - workspace/tasks/workflow-023/final/optimization_task_library.yaml
   notes: task_count=2
 quality_gate:
-  status: waiting_for_human_approval
-  can_continue: false
+  status: approved
+  can_continue: true
   blocking_issues: []
   warnings: []
   config:
@@ -336,16 +336,20 @@ quality_gate:
     human_approval_required: true
   human_approval:
     required: true
-    merge_approved: false
-    status: pending
-  next_allowed_action: 人工审批通过后继续。
+    merge_approved: true
+    status: approved
+  next_allowed_action: 人工审批已通过，可以继续后续动作。
 post_approval_action:
-  status: approval_required
-  can_continue: false
+  status: allowed
+  can_continue: true
   allowed_actions:
-  - view_run_record
-  - approve_run
-  blocked_actions:
   - continue_next_stage
-  recommended_action: 补充人工审批记录后再决定是否继续。
-  reason: 当前运行尚未获得人工审批。
+  - view_run_record
+  blocked_actions: []
+  recommended_action: 继续执行下一阶段任务。
+  reason: 人工审批已通过。
+approval_record:
+  approver: dennis
+  decision: approved
+  comment: 批准 workflow-023，继续执行 workflow-024，目标是完成 ai-dev-pipeline 可用版验收标准。
+  decided_at: '2026-06-02T00:00:00Z'

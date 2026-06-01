@@ -1,0 +1,43 @@
+{
+  "task_id": "workflow-024",
+  "status": "passed",
+  "checked_at": "2026-06-01T17:58:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "usable_acceptance_created",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-024/final/usable_version_acceptance.yaml",
+        "workspace/tasks/workflow-024/final/usable_version_report.md"
+      ],
+      "notes": "可用版验收标准和面向人工的验收报告已生成。"
+    },
+    {
+      "id": "all_criteria_passed",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-024/final/usable_version_acceptance.yaml"
+      ],
+      "notes": "5 项可用版验收标准全部通过。"
+    },
+    {
+      "id": "finite_boundary",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-024/runs/workflow-024-run.yaml"
+      ],
+      "notes": "next_recommended_action 停在 final_acceptance，task_id=null，不再自动生成下一轮任务。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-024/final/target_effect_report.md",
+        "workspace/tasks/workflow-024/runs/workflow-024-run.yaml",
+        "workspace/tasks/workflow-024/state.json"
+      ],
+      "notes": "workflow-024 正式运行完成，目标效果验证通过，当前等待人工最终验收。"
+    }
+  ],
+  "blocking_issues": []
+}

@@ -2,7 +2,7 @@
 
 本项目用于搭建一个务实、可演进的多 Agent AI 开发流水线，并用这条流水线逐步分析、设计和开发项目自身。
 
-当前阶段：验证反馈到优化任务的闭环已实现并收口；下一步是规划下一轮产品化增强。
+当前阶段：可用版验收标准已通过，项目停在最终人工验收门。
 
 ## 项目目标
 
@@ -15,6 +15,21 @@
 ## 目标效果
 
 - 交互式效果展示：[docs/demos/ai_dev_pipeline_demo.html](docs/demos/ai_dev_pipeline_demo.html)
+
+## 可用版验收状态
+
+当前可用版验收报告：
+
+- [workspace/tasks/workflow-024/final/usable_version_report.md](workspace/tasks/workflow-024/final/usable_version_report.md)
+- [workspace/tasks/workflow-024/final/usable_version_acceptance.yaml](workspace/tasks/workflow-024/final/usable_version_acceptance.yaml)
+
+已通过的验收标准：
+
+- 本地端到端闭环可运行。
+- 人工审批质量门有效。
+- 决策产物完整。
+- 自动化验证通过。
+- 当前开发链路有明确终点，不再自动扩展任务。
 
 ## 项目架构预览
 

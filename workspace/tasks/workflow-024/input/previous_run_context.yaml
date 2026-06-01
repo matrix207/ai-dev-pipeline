@@ -1,0 +1,69 @@
+available: true
+source_run_record: workspace/tasks/workflow-023/runs/workflow-023-run.yaml
+source_task_id: workflow-023
+source_run_id: workflow-023-run
+quality_gate_status: approved
+post_approval_action_status: allowed
+evidence_decisions:
+- goal_effect_aligned
+- tests_passed
+- dispatch_validated
+- code_review_passed
+- retry_required
+- next_action
+- human_roadmap_selection
+- decision_view_productized
+- task_library_productized
+evidence_summary:
+- decision: goal_effect_aligned
+  status: passed
+  evidence_count: 4
+  notes: alignment_score=1.0; blocking_issues=0
+- decision: tests_passed
+  status: passed
+  evidence_count: 3
+  notes: validation_state=waiting_for_human_merge_approval
+- decision: dispatch_validated
+  status: waiting_for_human_merge_approval
+  evidence_count: 11
+  notes: completed=3; skipped=0
+- decision: code_review_passed
+  status: passed
+  evidence_count: 3
+  notes: review_state=waiting_for_human_merge_approval
+- decision: retry_required
+  status: not_required
+  evidence_count: 0
+  notes: 自动化步骤已完成，等待人工质量门决策。
+- decision: next_action
+  status: medium
+  evidence_count: 1
+  notes: 'workflow-024: 端到端闭环持续优化'
+- decision: human_roadmap_selection
+  status: selected
+  evidence_count: 1
+  notes: selected=decision-view-001, task-library-001
+- decision: decision_view_productized
+  status: ready
+  evidence_count: 1
+  notes: 人工决策视图已生成。
+- decision: task_library_productized
+  status: ready_for_reuse
+  evidence_count: 1
+  notes: task_count=2
+remaining_work:
+- 暂无未完成的自动生成任务。
+remaining_work_count: 1
+completed_source_task_ids:
+- ui-validation-001
+- feedback-002
+- dispatch-002
+- roadmap-001
+- decision-view-001
+- task-library-001
+next_recommended_action:
+  task_id: workflow-024
+  title: 端到端闭环持续优化
+  priority: medium
+  reason: 上一轮剩余任务已完成或已验证：ui-validation-001, feedback-002, dispatch-002, roadmap-001,
+    decision-view-001, task-library-001。转入下一轮持续优化。

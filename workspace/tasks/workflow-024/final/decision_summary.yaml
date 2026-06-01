@@ -1,0 +1,326 @@
+task_id: workflow-024
+status: ready_for_final_acceptance
+run_metadata:
+  run_id: workflow-024-run
+  started_at: '2026-06-01T17:53:26Z'
+run_strategy:
+  dry_run: false
+  rerun_policy: new_ids
+goal_effect:
+  target: 一个命令运行目标验证、反馈规划、批量调度、验证评审和下一轮任务规划。
+  validation_status: passed
+  alignment_score: 1.0
+  blocking_issues: []
+current_result:
+  validation_state:
+    task_id: workflow-024-validation
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-024-validation/review/test_validation.json
+    - workspace/tasks/workflow-024-validation/review/code_review.json
+    - workspace/tasks/workflow-024-validation/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  dispatch_state:
+    task_id: workflow-024-dispatch
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-024-dispatch/code/dispatch_result.json
+    - workspace/tasks/workflow-024-dispatch/review/dispatched_task_validation.json
+    - workspace/tasks/workflow-024-feedback-002/review/test_validation.json
+    - workspace/tasks/workflow-024-feedback-002/review/code_review.json
+    - workspace/tasks/workflow-024-feedback-002/final/validation_feedback.json
+    - workspace/tasks/workflow-024-dispatch-002/review/test_validation.json
+    - workspace/tasks/workflow-024-dispatch-002/review/code_review.json
+    - workspace/tasks/workflow-024-dispatch-002/final/validation_feedback.json
+    - workspace/tasks/workflow-024-dispatch/review/test_validation.json
+    - workspace/tasks/workflow-024-dispatch/review/code_review.json
+    - workspace/tasks/workflow-024-dispatch/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  review_state:
+    task_id: workflow-024-review
+    step: human_merge_gate
+    status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-024-review/review/test_validation.json
+    - workspace/tasks/workflow-024-review/review/code_review.json
+    - workspace/tasks/workflow-024-review/final/validation_feedback.json
+    errors: []
+    gates:
+      goal_approved: true
+      design_review_passed: false
+      tests_passed: true
+      code_review_passed: true
+      human_merge_approved: false
+  previous_run_context_artifact: workspace/tasks/workflow-024/input/previous_run_context.yaml
+  initial_plan_artifact: workspace/tasks/workflow-024/final/initial_next_optimization_tasks.yaml
+  dispatch_tasks_artifact: workspace/tasks/workflow-024/input/dispatch_tasks.yaml
+  final_plan_artifact: workspace/tasks/workflow-024/final/final_next_optimization_tasks.yaml
+  feedback_artifacts:
+  - workspace/tasks/workflow-024-validation/final/validation_feedback.json
+  - workspace/tasks/workflow-024-dispatch/final/validation_feedback.json
+  - workspace/tasks/workflow-024-review/final/validation_feedback.json
+previous_run_context:
+  available: true
+  source_run_record: workspace/tasks/workflow-023/runs/workflow-023-run.yaml
+  source_task_id: workflow-023
+  source_run_id: workflow-023-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  evidence_decisions:
+  - goal_effect_aligned
+  - tests_passed
+  - dispatch_validated
+  - code_review_passed
+  - retry_required
+  - next_action
+  - human_roadmap_selection
+  - decision_view_productized
+  - task_library_productized
+  evidence_summary:
+  - decision: goal_effect_aligned
+    status: passed
+    evidence_count: 4
+    notes: alignment_score=1.0; blocking_issues=0
+  - decision: tests_passed
+    status: passed
+    evidence_count: 3
+    notes: validation_state=waiting_for_human_merge_approval
+  - decision: dispatch_validated
+    status: waiting_for_human_merge_approval
+    evidence_count: 11
+    notes: completed=3; skipped=0
+  - decision: code_review_passed
+    status: passed
+    evidence_count: 3
+    notes: review_state=waiting_for_human_merge_approval
+  - decision: retry_required
+    status: not_required
+    evidence_count: 0
+    notes: 自动化步骤已完成，等待人工质量门决策。
+  - decision: next_action
+    status: medium
+    evidence_count: 1
+    notes: 'workflow-024: 端到端闭环持续优化'
+  - decision: human_roadmap_selection
+    status: selected
+    evidence_count: 1
+    notes: selected=decision-view-001, task-library-001
+  - decision: decision_view_productized
+    status: ready
+    evidence_count: 1
+    notes: 人工决策视图已生成。
+  - decision: task_library_productized
+    status: ready_for_reuse
+    evidence_count: 1
+    notes: task_count=2
+  remaining_work:
+  - 暂无未完成的自动生成任务。
+  remaining_work_count: 1
+  completed_source_task_ids:
+  - ui-validation-001
+  - feedback-002
+  - dispatch-002
+  - roadmap-001
+  - decision-view-001
+  - task-library-001
+  next_recommended_action:
+    task_id: workflow-024
+    title: 端到端闭环持续优化
+    priority: medium
+    reason: 上一轮剩余任务已完成或已验证：ui-validation-001, feedback-002, dispatch-002, roadmap-001,
+      decision-view-001, task-library-001。转入下一轮持续优化。
+execution_summary:
+  completed:
+  - step: validation
+    task_id: workflow-024-validation
+    status: completed
+    state_status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-024-validation/review/test_validation.json
+    - workspace/tasks/workflow-024-validation/review/code_review.json
+    - workspace/tasks/workflow-024-validation/final/validation_feedback.json
+    errors: []
+  - step: dispatch
+    task_id: workflow-024-dispatch
+    status: completed
+    state_status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-024-dispatch/code/dispatch_result.json
+    - workspace/tasks/workflow-024-dispatch/review/dispatched_task_validation.json
+    - workspace/tasks/workflow-024-feedback-002/review/test_validation.json
+    - workspace/tasks/workflow-024-feedback-002/review/code_review.json
+    - workspace/tasks/workflow-024-feedback-002/final/validation_feedback.json
+    - workspace/tasks/workflow-024-dispatch-002/review/test_validation.json
+    - workspace/tasks/workflow-024-dispatch-002/review/code_review.json
+    - workspace/tasks/workflow-024-dispatch-002/final/validation_feedback.json
+    - workspace/tasks/workflow-024-dispatch/review/test_validation.json
+    - workspace/tasks/workflow-024-dispatch/review/code_review.json
+    - workspace/tasks/workflow-024-dispatch/final/validation_feedback.json
+    errors: []
+  - step: review
+    task_id: workflow-024-review
+    status: completed
+    state_status: waiting_for_human_merge_approval
+    artifacts:
+    - workspace/tasks/workflow-024-review/review/test_validation.json
+    - workspace/tasks/workflow-024-review/review/code_review.json
+    - workspace/tasks/workflow-024-review/final/validation_feedback.json
+    errors: []
+  skipped: []
+  failed: []
+  next:
+  - task_id: null
+    title: 等待人工最终验收
+    priority: final_acceptance
+recommendation_basis:
+  strategy: previous_run_context
+  previous_remaining_task_ids: []
+  completed_this_run_task_ids: &id001
+  - ui-validation-001
+  - feedback-002
+  - dispatch-002
+  - roadmap-001
+  - decision-view-001
+  - task-library-001
+  completed_previous_source_task_ids:
+  - ui-validation-001
+  - feedback-002
+  - dispatch-002
+  - roadmap-001
+  - decision-view-001
+  - task-library-001
+  deprioritized_task_ids: *id001
+  remaining_open_task_ids: []
+  selected_source_task_id: null
+  selected_task_id: workflow-025
+retry_plan:
+  status: not_required
+  reason: 自动化步骤已完成，等待人工质量门决策。
+  recommended_command: null
+remaining_work:
+- 暂无未完成的自动生成任务。
+next_recommended_action:
+  task_id: null
+  title: 等待人工最终验收
+  priority: final_acceptance
+  reason: ai-dev-pipeline 可用版验收标准已全部通过，等待人工确认是否结束当前开发链路。
+run_record_artifact: workspace/tasks/workflow-024/runs/workflow-024-run.yaml
+target_effect_report:
+  artifact: workspace/tasks/workflow-024/final/target_effect_report.md
+  status: passed
+  feedback_artifacts:
+  - workspace/tasks/workflow-024-validation/final/validation_feedback.json
+  - workspace/tasks/workflow-024-dispatch/final/validation_feedback.json
+  - workspace/tasks/workflow-024-review/final/validation_feedback.json
+  render_check_count: 3
+  passed_render_check_count: 3
+  failed_render_check_count: 0
+  screenshot_artifacts:
+  - workspace/tasks/workflow-024-validation/review/demo_render_main_view.png
+  - workspace/tasks/workflow-024-dispatch/review/demo_render_main_view.png
+  - workspace/tasks/workflow-024-review/review/demo_render_main_view.png
+  blocking_issue_count: 0
+usable_version_acceptance:
+  artifact: workspace/tasks/workflow-024/final/usable_version_acceptance.yaml
+  report_artifact: workspace/tasks/workflow-024/final/usable_version_report.md
+  status: passed
+  criteria_count: 5
+  passed_count: 5
+  requires_human_final_acceptance: true
+evidence_map:
+- decision: goal_effect_aligned
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-024-validation/final/validation_feedback.json
+  - workspace/tasks/workflow-024-dispatch/final/validation_feedback.json
+  - workspace/tasks/workflow-024-review/final/validation_feedback.json
+  - workspace/tasks/workflow-024/final/target_effect_report.md
+  notes: alignment_score=1.0; blocking_issues=0
+- decision: tests_passed
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-024-validation/review/test_validation.json
+  - workspace/tasks/workflow-024-validation/review/code_review.json
+  - workspace/tasks/workflow-024-validation/final/validation_feedback.json
+  notes: validation_state=waiting_for_human_merge_approval
+- decision: dispatch_validated
+  status: waiting_for_human_merge_approval
+  evidence:
+  - workspace/tasks/workflow-024-dispatch/code/dispatch_result.json
+  - workspace/tasks/workflow-024-dispatch/review/dispatched_task_validation.json
+  - workspace/tasks/workflow-024-feedback-002/review/test_validation.json
+  - workspace/tasks/workflow-024-feedback-002/review/code_review.json
+  - workspace/tasks/workflow-024-feedback-002/final/validation_feedback.json
+  - workspace/tasks/workflow-024-dispatch-002/review/test_validation.json
+  - workspace/tasks/workflow-024-dispatch-002/review/code_review.json
+  - workspace/tasks/workflow-024-dispatch-002/final/validation_feedback.json
+  - workspace/tasks/workflow-024-dispatch/review/test_validation.json
+  - workspace/tasks/workflow-024-dispatch/review/code_review.json
+  - workspace/tasks/workflow-024-dispatch/final/validation_feedback.json
+  notes: completed=3; skipped=0
+- decision: code_review_passed
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-024-review/review/test_validation.json
+  - workspace/tasks/workflow-024-review/review/code_review.json
+  - workspace/tasks/workflow-024-review/final/validation_feedback.json
+  notes: review_state=waiting_for_human_merge_approval
+- decision: retry_required
+  status: not_required
+  evidence: []
+  notes: 自动化步骤已完成，等待人工质量门决策。
+- decision: next_action
+  status: final_acceptance
+  evidence:
+  - workspace/tasks/workflow-024/final/final_next_optimization_tasks.yaml
+  notes: 'None: 等待人工最终验收'
+- decision: usable_version_acceptance
+  status: passed
+  evidence:
+  - workspace/tasks/workflow-024/final/usable_version_acceptance.yaml
+  - workspace/tasks/workflow-024/final/usable_version_report.md
+  notes: passed=5/5
+quality_gate:
+  status: waiting_for_human_approval
+  can_continue: false
+  blocking_issues: []
+  warnings: []
+  config:
+    required_evidence:
+    - goal_effect_aligned
+    - tests_passed
+    - dispatch_validated
+    - code_review_passed
+    - next_action
+    missing_evidence: blocking
+    failed_evidence: blocking
+    human_approval_required: true
+  human_approval:
+    required: true
+    merge_approved: false
+    status: pending
+  next_allowed_action: 人工审批通过后继续。
+post_approval_action:
+  status: approval_required
+  can_continue: false
+  allowed_actions:
+  - view_run_record
+  - approve_run
+  blocked_actions:
+  - continue_next_stage
+  recommended_action: 补充人工审批记录后再决定是否继续。
+  reason: 当前运行尚未获得人工审批。

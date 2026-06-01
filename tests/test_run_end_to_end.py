@@ -707,6 +707,89 @@ def test_run_end_to_end_consumes_selected_roadmap_tasks(tmp_path: Path) -> None:
     }
 
 
+def test_run_end_to_end_builds_usable_version_acceptance_when_no_open_tasks(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-023/runs/workflow-023-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-023",
+            "run_metadata": {"run_id": "workflow-023-run"},
+            "remaining_work": ["暂无未完成的自动生成任务。"],
+            "recommendation_basis": {
+                "completed_this_run_task_ids": [
+                    "ui-validation-001",
+                    "feedback-002",
+                    "dispatch-002",
+                    "roadmap-001",
+                    "decision-view-001",
+                    "task-library-001",
+                ],
+                "remaining_open_task_ids": [],
+                "selected_source_task_id": None,
+            },
+            "next_recommended_action": {
+                "task_id": "workflow-024",
+                "title": "端到端闭环持续优化",
+                "priority": "medium",
+            },
+            "target_effect_report": {
+                "artifact": "workspace/tasks/workflow-023/final/target_effect_report.md",
+                "status": "passed",
+                "blocking_issue_count": 0,
+            },
+            "decision_view": {
+                "artifact": "workspace/tasks/workflow-023/final/human_decision_view.md",
+                "status": "ready",
+            },
+            "optimization_task_library": {
+                "artifact": "workspace/tasks/workflow-023/final/optimization_task_library.yaml",
+                "status": "ready_for_reuse",
+                "task_count": 2,
+            },
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "goal_effect_aligned",
+                    "status": "passed",
+                    "evidence": ["workspace/tasks/workflow-023/final/target_effect_report.md"],
+                    "notes": "alignment_score=1.0; blocking_issues=0",
+                }
+            ],
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-024",
+        run_id="workflow-024-run",
+        previous_run_record=previous_record_path,
+    )
+
+    acceptance = summary["usable_version_acceptance"]
+    assert acceptance["artifact"] == "workspace/tasks/workflow-024/final/usable_version_acceptance.yaml"
+    assert acceptance["report_artifact"] == "workspace/tasks/workflow-024/final/usable_version_report.md"
+    assert acceptance["status"] == "passed"
+    assert acceptance["passed_count"] == acceptance["criteria_count"]
+    assert summary["status"] == "ready_for_final_acceptance"
+    assert summary["next_recommended_action"]["task_id"] is None
+    assert summary["next_recommended_action"]["priority"] == "final_acceptance"
+    assert summary["execution_summary"]["next"][0]["priority"] == "final_acceptance"
+    saved = read_yaml(tmp_path, acceptance["artifact"])
+    assert {item["id"] for item in saved["criteria"]} >= {
+        "local_end_to_end_loop",
+        "human_quality_gate",
+        "decision_artifacts",
+        "automation_verification",
+    }
+    report = read_text(tmp_path, acceptance["report_artifact"])
+    assert "ai-dev-pipeline 可用版验收报告" in report
+    assert "workflow-023/runs/workflow-023-run.yaml" in report
+
+
 def test_quality_gate_blocks_missing_required_evidence() -> None:
     summary = {
         "execution_summary": {"failed": []},

@@ -1,0 +1,37 @@
+task_id: workflow-024
+status: ready_for_final_acceptance
+summary: >-
+  完成 ai-dev-pipeline 可用版验收标准。系统在上一轮无开放任务时生成
+  usable_version_acceptance.yaml 和 usable_version_report.md，并把下一步停在
+  final_acceptance 人工最终验收门，避免继续无限扩展 workflow。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: 新增可用版验收生成逻辑，上一轮已完成全部开放任务时输出验收标准和报告。
+  - path: scripts/run_end_to_end.py
+    change: 可用版验收通过后 next_recommended_action 改为 final_acceptance，task_id=null。
+  - path: tests/test_run_end_to_end.py
+    change: 增加无开放任务时生成可用版验收报告并停止自动推进的回归用例。
+  - path: README.md
+    change: 补充当前可用版验收状态和验收报告入口。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py::test_run_end_to_end_builds_usable_version_acceptance_when_no_open_tasks -q
+    result: 1 passed
+  - command: python -m pytest tests/test_run_end_to_end.py tests/test_optimization_planner_agent.py -q
+    result: 35 passed
+  - command: python -m pytest -q
+    result: 111 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-024 --dry-run --rerun-policy skip_completed --run-id workflow-024-dry-run --previous-run-record workspace/tasks/workflow-023/runs/workflow-023-run.yaml --json
+    result: dry_run 通过，计划包含 usable_version_acceptance.yaml 和 usable_version_report.md。
+  - command: python scripts/run_end_to_end.py --task-id workflow-024 --rerun-policy new_ids --run-id workflow-024-run --previous-run-record workspace/tasks/workflow-023/runs/workflow-023-run.yaml --json
+    result: ready_for_final_acceptance，usable_version_acceptance passed=5/5。
+usable_version_acceptance:
+  artifact: workspace/tasks/workflow-024/final/usable_version_acceptance.yaml
+  report_artifact: workspace/tasks/workflow-024/final/usable_version_report.md
+  status: passed
+  passed_count: 5
+  criteria_count: 5
+next_recommended_action:
+  task_id: null
+  title: 等待人工最终验收
+  status: final_acceptance
+  reason: 可用版验收标准已全部通过，由人工决定接受、修正或继续优化。
