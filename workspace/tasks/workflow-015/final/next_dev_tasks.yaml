@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-015
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 扩展本地 Agent 调度能力，减少 unsupported Agent 造成的任务跳过。
+tasks:
+  - id: workflow-016
+    title: 支持更多本地 Agent 调度
+    source_task_id: dispatch-002
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 dispatch-002，将 ArchitectAgent 等当前未支持的本地 Agent 纳入安全调度表。
+      - 为支持和不支持的 Agent 路径补充用例。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 调用外部 Agent 服务。
+      - 自动创建或合并 PR。
+    acceptance_criteria:
+      - dispatcher 能对 dispatch-002 代表的本地 Agent 支持缺口给出可执行路径。
+      - unsupported_agent 路径仍有结构化阻塞和测试覆盖。
+      - python -m pytest -q 通过。

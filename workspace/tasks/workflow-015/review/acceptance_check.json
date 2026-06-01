@@ -1,0 +1,37 @@
+{
+  "task_id": "workflow-015",
+  "status": "passed",
+  "checked_at": "2026-06-01T12:46:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "evidence_driven_recommendation",
+      "status": "passed",
+      "evidence": [
+        "scripts/run_end_to_end.py",
+        "tests/test_run_end_to_end.py",
+        "workspace/tasks/workflow-015/final/decision_summary.yaml"
+      ],
+      "notes": "next_recommended_action 基于 previous_run_context.remaining_work 和本轮 evidence 选择 workflow-016，并标注 source_task_id=dispatch-002。"
+    },
+    {
+      "id": "deprioritize_completed_templates",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-015/runs/workflow-015-run.yaml",
+        "workspace/tasks/workflow-015-dispatch/review/dispatched_task_validation.json"
+      ],
+      "notes": "recommendation_basis 记录本轮已验证 feedback-002、ui-validation-001，并将其降级。"
+    },
+    {
+      "id": "traceable_selection_basis",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-015/input/previous_run_context.yaml",
+        "workspace/tasks/workflow-015/final/decision_summary.yaml",
+        "workspace/tasks/workflow-015/runs/workflow-015-run.yaml"
+      ],
+      "notes": "decision_summary 和 run record 均包含 recommendation_basis，可追溯候选、降级和最终选择。"
+    }
+  ],
+  "blocking_issues": []
+}

@@ -211,6 +211,59 @@ def test_run_end_to_end_uses_previous_run_record_as_decision_input(tmp_path: Pat
     ]
 
 
+def test_run_end_to_end_recommends_unvalidated_previous_remaining_work(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-014/runs/workflow-014-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-014",
+            "run_metadata": {"run_id": "workflow-014-run"},
+            "remaining_work": [
+                "feedback-002: 把下一轮优化任务接入调度执行",
+                "dispatch-002: 支持更多本地 Agent 调度",
+                "ui-validation-001: 增加目标效果图的自动检查",
+            ],
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "dispatch_validated",
+                    "status": "waiting_for_human_merge_approval",
+                    "evidence": ["dispatch.json"],
+                    "notes": "completed=3; skipped=0",
+                }
+            ],
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-015",
+        run_id="workflow-015-run",
+        previous_run_record=previous_record_path,
+    )
+
+    assert summary["next_recommended_action"]["task_id"] == "workflow-016"
+    assert summary["next_recommended_action"]["source_task_id"] == "dispatch-002"
+    assert "dispatch-002" in summary["next_recommended_action"]["reason"]
+    basis = summary["recommendation_basis"]
+    assert basis["strategy"] == "previous_run_context"
+    assert basis["selected_source_task_id"] == "dispatch-002"
+    assert basis["completed_this_run_task_ids"] == [
+        "feedback-002",
+        "ui-validation-001",
+    ]
+    assert basis["deprioritized_task_ids"] == [
+        "feedback-002",
+        "ui-validation-001",
+    ]
+    saved = read_yaml(tmp_path, "workspace/tasks/workflow-015/final/decision_summary.yaml")
+    assert saved["recommendation_basis"] == basis
+
+
 def test_quality_gate_blocks_missing_required_evidence() -> None:
     summary = {
         "execution_summary": {"failed": []},

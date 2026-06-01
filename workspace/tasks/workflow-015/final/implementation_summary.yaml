@@ -1,0 +1,37 @@
+task_id: workflow-015
+status: completed
+summary: >-
+  完成 evidence 驱动的下一任务选择。端到端闭环现在会读取 previous_run_context.remaining_work，
+  结合本轮调度验证产物识别已完成模板任务，并优先推荐尚未被本轮验证的剩余任务。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: next_recommended_action 改为使用 recommendation_basis 生成，可标注 source_task_id 和 evidence 驱动原因。
+  - path: scripts/run_end_to_end.py
+    change: 新增 previous_run_context 推荐策略，识别本轮已验证的模板任务并降低重复推荐优先级。
+  - path: tests/test_run_end_to_end.py
+    change: 增加用例覆盖未验证 remaining_work 的推荐选择和 decision_summary 追溯。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py::test_run_end_to_end_recommends_unvalidated_previous_remaining_work -q
+    result: 1 passed
+  - command: python -m pytest tests/test_run_end_to_end.py -q
+    result: 24 passed
+  - command: python -m pytest -q
+    result: 100 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-015 --dry-run --rerun-policy skip_completed --run-id workflow-015-dry-run --previous-run-record workspace/tasks/workflow-014/runs/workflow-014-run.yaml --json
+    result: dry_run 通过，previous_run_context 可用
+  - command: python scripts/run_end_to_end.py --task-id workflow-015 --rerun-policy skip_completed --run-id workflow-015-run --previous-run-record workspace/tasks/workflow-014/runs/workflow-014-run.yaml --json
+    result: ready_for_human_decision，next_recommended_action=workflow-016，source_task_id=dispatch-002
+  - command: python scripts/run_end_to_end.py --task-id workflow-015 --approve-run workflow-015-run --approver dennis --decision approved --comment '同意 workflow-015 evidence 驱动推荐结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-015 --continue-run workflow-015-run --json
+    result: can_continue=true，recommended_command 指向 workflow-016
+key_artifacts:
+  - workspace/tasks/workflow-015/input/previous_run_context.yaml
+  - workspace/tasks/workflow-015/final/decision_summary.yaml
+  - workspace/tasks/workflow-015/runs/workflow-015-run.yaml
+  - workspace/tasks/workflow-015/review/acceptance_check.json
+  - workspace/tasks/workflow-015/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'
