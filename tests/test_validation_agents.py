@@ -431,3 +431,129 @@ def test_goal_effect_validator_agent_blocks_missing_demo_visual_signals(tmp_path
         "script_terms": ["addEventListener('click', play)"],
     }
     assert result.output["blocking_issues"][0]["id"] == "demo_visual_check:demo_visual_contract"
+
+
+def write_fake_browser(tmp_path: Path, *, screenshot_bytes: int = 4096, dom: str = "运行演示") -> Path:
+    browser = tmp_path / "fake_browser.py"
+    browser.write_text(
+        f"""#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+for arg in sys.argv:
+    if arg.startswith("--screenshot="):
+        path = Path(arg.split("=", 1)[1])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"\\x89PNG\\r\\n\\x1a\\n" + b"0" * {screenshot_bytes})
+        raise SystemExit(0)
+
+if "--dump-dom" in sys.argv:
+    print({dom!r})
+    raise SystemExit(0)
+
+raise SystemExit(0)
+""",
+        encoding="utf-8",
+    )
+    browser.chmod(browser.stat().st_mode | 0o111)
+    return browser
+
+
+def test_goal_effect_validator_agent_checks_demo_rendering(tmp_path: Path) -> None:
+    browser = write_fake_browser(tmp_path, dom="<html><body>运行演示 当前阶段</body></html>")
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果本地浏览器渲染可验证。",
+            "demo_render_checks": [
+                {
+                    "id": "demo_render_main",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "browser_path": str(browser),
+                    "screenshot_artifact": "workspace/tasks/validation-001/review/demo_render.png",
+                    "viewport": {"width": 960, "height": 640},
+                    "min_screenshot_bytes": 128,
+                    "required_dom_terms": ["运行演示", "当前阶段"],
+                }
+            ],
+        },
+    )
+    (tmp_path / "docs/demos").mkdir(parents=True)
+    (tmp_path / "docs/demos/ai_dev_pipeline_demo.html").write_text(
+        "<html><body>Demo</body></html>",
+        encoding="utf-8",
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    render_check = result.output["demo_render_checks"][0]
+    assert result.output["status"] == "passed"
+    assert render_check["result"] == "pass"
+    assert render_check["screenshot_artifact"] == "workspace/tasks/validation-001/review/demo_render.png"
+    assert render_check["screenshot_bytes"] >= 128
+    assert render_check["missing"] == {"browser": [], "screenshot": [], "dom_terms": []}
+
+
+def test_goal_effect_validator_agent_blocks_missing_demo_rendering(tmp_path: Path) -> None:
+    browser = write_fake_browser(tmp_path, screenshot_bytes=4, dom="<html><body>缺少目标文本</body></html>")
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果本地浏览器渲染可验证。",
+            "demo_render_checks": [
+                {
+                    "id": "demo_render_main",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "browser_path": str(browser),
+                    "screenshot_artifact": "workspace/tasks/validation-001/review/demo_render.png",
+                    "min_screenshot_bytes": 128,
+                    "required_dom_terms": ["运行演示"],
+                }
+            ],
+        },
+    )
+    (tmp_path / "docs/demos").mkdir(parents=True)
+    (tmp_path / "docs/demos/ai_dev_pipeline_demo.html").write_text(
+        "<html><body>Demo</body></html>",
+        encoding="utf-8",
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    render_check = result.output["demo_render_checks"][0]
+    assert result.output["status"] == "blocked"
+    assert render_check["result"] == "fail"
+    assert render_check["missing"]["screenshot"] == ["workspace/tasks/validation-001/review/demo_render.png"]
+    assert render_check["missing"]["dom_terms"] == ["运行演示"]
+    assert result.output["blocking_issues"][0]["id"] == "demo_render_check:demo_render_main"
+
+
+def test_goal_effect_validator_agent_blocks_missing_local_browser(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "workspace/tasks/validation-001/input/validation_goal.yaml",
+        {
+            "goal": "目标效果本地浏览器渲染可验证。",
+            "demo_render_checks": [
+                {
+                    "id": "demo_render_main",
+                    "demo_path": "docs/demos/ai_dev_pipeline_demo.html",
+                    "browser_path": str(tmp_path / "missing-browser"),
+                    "required_dom_terms": ["运行演示"],
+                }
+            ],
+        },
+    )
+
+    result = GoalEffectValidatorAgent().run(
+        {"repo_root": str(tmp_path), "task_id": "validation-001"}
+    )
+
+    assert result.output["status"] == "blocked"
+    assert result.output["demo_render_checks"][0]["missing"]["browser"] == ["local_browser"]

@@ -1,0 +1,47 @@
+task_id: workflow-012
+title: 目标效果图本地浏览器截图检查
+status: completed
+completed_at: "2026-06-01T17:49:00+08:00"
+goal_effect:
+  target: 在静态 HTML/CSS/JS 信号检查基础上，增加本地浏览器渲染和截图级验证，让目标效果检查更接近真实用户看到的结果。
+  achieved:
+    - GoalEffectValidatorAgent 新增 demo_render_checks。
+    - demo_render_checks 使用本地 Chrome/Chromium headless 生成截图。
+    - 检查截图产物大小，防止空截图或渲染失败。
+    - 使用 --dump-dom 检查渲染后 DOM 关键文本。
+    - validation_goal.yaml 新增 demo_render_main_view。
+    - ui_validation 和 workflow-012 validation/dispatch/review 均生成截图产物，结果全部通过。
+current_result:
+  run_id: workflow-012-run
+  quality_gate_status: approved
+  post_approval_action_status: allowed
+  can_continue: true
+  next_task_id: workflow-013
+  recommended_command: python scripts/run_end_to_end.py --task-id workflow-013 --rerun-policy skip_completed
+  run_record_artifact: workspace/tasks/workflow-012/runs/workflow-012-run.yaml
+  decision_summary_artifact: workspace/tasks/workflow-012/final/decision_summary.yaml
+  screenshot_artifacts:
+    - workspace/tasks/ui-validation-001/review/demo_render_main_view.png
+    - workspace/tasks/workflow-012-validation/review/demo_render_main_view.png
+    - workspace/tasks/workflow-012-dispatch/review/demo_render_main_view.png
+    - workspace/tasks/workflow-012-review/review/demo_render_main_view.png
+verification:
+  - command: source .venv/bin/activate && python -m pytest tests/test_validation_agents.py -q
+    result: 17 passed
+  - command: source .venv/bin/activate && python scripts/run_local_task.py --workflow ui_validation --goal-approved
+    result: demo_render_checks passed
+  - command: source .venv/bin/activate && python -m pytest -q
+    result: 95 passed
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-012 --rerun-policy skip_completed --run-id workflow-012-run --json
+    result: ready_for_human_decision
+  - command: source .venv/bin/activate && python scripts/run_end_to_end.py --task-id workflow-012 --continue-run workflow-012-run --json
+    result: status=allowed
+remaining_work:
+  - 可继续增加截图像素级或区域级检查。
+  - 扩展本地 Agent 调度覆盖，提升自动执行能力。
+  - 把反馈规划结果更直接接入调度执行队列。
+next_recommended_task:
+  id: workflow-013
+  title: 端到端闭环持续优化
+  priority: medium
+  reason: workflow-012 已完成本地浏览器截图检查，下一步建议推进调度或反馈执行能力。

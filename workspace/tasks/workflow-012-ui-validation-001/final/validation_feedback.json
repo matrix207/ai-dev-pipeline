@@ -1,5 +1,5 @@
 {
-  "task_id": "ui-validation-001",
+  "task_id": "workflow-012-ui-validation-001",
   "status": "passed",
   "goal": "项目可以执行本地自动化验证闭环，并基于目标对齐和效果验证输出反馈， 为后续优化提供结构化依据。\n",
   "alignment_score": 1.0,
@@ -345,8 +345,8 @@
         "width": 1280,
         "height": 900
       },
-      "screenshot_artifact": "workspace/tasks/ui-validation-001/review/demo_render_main_view.png",
-      "screenshot_bytes": 625030,
+      "screenshot_artifact": "workspace/tasks/workflow-012-ui-validation-001/review/demo_render_main_view.png",
+      "screenshot_bytes": 625004,
       "min_screenshot_bytes": 10000,
       "required_dom_terms": [
         "AI开发流水线效果展示",

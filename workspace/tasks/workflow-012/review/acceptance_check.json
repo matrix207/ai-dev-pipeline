@@ -1,0 +1,66 @@
+{
+  "task_id": "workflow-012",
+  "title": "目标效果图本地浏览器截图检查",
+  "status": "passed",
+  "checked_at": "2026-06-01T17:49:00+08:00",
+  "acceptance_criteria": [
+    {
+      "criterion": "目标效果验证报告输出 demo_render_checks。",
+      "status": "passed",
+      "evidence": [
+        "agents/goal_effect_validator_agent.py",
+        "tests/test_validation_agents.py::test_goal_effect_validator_agent_checks_demo_rendering",
+        "workspace/tasks/ui-validation-001/final/validation_feedback.json"
+      ],
+      "notes": "GoalEffectValidatorAgent 已输出 demo_render_checks，包含浏览器路径、viewport、截图产物、截图大小和 DOM 缺失项。"
+    },
+    {
+      "criterion": "本地浏览器截图产物非空且进入目标效果证据链。",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/ui-validation-001/review/demo_render_main_view.png",
+        "workspace/tasks/workflow-012-validation/review/demo_render_main_view.png",
+        "workspace/tasks/workflow-012-dispatch/review/demo_render_main_view.png",
+        "workspace/tasks/workflow-012-review/review/demo_render_main_view.png"
+      ],
+      "notes": "截图大小约 625KB，超过 min_screenshot_bytes=10000。"
+    },
+    {
+      "criterion": "渲染后 DOM 缺失关键目标文本时阻塞验证。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_validation_agents.py::test_goal_effect_validator_agent_blocks_missing_demo_rendering"
+      ],
+      "notes": "缺失 required_dom_terms 或截图过小会产生 demo_render_check:* blocking issue。"
+    },
+    {
+      "criterion": "本地浏览器不可用时阻塞验证。",
+      "status": "passed",
+      "evidence": [
+        "tests/test_validation_agents.py::test_goal_effect_validator_agent_blocks_missing_local_browser"
+      ],
+      "notes": "显式 browser_path 不可用时不会回退到系统浏览器，会阻塞并提示 local_browser 缺失。"
+    },
+    {
+      "criterion": "python -m pytest -q 通过。",
+      "status": "passed",
+      "evidence": [
+        "95 passed in 12.97s"
+      ],
+      "notes": "新增本地浏览器渲染检查后已执行全量测试。"
+    },
+    {
+      "criterion": "端到端闭环运行通过并允许推进下一阶段。",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-012/runs/workflow-012-run.yaml",
+        "workspace/tasks/workflow-012/final/decision_summary.yaml"
+      ],
+      "notes": "workflow-012-run 审批通过，--continue-run 返回 allowed，下一阶段为 workflow-013。"
+    }
+  ],
+  "residual_risks": [
+    "当前截图检查验证产物存在和 DOM 关键文本，不做复杂像素相似度比对。",
+    "本地环境需要可用的 Chrome/Chromium；已通过本机 /usr/bin/google-chrome 验证。"
+  ]
+}

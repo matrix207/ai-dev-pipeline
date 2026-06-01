@@ -186,6 +186,21 @@ demo_visual_checks:
       - "addLog"
       - "prCard"
       - "deliveryValue.textContent"
+demo_render_checks:
+  - id: demo_render_main_view
+    demo_path: docs/demos/ai_dev_pipeline_demo.html
+    expected_effect: 本地浏览器可以渲染目标效果页，并生成非空截图产物。
+    viewport:
+      width: 1280
+      height: 900
+    min_screenshot_bytes: 10000
+    virtual_time_budget_ms: 1500
+    required_dom_terms:
+      - AI开发流水线效果展示
+      - 运行演示
+      - 当前阶段
+      - 多Agent协作流
+      - 人工Gate
 feedback_policy:
   on_pass: 可以进入人工合并门，并基于反馈规划下一轮优化。
   on_block: 修复 blocking issue 后重新运行 automated_validation workflow。

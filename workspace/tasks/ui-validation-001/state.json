@@ -5,7 +5,8 @@
   "artifacts": [
     "workspace/tasks/ui-validation-001/review/test_validation.json",
     "workspace/tasks/ui-validation-001/review/code_review.json",
-    "workspace/tasks/ui-validation-001/final/validation_feedback.json"
+    "workspace/tasks/ui-validation-001/final/validation_feedback.json",
+    "workspace/tasks/ui-validation-001/review/demo_render_main_view.png"
   ],
   "errors": [],
   "gates": {

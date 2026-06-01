@@ -1,0 +1,40 @@
+source_task: workflow-012
+recommended_next_task:
+  id: workflow-013
+  title: 端到端闭环持续优化
+  recommended_agent: CoderAgent
+  priority: medium
+  risk_level: medium
+  goal: 继续基于端到端反馈闭环推进自动化验证与本地 Agent 调度能力。
+  scope:
+    - 优先在 dispatch-002 和 feedback-002 中选择一个高价值缺口继续实现。
+    - 或继续增强 ui-validation，增加截图像素级或区域级断言。
+    - 保持用例先行，新增或修改功能必须有测试覆盖。
+    - 继续产出运行记录、验收记录、实现摘要和下一任务建议。
+  out_of_scope:
+    - 自动 merge。
+    - 引入外部浏览器云服务。
+    - 大规模重构流水线架构。
+  acceptance_criteria:
+    - 新任务有明确目标效果、当前达成、剩余任务和下一步建议。
+    - 新增或修改功能有测试覆盖。
+    - python -m pytest -q 通过。
+alternative_tasks:
+  - id: dispatch-002
+    title: 支持更多本地 Agent 调度
+    recommended_agent: SystemDesignAgent
+    priority: medium
+    risk_level: medium
+    reason: 提升自动执行覆盖率，减少人工拆分任务。
+  - id: feedback-002
+    title: 把下一轮优化任务接入调度执行
+    recommended_agent: CoderAgent
+    priority: medium
+    risk_level: medium
+    reason: 让反馈规划结果更直接进入执行队列。
+  - id: ui-validation-003
+    title: 增加目标效果图截图区域断言
+    recommended_agent: TestValidatorAgent
+    priority: low
+    risk_level: medium
+    reason: 在已有本地截图基础上进一步做区域或像素级验证。

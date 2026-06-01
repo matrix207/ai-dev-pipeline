@@ -1,0 +1,99 @@
+{
+  "task_id": "workflow-012-ui-validation-001",
+  "status": "passed",
+  "decision": {
+    "approved_for_human_merge_gate": true,
+    "requires_human_review": false
+  },
+  "checks": [
+    {
+      "name": "test_validation_artifact",
+      "result": "pass",
+      "notes": "已读取 workspace/tasks/workflow-012-ui-validation-001/review/test_validation.json。"
+    },
+    {
+      "name": "tests_passed",
+      "result": "pass",
+      "notes": "测试验证已通过。"
+    },
+    {
+      "name": "task_state_recorded",
+      "result": "pass",
+      "notes": "任务状态产物存在。"
+    },
+    {
+      "name": "state_artifacts_exist",
+      "result": "pass",
+      "notes": "任务状态中的 artifact 路径均存在。"
+    },
+    {
+      "name": "acceptance_criteria_coverage",
+      "result": "pass_with_notes",
+      "notes": "部分验收标准缺少明确 evidence。"
+    }
+  ],
+  "blocking_issues": [],
+  "non_blocking_issues": [
+    {
+      "id": "acceptance_criteria_evidence",
+      "severity": "medium",
+      "description": "部分验收标准缺少明确 evidence。",
+      "recommendation": "在 acceptance_check.json 或 summary 中补充每条验收标准的 evidence。"
+    }
+  ],
+  "recommendations": [
+    "补充验收标准到 evidence 的逐条映射，提升自动评审可信度。"
+  ],
+  "acceptance_coverage": {
+    "criteria": [
+      "目标效果图检查有结构化产物。",
+      "validation_feedback.json 包含目标效果图检查结论。",
+      "python -m pytest -q 通过。"
+    ],
+    "covered": [
+      "python -m pytest -q 通过。"
+    ],
+    "missing_evidence": [
+      "目标效果图检查有结构化产物。",
+      "validation_feedback.json 包含目标效果图检查结论。"
+    ],
+    "acceptance_evidence_map": [
+      {
+        "criterion": "目标效果图检查有结构化产物。",
+        "status": "missing",
+        "matched_evidence": [],
+        "missing_evidence": [
+          "目标效果图检查有结构化产物。"
+        ],
+        "recommendation": "在 acceptance_check.json、implementation_summary.yaml 或相关产物中补充该验收标准的明确 evidence。"
+      },
+      {
+        "criterion": "validation_feedback.json 包含目标效果图检查结论。",
+        "status": "missing",
+        "matched_evidence": [],
+        "missing_evidence": [
+          "validation_feedback.json 包含目标效果图检查结论。"
+        ],
+        "recommendation": "在 acceptance_check.json、implementation_summary.yaml 或相关产物中补充该验收标准的明确 evidence。"
+      },
+      {
+        "criterion": "python -m pytest -q 通过。",
+        "status": "matched",
+        "matched_evidence": [
+          {
+            "path": "workspace/tasks/workflow-012-ui-validation-001/review/test_validation.json",
+            "match": "keyword_coverage"
+          }
+        ],
+        "missing_evidence": [],
+        "recommendation": ""
+      }
+    ]
+  },
+  "artifact_consistency": {
+    "checked": [
+      "workspace/tasks/workflow-012-ui-validation-001/review/test_validation.json"
+    ],
+    "missing": []
+  }
+}
