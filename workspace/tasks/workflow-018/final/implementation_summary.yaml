@@ -1,0 +1,45 @@
+task_id: workflow-018
+status: completed
+summary: >-
+  完成目标效果验证报告产品化。端到端运行现在会生成
+  workspace/tasks/{task_id}/final/target_effect_report.md，便于人工快速查看目标效果是否达成、
+  截图和 DOM 证据是否命中、是否存在阻塞项以及下一步建议。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: 新增目标效果报告生成逻辑，并把报告纳入 decision_summary、evidence_map、dry-run 计划和父任务 state artifacts。
+  - path: tests/test_run_end_to_end.py
+    change: 增加目标效果报告汇总用例，并验证端到端运行会写入报告产物。
+  - path: workspace/tasks/workflow-018/final/target_effect_report.md
+    change: 本轮正式运行生成的目标效果验证报告。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py -q
+    result: 25 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-018 --dry-run --rerun-policy skip_completed --run-id workflow-018-dry-run --previous-run-record workspace/tasks/workflow-017/runs/workflow-017-run.yaml --json
+    result: dry_run 通过，target_effect_report.md 已进入计划产物。
+  - command: python scripts/run_end_to_end.py --task-id workflow-018 --rerun-policy skip_completed --run-id workflow-018-run --previous-run-record workspace/tasks/workflow-017/runs/workflow-017-run.yaml --json
+    result: ready_for_human_decision，alignment_score=1.0，blocking_issues=0，render_check_count=3。
+  - command: python scripts/run_end_to_end.py --task-id workflow-018 --approve-run workflow-018-run --approver dennis --decision approved --comment '同意 workflow-018 目标效果验证报告产品化结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-018 --continue-run workflow-018-run --json
+    result: can_continue=true，recommended_command 指向 workflow-019
+target_effect_report:
+  artifact: workspace/tasks/workflow-018/final/target_effect_report.md
+  status: passed
+  render_check_count: 3
+  passed_render_check_count: 3
+  failed_render_check_count: 0
+  blocking_issue_count: 0
+  screenshot_artifacts:
+    - workspace/tasks/workflow-018-validation/review/demo_render_main_view.png
+    - workspace/tasks/workflow-018-dispatch/review/demo_render_main_view.png
+    - workspace/tasks/workflow-018-review/review/demo_render_main_view.png
+key_artifacts:
+  - workspace/tasks/workflow-018/final/target_effect_report.md
+  - workspace/tasks/workflow-018/final/decision_summary.yaml
+  - workspace/tasks/workflow-018/runs/workflow-018-run.yaml
+  - workspace/tasks/workflow-018/review/acceptance_check.json
+  - workspace/tasks/workflow-018/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

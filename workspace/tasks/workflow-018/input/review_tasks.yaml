@@ -1,0 +1,21 @@
+tasks:
+- id: workflow-018-review
+  title: 端到端闭环决策摘要评审
+  priority: medium
+  recommended_agent: CodeReviewerAgent
+  risk_level: low
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+  scope:
+  - 输出决策摘要，包含目标效果、当前达成、剩余任务和下一步建议。
+  - 失败时保留结构化错误和已完成产物。
+  - python -m pytest -q 通过。
+  out_of_scope:
+  - 自动 PR。
+  - 自动 merge。
+  acceptance_criteria:
+  - 输出决策摘要，包含目标效果、当前达成、剩余任务和下一步建议。
+  - 失败时保留结构化错误和已完成产物。
+  - python -m pytest -q 通过。

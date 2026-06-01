@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-018
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 继续提升目标效果验证闭环，避免同一源任务被重复推荐，并让剩余任务收敛更清晰。
+tasks:
+  - id: workflow-019
+    title: 目标效果验证剩余任务收敛
+    source_task_id: ui-validation-001
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 workflow-018 的目标效果报告和 evidence_map，识别 ui-validation-001 已完成的验收范围。
+      - 优化下一步推荐逻辑，减少已完成源任务被重复推荐。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 引入外部任务管理服务。
+      - 自动创建 PR 或自动 merge。
+    acceptance_criteria:
+      - 下一步推荐能体现已完成目标效果验证报告产品化。
+      - remaining_work 或 recommendation_basis 对已完成源任务的处理更清晰。
+      - python -m pytest -q 通过。

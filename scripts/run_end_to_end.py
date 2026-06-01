@@ -15,7 +15,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from agents import OptimizationPlannerAgent
-from artifacts import read_json, read_yaml, write_json, write_yaml
+from artifacts import read_json, read_yaml, write_json, write_text, write_yaml
 from scripts.run_local_task import run_local_task
 from tasks import TaskState, load_state, save_state
 
@@ -212,6 +212,11 @@ def run_end_to_end(
         "next_recommended_action": next_recommended_action,
     }
     summary["run_record_artifact"] = _run_record_path(task_id, run_metadata["run_id"])
+    summary["target_effect_report"] = _build_target_effect_report(
+        repo_root,
+        summary,
+        paths["target_effect_report"],
+    )
     summary["evidence_map"] = _evidence_map(summary)
     summary["quality_gate"] = _quality_gate(summary, _quality_gate_config(repo_root))
     summary["post_approval_action"] = _post_approval_action(summary)
@@ -231,6 +236,7 @@ def _workflow_paths(task_id: str) -> dict[str, str]:
         "review_tasks": f"{base}/input/review_tasks.yaml",
         "final_plan": f"{base}/final/final_next_optimization_tasks.yaml",
         "decision_summary": f"{base}/final/decision_summary.yaml",
+        "target_effect_report": f"{base}/final/target_effect_report.md",
     }
 
 
@@ -561,11 +567,15 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
     validation_state = current["validation_state"]
     dispatch_state = current["dispatch_state"]
     review_state = current["review_state"]
+    target_effect_report = summary.get("target_effect_report") or {}
+    goal_effect_evidence = list(current.get("feedback_artifacts", []))
+    if target_effect_report.get("artifact"):
+        goal_effect_evidence.append(target_effect_report["artifact"])
     return [
         _evidence_item(
             decision="goal_effect_aligned",
             status=str(goal.get("validation_status")),
-            evidence=list(current.get("feedback_artifacts", [])),
+            evidence=goal_effect_evidence,
             notes=f"alignment_score={goal.get('alignment_score')}; blocking_issues={len(goal.get('blocking_issues', []))}",
         ),
         _evidence_item(
@@ -603,6 +613,156 @@ def _evidence_map(summary: dict[str, Any]) -> list[dict[str, Any]]:
             notes=f"{summary['next_recommended_action'].get('task_id')}: {summary['next_recommended_action'].get('title')}",
         ),
     ]
+
+
+def _build_target_effect_report(
+    repo_root: str | Path,
+    summary: dict[str, Any],
+    report_artifact: str,
+) -> dict[str, Any]:
+    """把目标效果 evidence 汇总成面向人工审批的 Markdown 报告。"""
+    repo_root = Path(repo_root)
+    feedback_artifacts = list(summary.get("current_result", {}).get("feedback_artifacts", []))
+    render_checks = _collect_render_checks(repo_root, feedback_artifacts)
+    blocking_issues = list(summary.get("goal_effect", {}).get("blocking_issues", []))
+    blocking_issues.extend(_collect_feedback_blocking_issues(repo_root, feedback_artifacts))
+    failed_checks = [check for check in render_checks if check.get("result") != "pass"]
+    screenshot_artifacts = [
+        str(check.get("screenshot_artifact"))
+        for check in render_checks
+        if check.get("screenshot_artifact")
+    ]
+    status = "passed" if not failed_checks and not blocking_issues else "blocked"
+    report = {
+        "artifact": report_artifact,
+        "status": status,
+        "feedback_artifacts": feedback_artifacts,
+        "render_check_count": len(render_checks),
+        "passed_render_check_count": len(render_checks) - len(failed_checks),
+        "failed_render_check_count": len(failed_checks),
+        "screenshot_artifacts": screenshot_artifacts,
+        "blocking_issue_count": len(blocking_issues),
+    }
+    write_text(
+        repo_root,
+        report_artifact,
+        _format_target_effect_report(summary, report, render_checks, blocking_issues),
+    )
+    return report
+
+
+def _collect_render_checks(repo_root: Path, feedback_artifacts: list[str]) -> list[dict[str, Any]]:
+    checks: list[dict[str, Any]] = []
+    for feedback_artifact in feedback_artifacts:
+        feedback_path = repo_root / feedback_artifact
+        if not feedback_path.exists():
+            continue
+        feedback = read_json(repo_root, feedback_artifact)
+        for check in feedback.get("demo_render_checks", []):
+            item = dict(check)
+            item["feedback_artifact"] = feedback_artifact
+            checks.append(item)
+    return checks
+
+
+def _collect_feedback_blocking_issues(
+    repo_root: Path,
+    feedback_artifacts: list[str],
+) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for feedback_artifact in feedback_artifacts:
+        feedback_path = repo_root / feedback_artifact
+        if not feedback_path.exists():
+            continue
+        feedback = read_json(repo_root, feedback_artifact)
+        for issue in feedback.get("blocking_issues", []):
+            issue_id = str(issue.get("id") or issue)
+            key = f"{feedback_artifact}:{issue_id}"
+            if key in seen:
+                continue
+            seen.add(key)
+            item = dict(issue)
+            item["feedback_artifact"] = feedback_artifact
+            issues.append(item)
+    return issues
+
+
+def _format_target_effect_report(
+    summary: dict[str, Any],
+    report: dict[str, Any],
+    render_checks: list[dict[str, Any]],
+    blocking_issues: list[dict[str, Any]],
+) -> str:
+    goal = summary.get("goal_effect", {})
+    next_action = summary.get("next_recommended_action") or {}
+    lines = [
+        "# 目标效果验证报告",
+        "",
+        f"- 任务：{summary.get('task_id')}",
+        f"- 状态：{report['status']}",
+        f"- 目标验证：{goal.get('validation_status')}",
+        f"- 对齐分数：{goal.get('alignment_score')}",
+        f"- 渲染检查：{report['passed_render_check_count']}/{report['render_check_count']} 通过",
+        f"- 阻塞项：{report['blocking_issue_count']}",
+        "",
+        "## 证据来源",
+    ]
+    if report["feedback_artifacts"]:
+        lines.extend(f"- {artifact}" for artifact in report["feedback_artifacts"])
+    else:
+        lines.append("- 暂无 validation_feedback 产物。")
+
+    lines.extend(["", "## 渲染证据"])
+    if not render_checks:
+        lines.append("- 暂无 demo_render_checks；当前报告仅保留目标验证汇总和反馈来源。")
+    for check in render_checks:
+        evidence = check.get("evidence") or {}
+        screenshot = evidence.get("screenshot") or {}
+        page = evidence.get("page_structure") or {}
+        conclusion = check.get("acceptance_conclusion") or {}
+        lines.extend(
+            [
+                f"- 检查：{check.get('id')}（{check.get('result')}）",
+                f"  - 来源：{check.get('feedback_artifact')}",
+                f"  - 期望效果：{check.get('expected_effect', '')}",
+                f"  - 截图：{screenshot.get('artifact') or check.get('screenshot_artifact')}，大小 {screenshot.get('bytes', check.get('screenshot_bytes', 0))} / {screenshot.get('min_bytes', check.get('min_screenshot_bytes', 0))} bytes",
+                f"  - 页面结构：title={page.get('title', '')}，html={page.get('has_html')}，body={page.get('has_body')}",
+                f"  - 结论：{conclusion.get('summary', '')}",
+            ]
+        )
+        lines.extend(_format_presence_items("DOM 文本", evidence.get("dom_terms", []), "term"))
+        lines.extend(_format_presence_items("DOM 选择器", evidence.get("dom_selectors", []), "selector"))
+
+    lines.extend(["", "## 阻塞项"])
+    if blocking_issues:
+        for issue in blocking_issues:
+            lines.append(
+                f"- {issue.get('id', 'unknown')}：{issue.get('description', '')} "
+                f"建议：{issue.get('recommendation', '')}"
+            )
+    else:
+        lines.append("- 无。")
+
+    lines.extend(
+        [
+            "",
+            "## 下一步建议",
+            f"- {next_action.get('task_id')}: {next_action.get('title')}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def _format_presence_items(label: str, items: list[dict[str, Any]], key: str) -> list[str]:
+    if not items:
+        return [f"  - {label}：无结构化证据。"]
+    passed = [str(item.get(key)) for item in items if item.get("present") is True]
+    missing = [str(item.get(key)) for item in items if item.get("present") is not True]
+    lines = [f"  - {label}命中：{', '.join(passed) if passed else '无'}"]
+    if missing:
+        lines.append(f"  - {label}缺失：{', '.join(missing)}")
+    return lines
 
 
 def _quality_gate_config(repo_root: str | Path = ".") -> dict[str, Any]:
@@ -839,7 +999,7 @@ def _dry_run_summary(
             "task_id": task_id,
             "status": "next",
             "state_status": "planned",
-            "artifacts": [paths["final_plan"], paths["decision_summary"]],
+            "artifacts": [paths["final_plan"], paths["decision_summary"], paths["target_effect_report"]],
             "errors": [],
         },
     ]
@@ -899,6 +1059,7 @@ def _dry_run_summary(
                     paths["review_tasks"],
                     paths["final_plan"],
                     paths["decision_summary"],
+                    paths["target_effect_report"],
                 ],
                 notes="dry-run 仅预览计划，不写入产物。",
             )
@@ -1095,6 +1256,7 @@ def _save_parent_state(
         paths["review_tasks"],
         paths["final_plan"],
         paths["decision_summary"],
+        paths["target_effect_report"],
     ]
     previous_context_artifact = summary.get("current_result", {}).get("previous_run_context_artifact")
     if previous_context_artifact:
@@ -1168,6 +1330,7 @@ def format_end_to_end_summary(summary: dict[str, Any]) -> str:
             f"- Initial plan: {current['initial_plan_artifact']}",
             f"- Dispatch tasks: {current['dispatch_tasks_artifact']}",
             f"- Final plan: {current['final_plan_artifact']}",
+            f"- Target effect report: {(summary.get('target_effect_report') or {}).get('artifact', 'none')}",
             "",
             "Next recommended action:",
             f"- {next_action['task_id']}: {next_action['title']} ({next_action['priority']})",

@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-018",
+  "status": "passed",
+  "checked_at": "2026-06-01T14:55:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "human_readable_target_effect_report",
+      "status": "passed",
+      "evidence": [
+        "scripts/run_end_to_end.py",
+        "workspace/tasks/workflow-018/final/target_effect_report.md"
+      ],
+      "notes": "端到端运行会生成目标效果验证报告，汇总状态、对齐分数、渲染检查、阻塞项和下一步建议。"
+    },
+    {
+      "id": "report_links_structured_evidence",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-018/final/target_effect_report.md",
+        "workspace/tasks/workflow-018-validation/final/validation_feedback.json",
+        "workspace/tasks/workflow-018-dispatch/final/validation_feedback.json",
+        "workspace/tasks/workflow-018-review/final/validation_feedback.json"
+      ],
+      "notes": "报告引用 validation_feedback、截图路径、DOM 文本、DOM selector、页面结构和验收结论。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-018/final/decision_summary.yaml",
+        "workspace/tasks/workflow-018/runs/workflow-018-run.yaml",
+        "workspace/tasks/workflow-018/state.json"
+      ],
+      "notes": "workflow-018 完成 validation、dispatch、review、final planning，质量门已审批并允许进入 workflow-019。"
+    }
+  ],
+  "blocking_issues": []
+}

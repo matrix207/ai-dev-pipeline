@@ -4,8 +4,9 @@ import json
 import sys
 from pathlib import Path
 
-from artifacts import read_yaml, write_yaml
+from artifacts import read_text, read_yaml, write_json, write_yaml
 from scripts.run_end_to_end import (
+    _build_target_effect_report,
     _fallback_recommended_task,
     _post_approval_action,
     _quality_gate,
@@ -119,13 +120,105 @@ def test_run_end_to_end_writes_decision_summary(tmp_path: Path) -> None:
 
     saved = read_yaml(tmp_path, "workspace/tasks/workflow-001/final/decision_summary.yaml")
     assert saved == summary
+    report = summary["target_effect_report"]
+    assert report["artifact"] == "workspace/tasks/workflow-001/final/target_effect_report.md"
+    assert (tmp_path / report["artifact"]).exists()
     state = load_state(tmp_path, "workflow-001")
     assert state.status == "waiting_for_human_merge_approval"
     assert "workspace/tasks/workflow-001/final/decision_summary.yaml" in state.artifacts
+    assert "workspace/tasks/workflow-001/final/target_effect_report.md" in state.artifacts
 
     dispatch_tasks = read_yaml(tmp_path, "workspace/tasks/workflow-001/input/dispatch_tasks.yaml")
     assert len(dispatch_tasks["tasks"]) >= 1
     assert all(task["id"].startswith("workflow-001-") for task in dispatch_tasks["tasks"])
+
+
+def test_target_effect_report_summarizes_render_evidence(tmp_path: Path) -> None:
+    feedback_path = "workspace/tasks/workflow-018-validation/final/validation_feedback.json"
+    screenshot_path = "workspace/tasks/workflow-018-validation/review/demo_render_main_view.png"
+    write_json(
+        tmp_path,
+        feedback_path,
+        {
+            "task_id": "workflow-018-validation",
+            "status": "passed",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+            "demo_render_checks": [
+                {
+                    "id": "demo_render_main_view",
+                    "expected_effect": "目标效果页可渲染并保留关键交互。",
+                    "result": "pass",
+                    "screenshot_artifact": screenshot_path,
+                    "evidence": {
+                        "screenshot": {
+                            "artifact": screenshot_path,
+                            "exists": True,
+                            "bytes": 625004,
+                            "min_bytes": 10000,
+                            "passed": True,
+                        },
+                        "dom_terms": [
+                            {"term": "AI开发流水线效果展示", "present": True},
+                            {"term": "人工Gate", "present": True},
+                        ],
+                        "dom_selectors": [
+                            {"selector": "#playBtn", "present": True},
+                            {"selector": "[data-node=\"qa\"]", "present": True},
+                        ],
+                        "page_structure": {
+                            "has_html": True,
+                            "has_body": True,
+                            "title": "AI开发流水线效果展示",
+                        },
+                    },
+                    "acceptance_conclusion": {
+                        "passed": True,
+                        "summary": "目标效果渲染证据通过。",
+                        "missing": {
+                            "browser": [],
+                            "screenshot": [],
+                            "dom_terms": [],
+                            "dom_selectors": [],
+                        },
+                    },
+                }
+            ],
+        },
+    )
+    summary = {
+        "task_id": "workflow-018",
+        "goal_effect": {
+            "validation_status": "passed",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+        },
+        "current_result": {
+            "feedback_artifacts": [feedback_path],
+        },
+        "next_recommended_action": {
+            "task_id": "workflow-019",
+            "title": "继续优化",
+        },
+    }
+
+    report = _build_target_effect_report(
+        tmp_path,
+        summary,
+        "workspace/tasks/workflow-018/final/target_effect_report.md",
+    )
+
+    assert report["status"] == "passed"
+    assert report["render_check_count"] == 1
+    assert report["passed_render_check_count"] == 1
+    assert report["screenshot_artifacts"] == [screenshot_path]
+    text = read_text(tmp_path, report["artifact"])
+    assert "目标效果验证报告" in text
+    assert feedback_path in text
+    assert screenshot_path in text
+    assert "AI开发流水线效果展示" in text
+    assert "#playBtn" in text
+    assert "阻塞项：0" in text
 
 
 def test_run_end_to_end_writes_run_record(tmp_path: Path) -> None:
@@ -450,6 +543,10 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
             "dispatch_tasks_artifact": "workspace/tasks/workflow-001/input/dispatch_tasks.yaml",
             "final_plan_artifact": "workspace/tasks/workflow-001/final/final_next_optimization_tasks.yaml",
         },
+        "target_effect_report": {
+            "artifact": "workspace/tasks/workflow-001/final/target_effect_report.md",
+            "status": "passed",
+        },
         "next_recommended_action": {
             "task_id": "workflow-002",
             "title": "Next workflow task",
@@ -490,6 +587,7 @@ def test_format_end_to_end_summary_is_human_readable() -> None:
     assert "Post approval action: approval_required" in output
     assert "Can continue: False" in output
     assert "Dispatch state: waiting_for_human_merge_approval" in output
+    assert "Target effect report: workspace/tasks/workflow-001/final/target_effect_report.md" in output
     assert "workflow-002: Next workflow task" in output
 
 
