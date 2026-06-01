@@ -61,6 +61,34 @@ def test_optimization_planner_outputs_repair_tasks_for_blocking_issues(tmp_path:
     assert result.output["tasks"][0]["human_gate"]["risk_approval_required"] is True
 
 
+def test_optimization_planner_prefixes_task_ids_for_reusable_batches(tmp_path: Path) -> None:
+    write_json(
+        tmp_path,
+        "workspace/tasks/validation-001/final/validation_feedback.json",
+        {
+            "task_id": "validation-001",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+        },
+    )
+
+    result = OptimizationPlannerAgent().run(
+        {
+            "repo_root": str(tmp_path),
+            "task_id_prefix": "feedback-execution-001",
+        }
+    )
+
+    assert result.output["task_batch"]["task_id_prefix"] == "feedback-execution-001"
+    assert result.output["tasks"][0]["id"] == "feedback-execution-001-feedback-002"
+    assert result.output["tasks"][0]["source_task_id"] == "feedback-002"
+    assert [task["source_task_id"] for task in result.output["tasks"]] == [
+        "feedback-002",
+        "dispatch-002",
+        "ui-validation-001",
+    ]
+
+
 def test_optimization_planner_combines_multiple_feedback_sources(tmp_path: Path) -> None:
     write_json(
         tmp_path,

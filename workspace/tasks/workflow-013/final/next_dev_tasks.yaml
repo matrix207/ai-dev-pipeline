@@ -1,0 +1,26 @@
+task_batch:
+  source_task: workflow-013
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 继续把端到端闭环运行策略产品化，并减少人工理解成本。
+tasks:
+  - id: workflow-014
+    title: 端到端闭环持续优化
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 将 workflow-013 的运行记录和 evidence map 作为下一轮自动决策输入。
+      - 收敛 remaining_work 中仍未产品化的 feedback-002、dispatch-002、ui-validation-001 模板任务。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 接入外部代码托管平台 API。
+      - 自动创建或合并 PR。
+    acceptance_criteria:
+      - workflow-014 能读取 workflow-013 的 run record 并生成下一轮任务计划。
+      - 自动化验证继续输出 decision_summary、evidence_map 和 next_recommended_action。
+      - python -m pytest -q 通过。

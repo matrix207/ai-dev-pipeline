@@ -37,22 +37,30 @@ class OptimizationPlannerAgent(BaseAgent):
         else:
             tasks = self._enhancement_tasks(alignment_score)
             planning_mode = "enhancement"
+        task_id_prefix = payload.get("task_id_prefix")
+        if task_id_prefix is not None and not isinstance(task_id_prefix, str):
+            raise TypeError("task_id_prefix must be a string when provided.")
+        tasks = self._with_task_id_prefix(tasks, task_id_prefix)
 
         source_tasks = [
             str(item["feedback"].get("task_id", "validation-001")) for item in source_feedbacks
         ]
+        task_batch = {
+            "source_task": source_tasks[0],
+            "source_tasks": source_tasks,
+            "source_feedback_paths": feedback_paths,
+            "language": "zh-CN",
+            "status": "ready_for_human_review",
+            "goal": "基于自动化验证反馈生成下一轮优化任务。",
+            "planning_mode": planning_mode,
+            "alignment_score": alignment_score,
+            "blocking_issue_count": len(blocking_issues),
+        }
+        if task_id_prefix:
+            task_batch["task_id_prefix"] = task_id_prefix
+
         return {
-            "task_batch": {
-                "source_task": source_tasks[0],
-                "source_tasks": source_tasks,
-                "source_feedback_paths": feedback_paths,
-                "language": "zh-CN",
-                "status": "ready_for_human_review",
-                "goal": "基于自动化验证反馈生成下一轮优化任务。",
-                "planning_mode": planning_mode,
-                "alignment_score": alignment_score,
-                "blocking_issue_count": len(blocking_issues),
-            },
+            "task_batch": task_batch,
             "tasks": tasks,
             "human_gate": {
                 "required_before_starting_dev": True,
@@ -124,6 +132,25 @@ class OptimizationPlannerAgent(BaseAgent):
                 }
             )
         return tasks
+
+    def _with_task_id_prefix(
+        self,
+        tasks: list[dict[str, Any]],
+        task_id_prefix: str | None,
+    ) -> list[dict[str, Any]]:
+        if not task_id_prefix:
+            return tasks
+
+        prefixed_tasks = []
+        for task in tasks:
+            prefixed_task = dict(task)
+            original_id = str(prefixed_task["id"])
+            # 一体化闭环会重复消费同类优化模板；加本轮前缀避免被历史 state 误判为已完成。
+            if not original_id.startswith(f"{task_id_prefix}-"):
+                prefixed_task["id"] = f"{task_id_prefix}-{original_id}"
+            prefixed_task["source_task_id"] = original_id
+            prefixed_tasks.append(prefixed_task)
+        return prefixed_tasks
 
     def _enhancement_tasks(self, alignment_score: float) -> list[dict[str, Any]]:
         priority = "high" if alignment_score < 0.9 else "medium"

@@ -435,6 +435,50 @@ def test_run_local_task_dispatches_feedback_generated_tasks(tmp_path: Path) -> N
     assert dispatched_state["status"] == "waiting_for_validation"
 
 
+def test_run_local_task_dispatches_task_local_feedback_plan(tmp_path: Path) -> None:
+    write_config(
+        tmp_path,
+        [
+            {
+                "name": "optimization_planning",
+                "task_id_prefix": "{task_id}",
+            },
+            "optimization_dispatch",
+        ],
+    )
+    write_json(
+        tmp_path,
+        "workspace/tasks/validation-001/final/validation_feedback.json",
+        {
+            "task_id": "validation-001",
+            "alignment_score": 1.0,
+            "blocking_issues": [],
+        },
+    )
+
+    state = run_local_task(tmp_path, "local_dev", task_id="feedback-execution-001", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.status == "waiting_for_human_merge_approval"
+    assert state.artifacts == [
+        "workspace/tasks/feedback-execution-001/final/next_optimization_tasks.yaml",
+        "workspace/tasks/feedback-execution-001/code/dispatch_result.json",
+    ]
+    dispatch_result = read_json(
+        tmp_path,
+        "workspace/tasks/feedback-execution-001/code/dispatch_result.json",
+    )
+    assert dispatch_result["status"] == "dispatched"
+    assert dispatch_result["selected_task"]["id"] == "feedback-execution-001-feedback-002"
+    assert dispatch_result["selected_task"]["source_task_id"] == "feedback-002"
+    assert dispatch_result["tasks_path"] == (
+        "workspace/tasks/feedback-execution-001/final/next_optimization_tasks.yaml"
+    )
+    assert dispatch_result["selected_task"]["source_feedback_paths"] == [
+        "workspace/tasks/validation-001/final/validation_feedback.json"
+    ]
+
+
 def test_run_local_task_validates_dispatched_task(tmp_path: Path) -> None:
     write_config(
         tmp_path,

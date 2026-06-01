@@ -1,0 +1,38 @@
+{
+  "task_id": "workflow-013",
+  "status": "passed",
+  "checked_at": "2026-06-01T11:20:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "task_local_feedback_plan",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_local_task.py",
+        "workspace/tasks/feedback-execution-001/final/next_optimization_tasks.yaml",
+        "workspace/tasks/feedback-execution-001/code/dispatch_result.json"
+      ],
+      "notes": "feedback_execution 可在同一 workflow 中生成本任务 next_optimization_tasks.yaml，并由 optimization_dispatch 自动消费。"
+    },
+    {
+      "id": "fresh_dispatchable_task_ids",
+      "status": "passed",
+      "evidence": [
+        "agents/optimization_planner_agent.py",
+        "tests/test_optimization_planner_agent.py",
+        "workspace/tasks/feedback-execution-001-feedback-002/state.json"
+      ],
+      "notes": "optimization_planning 支持 task_id_prefix，生成本轮专属任务 ID，避免历史 state 导致 no_open_tasks。"
+    },
+    {
+      "id": "end_to_end_evidence_gate",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-013/final/decision_summary.yaml",
+        "workspace/tasks/workflow-013/runs/workflow-013-run.yaml",
+        "workspace/tasks/workflow-013/state.json"
+      ],
+      "notes": "workflow-013 完成 validation、dispatch、review、final planning，质量门已审批并允许继续下一阶段。"
+    }
+  ],
+  "blocking_issues": []
+}

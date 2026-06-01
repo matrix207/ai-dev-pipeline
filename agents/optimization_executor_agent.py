@@ -87,6 +87,7 @@ class OptimizationExecutorAgent(BaseAgent):
             "validation_path",
             "task_definition_path",
             "goal_spec_path",
+            "source_task_id",
         ]:
             if field in task:
                 selected[field] = task[field]

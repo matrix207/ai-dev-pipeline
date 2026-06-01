@@ -122,6 +122,10 @@ def _run_step(
         )
         return f"workspace/tasks/{task_id}/final/validation_feedback.json", result.output
     if step == "optimization_planning":
+        task_id_prefix = step_options.get("task_id_prefix")
+        if isinstance(task_id_prefix, str):
+            # workflow 配置可用当前任务号生成本轮专属任务 ID 前缀，避免复用历史任务状态。
+            task_id_prefix = task_id_prefix.format(task_id=task_id)
         result = OptimizationPlannerAgent().run(
             {
                 "repo_root": str(repo_root),
@@ -130,6 +134,7 @@ def _run_step(
                     "workspace/tasks/validation-001/final/validation_feedback.json",
                 ),
                 "feedback_paths": step_options.get("feedback_paths"),
+                "task_id_prefix": task_id_prefix,
             }
         )
         return f"workspace/tasks/{task_id}/final/next_optimization_tasks.yaml", result.output
@@ -150,6 +155,11 @@ def _run_step(
         if tasks_path is None and task_id.endswith("-dispatch"):
             # dispatch 子流程默认读取父任务生成的 dispatch_tasks.yaml，保证 workflow-00N 都能复用。
             tasks_path = f"workspace/tasks/{_parent_task_id(task_id, '-dispatch')}/input/dispatch_tasks.yaml"
+        if tasks_path is None:
+            task_local_tasks_path = f"workspace/tasks/{task_id}/final/next_optimization_tasks.yaml"
+            # 同一 workflow 先 planning 后 dispatch 时，优先消费刚生成的本任务优化队列。
+            if (Path(repo_root) / task_local_tasks_path).exists():
+                tasks_path = task_local_tasks_path
         result = OptimizationDispatcherAgent().run(
             {
                 "repo_root": str(repo_root),

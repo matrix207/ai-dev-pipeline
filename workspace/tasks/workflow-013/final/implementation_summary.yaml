@@ -1,0 +1,43 @@
+task_id: workflow-013
+status: completed
+summary: >-
+  完成反馈规划到调度执行的一体化闭环。feedback_execution 现在可以在同一任务内生成本轮优化任务、
+  自动选择本任务产物作为 dispatch 输入，并验证被调度子任务。
+implemented_changes:
+  - path: agents/optimization_planner_agent.py
+    change: 增加 task_id_prefix 支持，并在任务中保留 source_task_id 便于追溯原始优化模板。
+  - path: scripts/run_local_task.py
+    change: optimization_planning 支持从 workflow 配置展开 "{task_id}" 前缀，optimization_dispatch 优先消费本任务生成的 next_optimization_tasks.yaml。
+  - path: agents/optimization_executor_agent.py
+    change: selected_task 保留 source_task_id，便于调度结果映射回原始任务。
+  - path: config/pipeline.yaml
+    change: feedback_execution workflow 接入 task_id_prefix，支持本轮新任务调度。
+  - path: tests/test_optimization_planner_agent.py
+    change: 覆盖规划器生成前缀任务 ID 和 source_task_id 的行为。
+  - path: tests/test_run_local_task.py
+    change: 覆盖 task-local feedback plan 直接 dispatch 的 workflow 行为。
+verification:
+  - command: python -m pytest tests/test_optimization_planner_agent.py tests/test_run_local_task.py -q
+    result: 21 passed
+  - command: python -m pytest -q
+    result: 97 passed
+  - command: python scripts/run_local_task.py --workflow feedback_execution --task-id feedback-execution-001 --goal-approved
+    result: waiting_for_human_merge_approval，且 dispatched_task_validation passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-013 --rerun-policy skip_completed --run-id workflow-013-run --json
+    result: ready_for_human_decision，alignment_score=1.0，blocking_issues=0
+  - command: python scripts/run_end_to_end.py --task-id workflow-013 --approve-run workflow-013-run --approver dennis --decision approved --comment '同意 workflow-013 端到端闭环结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-013 --continue-run workflow-013-run --json
+    result: can_continue=true，recommended_command 指向 workflow-014
+key_artifacts:
+  - workspace/tasks/feedback-execution-001/final/next_optimization_tasks.yaml
+  - workspace/tasks/feedback-execution-001/code/dispatch_result.json
+  - workspace/tasks/feedback-execution-001/review/dispatched_task_validation.json
+  - workspace/tasks/workflow-013/final/decision_summary.yaml
+  - workspace/tasks/workflow-013/runs/workflow-013-run.yaml
+  - workspace/tasks/workflow-013/review/acceptance_check.json
+  - workspace/tasks/workflow-013/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

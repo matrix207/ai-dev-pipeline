@@ -1,0 +1,186 @@
+{
+  "status": "dispatched",
+  "selected_task": {
+    "id": "feedback-execution-001-feedback-002",
+    "title": "把下一轮优化任务接入调度执行",
+    "priority": "medium",
+    "recommended_agent": "CoderAgent",
+    "risk_level": "medium",
+    "human_gate": {
+      "goal_approval_required": true,
+      "risk_approval_required": false,
+      "merge_approval_required": true
+    },
+    "source_tasks": [
+      "validation-001"
+    ],
+    "source_feedback_paths": [
+      "workspace/tasks/validation-001/final/validation_feedback.json"
+    ],
+    "source_task_id": "feedback-002"
+  },
+  "tasks_path": "workspace/tasks/feedback-execution-001/final/next_optimization_tasks.yaml",
+  "task_batch": {
+    "source_task": "validation-001",
+    "source_tasks": [
+      "validation-001"
+    ],
+    "source_feedback_paths": [
+      "workspace/tasks/validation-001/final/validation_feedback.json"
+    ],
+    "language": "zh-CN",
+    "status": "ready_for_human_review",
+    "goal": "基于自动化验证反馈生成下一轮优化任务。",
+    "planning_mode": "enhancement",
+    "alignment_score": 1.0,
+    "blocking_issue_count": 0,
+    "task_id_prefix": "feedback-execution-001"
+  },
+  "source_tasks": [
+    "validation-001"
+  ],
+  "source_feedback_paths": [
+    "workspace/tasks/validation-001/final/validation_feedback.json"
+  ],
+  "execution": {
+    "status": "ready",
+    "tasks_path": "workspace/tasks/feedback-execution-001/final/next_optimization_tasks.yaml",
+    "task_batch": {
+      "source_task": "validation-001",
+      "source_tasks": [
+        "validation-001"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/validation-001/final/validation_feedback.json"
+      ],
+      "language": "zh-CN",
+      "status": "ready_for_human_review",
+      "goal": "基于自动化验证反馈生成下一轮优化任务。",
+      "planning_mode": "enhancement",
+      "alignment_score": 1.0,
+      "blocking_issue_count": 0,
+      "task_id_prefix": "feedback-execution-001"
+    },
+    "selected_task": {
+      "id": "feedback-execution-001-feedback-002",
+      "title": "把下一轮优化任务接入调度执行",
+      "priority": "medium",
+      "recommended_agent": "CoderAgent",
+      "risk_level": "medium",
+      "human_gate": {
+        "goal_approval_required": true,
+        "risk_approval_required": false,
+        "merge_approval_required": true
+      },
+      "source_tasks": [
+        "validation-001"
+      ],
+      "source_feedback_paths": [
+        "workspace/tasks/validation-001/final/validation_feedback.json"
+      ],
+      "source_task_id": "feedback-002"
+    },
+    "execution_allowed": true,
+    "blocking_issues": [],
+    "execution_plan": [
+      {
+        "order": 1,
+        "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 2,
+        "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+        "recommended_agent": "CoderAgent"
+      },
+      {
+        "order": 3,
+        "description": "保留 goal approval 和 merge approval 人工质量门。",
+        "recommended_agent": "CoderAgent"
+      }
+    ],
+    "out_of_scope": [
+      "接入外部代码托管平台 API。",
+      "执行自动 merge。"
+    ],
+    "acceptance_criteria": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ]
+  },
+  "dispatch_result": {
+    "task_id": "feedback-execution-001-feedback-002",
+    "title": "把下一轮优化任务接入调度执行",
+    "priority": "medium",
+    "scope": [
+      "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+      "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+      "保留 goal approval 和 merge approval 人工质量门。"
+    ],
+    "out_of_scope": [
+      "接入外部代码托管平台 API。",
+      "执行自动 merge。"
+    ],
+    "acceptance_criteria": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ],
+    "implementation_plan": [
+      {
+        "order": 1,
+        "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+        "expected_artifact": "workspace/tasks/feedback-execution-001-feedback-002/code/"
+      },
+      {
+        "order": 2,
+        "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+        "expected_artifact": "workspace/tasks/feedback-execution-001-feedback-002/code/"
+      },
+      {
+        "order": 3,
+        "description": "保留 goal approval 和 merge approval 人工质量门。",
+        "expected_artifact": "workspace/tasks/feedback-execution-001-feedback-002/code/"
+      }
+    ],
+    "verification": {
+      "required_commands": [
+        "python -m pytest -q"
+      ],
+      "acceptance_criteria": [
+        "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+        "调度产物能引用来源 validation_feedback。",
+        "python -m pytest -q 通过。"
+      ]
+    },
+    "safety": {
+      "external_model_api": "not_used",
+      "pr_or_merge": "not_allowed",
+      "destructive_operations": "not_allowed"
+    },
+    "output_artifacts": [
+      "workspace/tasks/feedback-execution-001-feedback-002/code/implementation_plan.json",
+      "workspace/tasks/feedback-execution-001-feedback-002/review/acceptance_check.json",
+      "workspace/tasks/feedback-execution-001-feedback-002/final/implementation_summary.yaml"
+    ]
+  },
+  "written_artifacts": [
+    "workspace/tasks/feedback-execution-001-feedback-002/code/implementation_plan.json",
+    "workspace/tasks/feedback-execution-001-feedback-002/state.json",
+    "workspace/tasks/feedback-execution-001-feedback-002/review/test_validation.json",
+    "workspace/tasks/feedback-execution-001-feedback-002/review/code_review.json",
+    "workspace/tasks/feedback-execution-001-feedback-002/final/validation_feedback.json"
+  ],
+  "blocking_issues": [],
+  "dispatched_task_validation": {
+    "status": "passed",
+    "dispatched_task_id": "feedback-execution-001-feedback-002",
+    "artifacts": [
+      "workspace/tasks/feedback-execution-001-feedback-002/review/test_validation.json",
+      "workspace/tasks/feedback-execution-001-feedback-002/review/code_review.json",
+      "workspace/tasks/feedback-execution-001-feedback-002/final/validation_feedback.json"
+    ],
+    "blocking_issues": []
+  }
+}
