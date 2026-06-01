@@ -1,0 +1,27 @@
+task_batch:
+  source_task: workflow-019
+  language: zh-CN
+  status: ready_for_human_review
+  goal: 在上一轮剩余任务已收敛后，进入新的端到端闭环持续优化阶段，选择下一组高价值改进。
+tasks:
+  - id: workflow-020
+    title: 端到端闭环持续优化
+    source_task_id: null
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: low
+    human_gate:
+      goal_approval_required: true
+      risk_approval_required: false
+      merge_approval_required: true
+    scope:
+      - 基于 workflow-019 的 recommendation_basis，确认 previous_remaining_task_ids 已全部完成或验证。
+      - 从新的 validation_feedback 和 final_next_optimization_tasks 中选择下一组高价值改进。
+      - 保留人工审批质量门，继续禁止自动 merge。
+    out_of_scope:
+      - 接入外部代码托管平台 API。
+      - 自动创建 PR 或自动 merge。
+    acceptance_criteria:
+      - 下一轮推荐不再重复选择 ui-validation-001、feedback-002、dispatch-002。
+      - 新的 remaining_work 或 recommendation_basis 能说明为何进入持续优化。
+      - python -m pytest -q 通过。

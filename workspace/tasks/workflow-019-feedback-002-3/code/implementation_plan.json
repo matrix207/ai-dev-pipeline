@@ -1,0 +1,56 @@
+{
+  "task_id": "workflow-019-feedback-002-3",
+  "title": "把下一轮优化任务接入调度执行",
+  "priority": "medium",
+  "scope": [
+    "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+    "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+    "保留 goal approval 和 merge approval 人工质量门。"
+  ],
+  "out_of_scope": [
+    "接入外部代码托管平台 API。",
+    "执行自动 merge。"
+  ],
+  "acceptance_criteria": [
+    "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+    "调度产物能引用来源 validation_feedback。",
+    "python -m pytest -q 通过。"
+  ],
+  "implementation_plan": [
+    {
+      "order": 1,
+      "description": "让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch 的 tasks_path。",
+      "expected_artifact": "workspace/tasks/workflow-019-feedback-002-3/code/"
+    },
+    {
+      "order": 2,
+      "description": "运行调度后，父任务能记录来源反馈和被调度任务验证状态。",
+      "expected_artifact": "workspace/tasks/workflow-019-feedback-002-3/code/"
+    },
+    {
+      "order": 3,
+      "description": "保留 goal approval 和 merge approval 人工质量门。",
+      "expected_artifact": "workspace/tasks/workflow-019-feedback-002-3/code/"
+    }
+  ],
+  "verification": {
+    "required_commands": [
+      "python -m pytest -q"
+    ],
+    "acceptance_criteria": [
+      "optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。",
+      "调度产物能引用来源 validation_feedback。",
+      "python -m pytest -q 通过。"
+    ]
+  },
+  "safety": {
+    "external_model_api": "not_used",
+    "pr_or_merge": "not_allowed",
+    "destructive_operations": "not_allowed"
+  },
+  "output_artifacts": [
+    "workspace/tasks/workflow-019-feedback-002-3/code/implementation_plan.json",
+    "workspace/tasks/workflow-019-feedback-002-3/review/acceptance_check.json",
+    "workspace/tasks/workflow-019-feedback-002-3/final/implementation_summary.yaml"
+  ]
+}

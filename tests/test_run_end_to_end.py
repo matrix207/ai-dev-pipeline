@@ -7,6 +7,7 @@ from pathlib import Path
 from artifacts import read_text, read_yaml, write_json, write_yaml
 from scripts.run_end_to_end import (
     _build_target_effect_report,
+    _completed_template_task_ids,
     _fallback_recommended_task,
     _post_approval_action,
     _quality_gate,
@@ -355,6 +356,85 @@ def test_run_end_to_end_recommends_unvalidated_previous_remaining_work(tmp_path:
     ]
     saved = read_yaml(tmp_path, "workspace/tasks/workflow-015/final/decision_summary.yaml")
     assert saved["recommendation_basis"] == basis
+
+
+def test_run_end_to_end_deprioritizes_completed_previous_source_task(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-018/runs/workflow-018-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-018",
+            "run_metadata": {"run_id": "workflow-018-run"},
+            "remaining_work": [
+                "feedback-002: 把下一轮优化任务接入调度执行",
+                "dispatch-002: 支持更多本地 Agent 调度",
+                "ui-validation-001: 增加目标效果图的自动检查",
+            ],
+            "next_recommended_action": {
+                "task_id": "workflow-019",
+                "title": "增加目标效果图的自动检查",
+                "priority": "medium",
+                "source_task_id": "ui-validation-001",
+            },
+            "target_effect_report": {
+                "artifact": "workspace/tasks/workflow-018/final/target_effect_report.md",
+                "status": "passed",
+                "render_check_count": 3,
+                "passed_render_check_count": 3,
+                "blocking_issue_count": 0,
+            },
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "goal_effect_aligned",
+                    "status": "passed",
+                    "evidence": [
+                        "workspace/tasks/workflow-018/final/target_effect_report.md"
+                    ],
+                    "notes": "alignment_score=1.0; blocking_issues=0",
+                }
+            ],
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-019",
+        run_id="workflow-019-run",
+        previous_run_record=previous_record_path,
+    )
+
+    assert summary["previous_run_context"]["completed_source_task_ids"] == ["ui-validation-001"]
+    assert summary["recommendation_basis"]["completed_previous_source_task_ids"] == [
+        "ui-validation-001"
+    ]
+    assert summary["recommendation_basis"]["selected_source_task_id"] is None
+    assert summary["next_recommended_action"].get("source_task_id") is None
+    assert summary["remaining_work"] == ["暂无未完成的自动生成任务。"]
+    assert "已完成" in summary["next_recommended_action"]["reason"]
+
+
+def test_completed_template_task_ids_handles_new_id_suffixes() -> None:
+    events = [
+        {
+            "artifacts": [
+                "workspace/tasks/workflow-019-feedback-002-2/final/validation_feedback.json",
+                "workspace/tasks/workflow-019-dispatch-002-2/final/validation_feedback.json",
+            ]
+        }
+    ]
+
+    completed = _completed_template_task_ids(
+        "workflow-019",
+        events,
+        ["feedback-002", "dispatch-002", "ui-validation-001"],
+    )
+
+    assert completed == ["feedback-002", "dispatch-002"]
 
 
 def test_quality_gate_blocks_missing_required_evidence() -> None:

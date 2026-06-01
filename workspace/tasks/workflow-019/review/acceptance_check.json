@@ -1,0 +1,44 @@
+{
+  "task_id": "workflow-019",
+  "status": "passed",
+  "checked_at": "2026-06-01T15:05:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "completed_source_task_detected",
+      "status": "passed",
+      "evidence": [
+        "scripts/run_end_to_end.py",
+        "workspace/tasks/workflow-019/input/previous_run_context.yaml"
+      ],
+      "notes": "workflow-018 的 target_effect_report 通过后，previous_run_context 会标记 completed_source_task_ids=['ui-validation-001']。"
+    },
+    {
+      "id": "recommendation_deprioritizes_completed_source",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-019/final/decision_summary.yaml",
+        "workspace/tasks/workflow-019/runs/workflow-019-run.yaml"
+      ],
+      "notes": "recommendation_basis 已将 ui-validation-001、feedback-002、dispatch-002 放入 completed_this_run_task_ids 和 deprioritized_task_ids，下一步转入 workflow-020 持续优化。"
+    },
+    {
+      "id": "remaining_work_filtered",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-019/final/decision_summary.yaml"
+      ],
+      "notes": "remaining_work 已过滤全部完成项，显示暂无未完成的自动生成任务。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-019/final/target_effect_report.md",
+        "workspace/tasks/workflow-019/runs/workflow-019-run.yaml",
+        "workspace/tasks/workflow-019/state.json"
+      ],
+      "notes": "workflow-019 完成正式运行、质量门审批和 continue 检查。"
+    }
+  ],
+  "blocking_issues": []
+}

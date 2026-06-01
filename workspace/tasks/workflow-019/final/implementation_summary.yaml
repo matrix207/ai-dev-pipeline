@@ -1,0 +1,43 @@
+task_id: workflow-019
+status: completed
+summary: >-
+  完成目标效果验证剩余任务收敛。端到端运行现在会从已审批运行记录中识别
+  target_effect_report 通过的 source_task_id，并在下一轮推荐和 remaining_work 中降低或过滤已完成任务。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: previous_run_context 新增 completed_source_task_ids，并基于已通过 target_effect_report 识别完成的 source_task_id。
+  - path: scripts/run_end_to_end.py
+    change: 推荐器过滤已完成的上一轮剩余任务，recommendation_basis 新增 completed_previous_source_task_ids 和 remaining_open_task_ids。
+  - path: scripts/run_end_to_end.py
+    change: remaining_work 基于 completed_this_run_task_ids 过滤，避免已完成源任务继续出现在剩余任务列表。
+  - path: tests/test_run_end_to_end.py
+    change: 增加已完成 source task 不再重复推荐的回归用例。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py -q
+    result: 26 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-019 --dry-run --rerun-policy skip_completed --run-id workflow-019-dry-run --previous-run-record workspace/tasks/workflow-018/runs/workflow-018-run.yaml --json
+    result: dry_run 通过，previous_run_context 带出 completed_source_task_ids=['ui-validation-001']。
+  - command: python scripts/run_end_to_end.py --task-id workflow-019 --rerun-policy new_ids --run-id workflow-019-run --previous-run-record workspace/tasks/workflow-018/runs/workflow-018-run.yaml --json
+    result: ready_for_human_decision，下一步推荐 workflow-020，remaining_work 显示暂无未完成的自动生成任务。
+  - command: python scripts/run_end_to_end.py --task-id workflow-019 --approve-run workflow-019-run --approver dennis --decision approved --comment '同意 workflow-019 目标效果验证剩余任务收敛结果，允许进入下一阶段。' --decided-at 2026-06-01T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-019 --continue-run workflow-019-run --json
+    result: can_continue=true，recommended_command 指向 workflow-020
+recommendation_result:
+  completed_source_task_ids:
+    - ui-validation-001
+    - feedback-002
+    - dispatch-002
+  remaining_open_task_ids: []
+  selected_next_task: workflow-020
+  selected_source_task_id: null
+key_artifacts:
+  - workspace/tasks/workflow-019/final/decision_summary.yaml
+  - workspace/tasks/workflow-019/final/target_effect_report.md
+  - workspace/tasks/workflow-019/runs/workflow-019-run.yaml
+  - workspace/tasks/workflow-019/review/acceptance_check.json
+  - workspace/tasks/workflow-019/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-01T00:00:00Z'

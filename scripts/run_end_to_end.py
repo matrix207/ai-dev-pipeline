@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -208,7 +209,10 @@ def run_end_to_end(
         "execution_summary": execution_summary,
         "recommendation_basis": recommendation_basis,
         "retry_plan": _retry_plan(execution_summary),
-        "remaining_work": _remaining_work(final_plan),
+        "remaining_work": _remaining_work(
+            final_plan,
+            completed_task_ids=recommendation_basis.get("completed_this_run_task_ids", []),
+        ),
         "next_recommended_action": next_recommended_action,
     }
     summary["run_record_artifact"] = _run_record_path(task_id, run_metadata["run_id"])
@@ -275,6 +279,7 @@ def _previous_run_context(repo_root: Path, previous_run_record: str | None) -> d
     record = read_yaml(repo_root, previous_run_record)
     evidence_map = list(record.get("evidence_map", []))
     remaining_work = list(record.get("remaining_work", []))
+    completed_source_task_ids = _completed_source_task_ids(record)
     # 上一轮上下文只保留决策所需索引，完整证据仍通过 source_run_record 追溯。
     return {
         "available": True,
@@ -299,8 +304,34 @@ def _previous_run_context(repo_root: Path, previous_run_record: str | None) -> d
         ],
         "remaining_work": remaining_work,
         "remaining_work_count": len(remaining_work),
+        "completed_source_task_ids": completed_source_task_ids,
         "next_recommended_action": record.get("next_recommended_action"),
     }
+
+
+def _completed_source_task_ids(record: dict[str, Any]) -> list[str]:
+    """从已审批运行记录中识别已完成的源任务，避免下一轮重复推荐。"""
+    if (record.get("quality_gate") or {}).get("status") != "approved":
+        return []
+    if (record.get("post_approval_action") or {}).get("status") != "allowed":
+        return []
+
+    completed: list[str] = []
+    next_action = record.get("next_recommended_action") or {}
+    source_task_id = next_action.get("source_task_id")
+    target_effect_report = record.get("target_effect_report") or {}
+    if (
+        source_task_id
+        and target_effect_report.get("status") == "passed"
+        and int(target_effect_report.get("blocking_issue_count", 0)) == 0
+    ):
+        completed.append(str(source_task_id))
+
+    for task_id_value in record.get("completed_source_task_ids", []):
+        task_id_text = str(task_id_value)
+        if task_id_text not in completed:
+            completed.append(task_id_text)
+    return completed
 
 
 def _annotate_plan_with_previous_context(
@@ -492,11 +523,19 @@ def _existing_feedback_paths(repo_root: Path, paths: list[str]) -> list[str]:
     return [path for path in paths if (repo_root / path).exists()]
 
 
-def _remaining_work(plan: dict[str, Any]) -> list[str]:
+def _remaining_work(
+    plan: dict[str, Any],
+    *,
+    completed_task_ids: list[str] | None = None,
+) -> list[str]:
     tasks = plan.get("tasks", [])
-    if not tasks:
-        return ["暂无自动生成的剩余任务。"]
-    return [f"{task.get('id')}: {task.get('title')}" for task in tasks[:5]]
+    completed = set(completed_task_ids or [])
+    remaining_tasks = [
+        task for task in tasks if str(task.get("id")) not in completed
+    ]
+    if not remaining_tasks:
+        return ["暂无未完成的自动生成任务。"]
+    return [f"{task.get('id')}: {task.get('title')}" for task in remaining_tasks[:5]]
 
 
 def _execution_summary(
@@ -1136,9 +1175,21 @@ def _recommended_from_previous_context(
     events: list[dict[str, Any]],
 ) -> dict[str, Any]:
     remaining_task_ids = _previous_remaining_task_ids(previous_context)
-    completed_task_ids = _completed_template_task_ids(task_id, events, remaining_task_ids)
+    completed_previous_source_task_ids = list(previous_context.get("completed_source_task_ids", []))
+    completed_task_ids = _merge_unique(
+        completed_previous_source_task_ids,
+        _completed_template_task_ids(task_id, events, remaining_task_ids),
+    )
     priority_order = {"high": 0, "medium": 1, "low": 2}
     remaining_order = {remaining_task_id: index for index, remaining_task_id in enumerate(remaining_task_ids)}
+    selectable_tasks = [
+        task
+        for task in tasks
+        if not (
+            str(task.get("id")) in remaining_order
+            and str(task.get("id")) in completed_task_ids
+        )
+    ]
 
     def recommendation_key(task: dict[str, Any]) -> tuple[int, int, int, str]:
         task_id_value = str(task.get("id"))
@@ -1156,14 +1207,16 @@ def _recommended_from_previous_context(
             task_id_value,
         )
 
-    available_tasks = sorted(tasks, key=recommendation_key)
+    available_tasks = sorted(selectable_tasks, key=recommendation_key)
     if not available_tasks:
         fallback = _fallback_recommended_task(task_id)
         fallback["selection_basis"] = {
             "strategy": "previous_run_context",
             "previous_remaining_task_ids": remaining_task_ids,
             "completed_this_run_task_ids": completed_task_ids,
-            "deprioritized_task_ids": [],
+            "completed_previous_source_task_ids": completed_previous_source_task_ids,
+            "deprioritized_task_ids": completed_task_ids,
+            "remaining_open_task_ids": [],
             "selected_source_task_id": None,
             "selected_task_id": fallback["id"],
         }
@@ -1184,7 +1237,11 @@ def _recommended_from_previous_context(
         "strategy": "previous_run_context",
         "previous_remaining_task_ids": remaining_task_ids,
         "completed_this_run_task_ids": completed_task_ids,
+        "completed_previous_source_task_ids": completed_previous_source_task_ids,
         "deprioritized_task_ids": deprioritized,
+        "remaining_open_task_ids": [
+            task_id_value for task_id_value in remaining_task_ids if task_id_value not in completed_task_ids
+        ],
         "candidate_task_ids": [str(task.get("id")) for task in available_tasks],
         "selected_source_task_id": selected["source_task_id"],
         "selected_task_id": selected["id"],
@@ -1193,6 +1250,15 @@ def _recommended_from_previous_context(
         ).exists(),
     }
     return selected
+
+
+def _merge_unique(*groups: list[str]) -> list[str]:
+    merged: list[str] = []
+    for group in groups:
+        for item in group:
+            if item not in merged:
+                merged.append(item)
+    return merged
 
 
 def _previous_remaining_task_ids(previous_context: dict[str, Any]) -> list[str]:
@@ -1219,10 +1285,19 @@ def _completed_template_task_ids(
             task_dir = parts[2]
             if not task_dir.startswith(prefix):
                 continue
-            template_task_id = task_dir[len(prefix) :]
+            template_task_id = _template_task_id(task_dir[len(prefix) :], candidate_task_ids)
             if template_task_id in candidate_task_ids and template_task_id not in completed:
                 completed.append(template_task_id)
     return completed
+
+
+def _template_task_id(task_dir_suffix: str, candidate_task_ids: list[str]) -> str:
+    if task_dir_suffix in candidate_task_ids:
+        return task_dir_suffix
+    for candidate_task_id in candidate_task_ids:
+        if re.fullmatch(rf"{re.escape(candidate_task_id)}-\d+", task_dir_suffix):
+            return candidate_task_id
+    return task_dir_suffix
 
 
 def _recommendation_reason(recommended_task: dict[str, Any]) -> str:
@@ -1232,6 +1307,11 @@ def _recommendation_reason(recommended_task: dict[str, Any]) -> str:
 
     source_task_id = basis.get("selected_source_task_id")
     deprioritized = basis.get("deprioritized_task_ids", [])
+    if not source_task_id:
+        completed = basis.get("completed_this_run_task_ids", [])
+        if completed:
+            return f"上一轮剩余任务已完成或已验证：{', '.join(completed)}。转入下一轮持续优化。"
+        return "previous_run_context 未发现可继续推荐的开放任务，转入下一轮持续优化。"
     reason = f"基于 previous_run_context.remaining_work 和 evidence_summary 选择 {source_task_id}。"
     if deprioritized:
         reason += f" 本轮已验证 {', '.join(deprioritized)}，因此降低其重复推荐优先级。"
