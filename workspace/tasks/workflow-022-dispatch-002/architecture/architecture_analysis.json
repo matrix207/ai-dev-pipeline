@@ -1,0 +1,25 @@
+{
+  "task_id": "workflow-022-dispatch-002",
+  "status": "passed",
+  "artifact_type": "architecture_analysis",
+  "architecture_goal": "支持更多本地 Agent 调度",
+  "module_boundaries": [
+    {
+      "module": "agents",
+      "responsibility": "实现独立 Agent 的本地结构化转换能力。"
+    },
+    {
+      "module": "scripts",
+      "responsibility": "负责编排 workflow、质量门和运行记录。"
+    },
+    {
+      "module": "workspace/tasks",
+      "responsibility": "持久化每个任务的输入、执行、评审和最终产物。"
+    }
+  ],
+  "risks": [
+    "Agent 直接耦合会降低可测试性，应继续通过结构化产物交互。",
+    "自动化推进不能绕过人工审批质量门。"
+  ],
+  "recommended_design_artifact": "workspace/tasks/workflow-022-dispatch-002/design/system_design.json"
+}

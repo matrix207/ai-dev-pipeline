@@ -498,6 +498,85 @@ def test_run_end_to_end_carries_completed_tasks_after_remaining_work_converges(t
     assert summary["next_recommended_action"]["source_task_id"] == "roadmap-001"
 
 
+def test_run_end_to_end_builds_roadmap_and_waits_for_human_selection(tmp_path: Path) -> None:
+    write_end_to_end_config(tmp_path)
+    write_validation_goal(tmp_path)
+    previous_record_path = "workspace/tasks/workflow-021/runs/workflow-021-run.yaml"
+    write_yaml(
+        tmp_path,
+        previous_record_path,
+        {
+            "task_id": "workflow-021",
+            "run_metadata": {"run_id": "workflow-021-run"},
+            "remaining_work": [
+                "roadmap-001: 持续优化路线图产品化",
+                "decision-view-001: 人工决策视图产品化",
+                "task-library-001: 优化任务库结构化",
+            ],
+            "recommendation_basis": {
+                "completed_this_run_task_ids": [
+                    "ui-validation-001",
+                    "feedback-002",
+                    "dispatch-002",
+                ],
+                "remaining_open_task_ids": [
+                    "roadmap-001",
+                    "decision-view-001",
+                    "task-library-001",
+                ],
+                "selected_source_task_id": "roadmap-001",
+            },
+            "next_recommended_action": {
+                "task_id": "workflow-022",
+                "title": "持续优化路线图产品化",
+                "priority": "medium",
+                "source_task_id": "roadmap-001",
+            },
+            "target_effect_report": {
+                "artifact": "workspace/tasks/workflow-021/final/target_effect_report.md",
+                "status": "passed",
+                "blocking_issue_count": 0,
+            },
+            "quality_gate": {"status": "approved"},
+            "post_approval_action": {"status": "allowed"},
+            "evidence_map": [
+                {
+                    "decision": "goal_effect_aligned",
+                    "status": "passed",
+                    "evidence": ["workspace/tasks/workflow-021/final/target_effect_report.md"],
+                    "notes": "alignment_score=1.0; blocking_issues=0",
+                }
+            ],
+        },
+    )
+
+    summary = run_end_to_end(
+        tmp_path,
+        task_id="workflow-022",
+        run_id="workflow-022-run",
+        previous_run_record=previous_record_path,
+    )
+
+    roadmap = summary["continuous_optimization_roadmap"]
+    assert roadmap["artifact"] == (
+        "workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml"
+    )
+    assert roadmap["status"] == "waiting_for_human_selection"
+    assert roadmap["candidate_task_ids"] == [
+        "decision-view-001",
+        "task-library-001",
+    ]
+    assert summary["next_recommended_action"]["task_id"] is None
+    assert summary["next_recommended_action"]["priority"] == "human_decision"
+    assert "人工选择" in summary["next_recommended_action"]["reason"]
+    saved = read_yaml(tmp_path, roadmap["artifact"])
+    assert saved["decision_gate"]["required"] is True
+    assert [item["id"] for item in saved["candidate_tasks"]] == [
+        "decision-view-001",
+        "task-library-001",
+    ]
+
+
 def test_quality_gate_blocks_missing_required_evidence() -> None:
     summary = {
         "execution_summary": {"failed": []},

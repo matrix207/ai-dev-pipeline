@@ -1,0 +1,47 @@
+task_id: workflow-022
+source_task_id: roadmap-001
+status: waiting_for_human_selection
+goal: 让人工基于价值、风险和验收方式选择下一组高价值任务。
+context:
+  previous_run_record: workspace/tasks/workflow-021/runs/workflow-021-run.yaml
+  target_effect_report: workspace/tasks/workflow-022/final/target_effect_report.md
+  completed_source_task_ids:
+  - feedback-002
+  - dispatch-002
+  - ui-validation-001
+candidate_tasks:
+- id: decision-view-001
+  title: 人工决策视图产品化
+  priority: medium
+  recommended_agent: CoderAgent
+  risk_level: low
+  value: 把目标效果、当前达成、剩余任务和下一步建议汇总为稳定的人读决策视图。
+  risk: 低风险，主要影响结构化产物和人工决策表达。
+  acceptance_criteria:
+  - 决策视图能引用 run record、target_effect_report 和 recommendation_basis。
+  - 视图能清楚展示是否可以进入下一阶段。
+  - python -m pytest -q 通过。
+  recommended_next_step: 人工确认后执行 decision-view-001。
+- id: task-library-001
+  title: 优化任务库结构化
+  priority: medium
+  recommended_agent: RequirementAnalysisAgent
+  risk_level: low
+  value: 整理可复用优化任务模板，区分基础能力、产品化表达和长期演进。
+  risk: 低风险，主要影响结构化产物和人工决策表达。
+  acceptance_criteria:
+  - 任务库产物包含分类、触发条件和验收标准。
+  - 任务库不重复旧三项已完成任务。
+  - python -m pytest -q 通过。
+  recommended_next_step: 人工确认后执行 task-library-001。
+recommended_order:
+- decision-view-001
+- task-library-001
+decision_gate:
+  required: true
+  decision_owner: human
+  allowed_decisions:
+  - select_tasks
+  - defer
+  - stop
+  notes: 路线图只提供候选方向，不自动进入下一阶段。

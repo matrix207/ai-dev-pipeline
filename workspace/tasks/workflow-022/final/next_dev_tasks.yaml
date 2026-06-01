@@ -1,0 +1,37 @@
+task_batch:
+  source_task: workflow-022
+  language: zh-CN
+  status: waiting_for_human_selection
+  goal: 人工基于路线图选择下一阶段任务；系统不自动进入下一阶段。
+  roadmap_artifact: workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml
+tasks:
+  - id: decision-view-001
+    title: 人工决策视图产品化
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: low
+    selection_status: candidate
+    reason: 帮助人工一屏判断目标效果、当前达成、剩余任务和下一步建议。
+    acceptance_criteria:
+      - 决策视图能引用 run record、target_effect_report 和 recommendation_basis。
+      - 视图能清楚展示是否可以进入下一阶段。
+      - python -m pytest -q 通过。
+  - id: task-library-001
+    title: 优化任务库结构化
+    priority: medium
+    recommended_agent: RequirementAnalysisAgent
+    risk_level: low
+    selection_status: candidate
+    reason: 帮助后续 planner 从结构化任务库选择下一组任务。
+    acceptance_criteria:
+      - 任务库产物包含分类、触发条件和验收标准。
+      - 任务库不重复旧三项已完成任务。
+      - python -m pytest -q 通过。
+human_decision:
+  required: true
+  allowed_decisions:
+    - select decision-view-001
+    - select task-library-001
+    - select both
+    - defer
+    - stop

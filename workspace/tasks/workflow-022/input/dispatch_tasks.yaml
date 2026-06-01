@@ -1,0 +1,50 @@
+task_batch:
+  source_task: workflow-022
+  source_tasks:
+  - workflow-022
+  source_feedback_paths:
+  - workspace/tasks/workflow-022-validation/final/validation_feedback.json
+  goal: 端到端命令生成的可调度任务队列。
+tasks:
+- id: workflow-022-feedback-002
+  title: 把下一轮优化任务接入调度执行
+  priority: medium
+  recommended_agent: CoderAgent
+  risk_level: medium
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+  scope:
+  - 让 feedback_planning 生成的 next_optimization_tasks.yaml 可直接作为 optimization_dispatch
+    的 tasks_path。
+  - 运行调度后，父任务能记录来源反馈和被调度任务验证状态。
+  - 保留 goal approval 和 merge approval 人工质量门。
+  out_of_scope:
+  - 接入外部代码托管平台 API。
+  - 执行自动 merge。
+  acceptance_criteria:
+  - optimization_dispatch 可读取 workspace/tasks/feedback-001/final/next_optimization_tasks.yaml。
+  - 调度产物能引用来源 validation_feedback。
+  - python -m pytest -q 通过。
+- id: workflow-022-dispatch-002
+  title: 支持更多本地 Agent 调度
+  priority: medium
+  recommended_agent: ArchitectAgent
+  risk_level: medium
+  human_gate:
+    goal_approval_required: true
+    risk_approval_required: false
+    merge_approval_required: true
+  scope:
+  - 为 dispatcher 增加安全的本地 Agent 调度表。
+  - 支持 DesignReviewerAgent、TestValidatorAgent、CodeReviewerAgent、GoalEffectValidatorAgent
+    的最小调度适配。
+  - 不支持的 Agent 继续返回结构化 blocking issue。
+  out_of_scope:
+  - 调用外部 Agent 服务。
+  - 自动 PR 或 merge。
+  acceptance_criteria:
+  - dispatcher 对支持的 Agent 有测试覆盖。
+  - unsupported_agent 路径仍有测试覆盖。
+  - python -m pytest -q 通过。

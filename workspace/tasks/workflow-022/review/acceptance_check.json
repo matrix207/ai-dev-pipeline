@@ -1,0 +1,43 @@
+{
+  "task_id": "workflow-022",
+  "status": "passed",
+  "checked_at": "2026-06-02T00:30:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "roadmap_artifact_created",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml"
+      ],
+      "notes": "路线图包含候选方向、价值、风险、验收方式和推荐顺序。"
+    },
+    {
+      "id": "human_selection_gate",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-022/final/decision_summary.yaml",
+        "workspace/tasks/workflow-022/runs/workflow-022-run.yaml"
+      ],
+      "notes": "next_recommended_action 为 human_decision，recommended_command=null，不自动进入下一阶段。"
+    },
+    {
+      "id": "old_tasks_not_repeated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml"
+      ],
+      "notes": "路线图候选任务只包含 decision-view-001 和 task-library-001，不重复旧三项。"
+    },
+    {
+      "id": "workflow_validated",
+      "status": "passed",
+      "evidence": [
+        "workspace/tasks/workflow-022/final/target_effect_report.md",
+        "workspace/tasks/workflow-022/runs/workflow-022-run.yaml",
+        "workspace/tasks/workflow-022/state.json"
+      ],
+      "notes": "workflow-022 完成正式运行、质量门审批和 continue 检查。"
+    }
+  ],
+  "blocking_issues": []
+}

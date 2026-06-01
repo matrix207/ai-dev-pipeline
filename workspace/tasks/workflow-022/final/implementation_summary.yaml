@@ -1,0 +1,43 @@
+task_id: workflow-022
+status: completed
+summary: >-
+  完成持续优化路线图产品化。端到端运行会在执行 roadmap-001 时生成
+  continuous_optimization_roadmap.yaml，并把下一步动作切换为 human_decision，
+  防止路线图候选任务被自动推进。
+implemented_changes:
+  - path: scripts/run_end_to_end.py
+    change: 新增 continuous_optimization_roadmap.yaml 生成逻辑，且仅在当前任务执行上一轮 roadmap-001 推荐时触发。
+  - path: scripts/run_end_to_end.py
+    change: 路线图生成后 next_recommended_action 改为等待人工选择，continue 检查不再给出自动 recommended_command。
+  - path: tests/test_run_end_to_end.py
+    change: 增加 workflow-022 路线图产出和人工选择门回归用例。
+verification:
+  - command: python -m pytest tests/test_run_end_to_end.py tests/test_optimization_planner_agent.py -q
+    result: 33 passed
+  - command: python -m pytest -q
+    result: 109 passed
+  - command: python scripts/run_end_to_end.py --task-id workflow-022 --dry-run --rerun-policy skip_completed --run-id workflow-022-dry-run --previous-run-record workspace/tasks/workflow-021/runs/workflow-021-run.yaml --json
+    result: dry_run 通过，计划包含 continuous_optimization_roadmap.yaml。
+  - command: python scripts/run_end_to_end.py --task-id workflow-022 --rerun-policy new_ids --run-id workflow-022-run --previous-run-record workspace/tasks/workflow-021/runs/workflow-021-run.yaml --json
+    result: ready_for_human_decision，roadmap candidate_count=2，next_action=human_decision。
+  - command: python scripts/run_end_to_end.py --task-id workflow-022 --approve-run workflow-022-run --approver dennis --decision approved --comment '同意 workflow-022 路线图产物，后续候选任务需人工选择后再进入下一阶段。' --decided-at 2026-06-02T00:00:00Z --json
+    result: quality_gate approved
+  - command: python scripts/run_end_to_end.py --task-id workflow-022 --continue-run workflow-022-run --json
+    result: can_continue=true，recommended_command=null
+roadmap:
+  artifact: workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml
+  status: waiting_for_human_selection
+  candidate_task_ids:
+    - decision-view-001
+    - task-library-001
+  requires_human_selection: true
+key_artifacts:
+  - workspace/tasks/workflow-022/final/continuous_optimization_roadmap.yaml
+  - workspace/tasks/workflow-022/final/decision_summary.yaml
+  - workspace/tasks/workflow-022/runs/workflow-022-run.yaml
+  - workspace/tasks/workflow-022/review/acceptance_check.json
+  - workspace/tasks/workflow-022/final/implementation_summary.yaml
+human_gate:
+  status: approved
+  approver: dennis
+  decided_at: '2026-06-02T00:00:00Z'
