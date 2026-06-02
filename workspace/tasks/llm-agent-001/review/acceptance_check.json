@@ -1,0 +1,54 @@
+{
+  "task_id": "llm-agent-001",
+  "status": "passed",
+  "checked_at": "2026-06-03T00:00:00Z",
+  "acceptance_criteria": [
+    {
+      "id": "secret_not_inline",
+      "status": "passed",
+      "evidence": [
+        "tests/test_llm_agent.py",
+        "agents/llm_agent.py"
+      ],
+      "notes": "LLMConfig.from_mapping 会拒绝 api_key、secret、token、password 等内联密钥字段。"
+    },
+    {
+      "id": "disabled_llm_fallback",
+      "status": "passed",
+      "evidence": [
+        "tests/test_llm_agent.py",
+        "agents/llm_agent.py"
+      ],
+      "notes": "LLM 未启用时 LLMAgent 直接返回 fallback_agent 的确定性输出。"
+    },
+    {
+      "id": "mock_llm_merge",
+      "status": "passed",
+      "evidence": [
+        "tests/test_llm_agent.py",
+        "agents/llm_agent.py"
+      ],
+      "notes": "StaticLLMClient 支持离线结构化响应，LLMAgent 可合并 LLM 输出并保留 llm 元数据。"
+    },
+    {
+      "id": "workflow_step_config",
+      "status": "passed",
+      "evidence": [
+        "tests/test_run_local_task.py",
+        "scripts/run_local_task.py",
+        "config/pipeline.yaml"
+      ],
+      "notes": "coding_plan step 支持通过 llm_model 读取 config/pipeline.yaml 的模型配置。"
+    },
+    {
+      "id": "tests_passed",
+      "status": "passed",
+      "evidence": [
+        "python -m pytest tests/test_llm_agent.py tests/test_run_local_task.py -q",
+        "python -m pytest -q"
+      ],
+      "notes": "相关测试 21 passed，全量测试 115 passed。"
+    }
+  ],
+  "blocking_issues": []
+}

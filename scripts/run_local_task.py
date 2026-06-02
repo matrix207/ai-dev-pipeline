@@ -14,6 +14,8 @@ from agents import (
     CoderAgent,
     DesignReviewerAgent,
     GoalEffectValidatorAgent,
+    LLMConfig,
+    LLMAgent,
     OptimizationDispatcherAgent,
     OptimizationExecutorAgent,
     OptimizationPlannerAgent,
@@ -84,7 +86,8 @@ def _run_step(
         result = DesignReviewerAgent().run({"repo_root": str(repo_root), "task_id": task_id})
         return f"workspace/tasks/{task_id}/review/design_review.json", result.output
     if step == "coding_plan":
-        result = CoderAgent().run({"repo_root": str(repo_root), "task_id": task_id})
+        agent = _agent_with_optional_llm(repo_root, CoderAgent(), step_options)
+        result = agent.run({"repo_root": str(repo_root), "task_id": task_id})
         return f"workspace/tasks/{task_id}/code/implementation_plan.json", result.output
     if step == "test_validation":
         result = TestValidatorAgent().run(
@@ -184,6 +187,28 @@ def _run_step(
         }
     )
     return _step_artifact_path(task_id, step), result.output
+
+
+def _agent_with_optional_llm(
+    repo_root: str | Path,
+    agent: BaseAgent,
+    step_options: dict[str, Any],
+) -> BaseAgent:
+    model_name = step_options.get("llm_model")
+    if not model_name:
+        return agent
+    if not isinstance(model_name, str):
+        raise TypeError("llm_model must be a string when provided.")
+
+    config = read_yaml(repo_root, "config/pipeline.yaml")
+    model_config = dict(config.get("models", {}).get(model_name, {}))
+    if not model_config:
+        raise ValueError(f"Unknown LLM model config: {model_name}")
+    # LLM 配置只决定是否增强本地 Agent；未启用时仍保持确定性本地输出。
+    return LLMAgent(
+        fallback_agent=agent,
+        config=LLMConfig.from_mapping(model_config),
+    )
 
 
 def _load_or_create_state(repo_root: str | Path, task_id: str) -> TaskState:

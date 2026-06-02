@@ -1,0 +1,27 @@
+{
+  "task_id": "llm-agent-001",
+  "step": "completed",
+  "status": "completed",
+  "artifacts": [
+    "agents/llm_agent.py",
+    "agents/__init__.py",
+    "scripts/run_local_task.py",
+    "config/pipeline.yaml",
+    "README.md",
+    "tests/test_llm_agent.py",
+    "tests/test_run_local_task.py",
+    "workspace/tasks/llm-agent-001/input/task_brief.yaml",
+    "workspace/tasks/llm-agent-001/review/acceptance_check.json",
+    "workspace/tasks/llm-agent-001/final/target_effect_report.md",
+    "workspace/tasks/llm-agent-001/final/implementation_summary.yaml",
+    "workspace/tasks/llm-agent-001/final/next_dev_tasks.yaml"
+  ],
+  "errors": [],
+  "gates": {
+    "goal_approved": true,
+    "design_review_passed": true,
+    "tests_passed": true,
+    "code_review_passed": true,
+    "human_merge_approved": true
+  }
+}

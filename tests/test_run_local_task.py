@@ -190,6 +190,54 @@ def test_run_local_task_writes_coding_plan_artifact(tmp_path: Path) -> None:
     assert plan["safety"]["pr_or_merge"] == "not_allowed"
 
 
+def test_run_local_task_can_configure_llm_for_coding_plan(tmp_path: Path) -> None:
+    write_yaml(
+        tmp_path,
+        "config/pipeline.yaml",
+        {
+            "agent_config": {"human_gate_required": True},
+            "models": {
+                "coding_llm": {
+                    "enabled": True,
+                    "provider": "mock",
+                    "model": "static-coding-plan",
+                    "system_prompt": "增强编码计划，但不要绕过人工质量门。",
+                    "response": {
+                        "title": "LLM 增强编码计划",
+                        "llm_notes": ["已根据模型配置增强结构化计划。"],
+                    },
+                }
+            },
+            "workflows": {
+                "local_dev": {
+                    "task_id": "dev-003",
+                    "steps": [
+                        {
+                            "name": "coding_plan",
+                            "llm_model": "coding_llm",
+                        }
+                    ],
+                }
+            },
+        },
+    )
+    write_task_batch(tmp_path, "dev-003")
+
+    state = run_local_task(tmp_path, "local_dev", goal_approved=True)
+
+    assert state.step == "human_merge_gate"
+    assert state.artifacts == ["workspace/tasks/dev-003/code/implementation_plan.json"]
+    plan = read_json(tmp_path, state.artifacts[0])
+    assert plan["title"] == "LLM 增强编码计划"
+    assert plan["llm_notes"] == ["已根据模型配置增强结构化计划。"]
+    assert plan["llm"] == {
+        "used": True,
+        "provider": "mock",
+        "model": "static-coding-plan",
+    }
+    assert plan["safety"]["external_model_api"] == "not_used"
+
+
 def test_run_local_task_runs_automated_validation_workflow(tmp_path: Path) -> None:
     write_config(
         tmp_path,

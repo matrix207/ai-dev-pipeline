@@ -11,6 +11,7 @@ from agents.generation_agents import (
     SystemDesignAgent,
 )
 from agents.goal_effect_validator_agent import GoalEffectValidatorAgent
+from agents.llm_agent import LLMConfig, LLMAgent, LLMRequest, LLMResponse, StaticLLMClient
 from agents.optimization_dispatcher_agent import OptimizationDispatcherAgent
 from agents.optimization_executor_agent import OptimizationExecutorAgent
 from agents.optimization_planner_agent import OptimizationPlannerAgent
@@ -24,11 +25,16 @@ __all__ = [
     "CoderAgent",
     "DesignReviewerAgent",
     "GoalEffectValidatorAgent",
+    "LLMConfig",
+    "LLMAgent",
+    "LLMRequest",
+    "LLMResponse",
     "OptimizationDispatcherAgent",
     "OptimizationExecutorAgent",
     "OptimizationPlannerAgent",
     "ProjectAnalysisAgent",
     "RequirementAnalysisAgent",
+    "StaticLLMClient",
     "SystemDesignAgent",
     "TestValidatorAgent",
 ]

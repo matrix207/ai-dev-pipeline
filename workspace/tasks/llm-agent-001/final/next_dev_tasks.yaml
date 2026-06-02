@@ -1,0 +1,31 @@
+task_batch:
+  source_task: llm-agent-001
+  language: zh-CN
+  status: waiting_for_human_decision
+  goal: 决定是否从离线 mock LLM 扩展到真实 provider。
+completed_tasks:
+  - id: llm-agent-001
+    title: 把本地确定性 Agent 扩展为可配置 LLM Agent
+    status: completed
+    artifacts:
+      - agents/llm_agent.py
+      - tests/test_llm_agent.py
+      - workspace/tasks/llm-agent-001/final/target_effect_report.md
+candidate_tasks:
+  - id: llm-provider-001
+    title: 接入真实 LLM provider 客户端
+    priority: medium
+    recommended_agent: CoderAgent
+    risk_level: medium
+    reason: 当前只支持 mock/static 离线客户端，真实模型调用需要 provider adapter。
+    acceptance_criteria:
+      - provider 客户端从环境变量或外部凭证读取密钥，不写入仓库。
+      - 单元测试使用 fake HTTP/client，不访问真实外部服务。
+      - 失败时输出可诊断错误，不泄露 secret。
+      - python -m pytest -q 通过。
+pending_human_decision:
+  required: true
+  options:
+    - approve llm-provider-001 with explicit provider and budget
+    - stop at mock LLM capability
+    - extend more local agents before real provider

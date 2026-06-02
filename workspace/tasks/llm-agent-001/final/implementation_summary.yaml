@@ -1,0 +1,36 @@
+task_id: llm-agent-001
+status: completed
+summary: >-
+  完成可配置 LLM Agent 的最小可用扩展。系统现在支持通过 workflow step 的
+  llm_model 配置包装本地确定性 Agent，并用 mock/static LLM 客户端离线验证
+  配置链路和结构化输出合并。
+implemented_changes:
+  - path: agents/llm_agent.py
+    change: 新增 LLMConfig、LLMClient 协议、StaticLLMClient 和 LLMAgent。
+  - path: agents/__init__.py
+    change: 导出 LLM Agent 相关类型，供编排层和测试使用。
+  - path: scripts/run_local_task.py
+    change: coding_plan step 支持 llm_model，可按 config/pipeline.yaml 包装 CoderAgent。
+  - path: config/pipeline.yaml
+    change: 增加 coding_plan_mock 模型配置和 llm_coding_plan_demo workflow。
+  - path: README.md
+    change: 增加可配置 LLM Agent 使用说明和离线 mock 示例。
+  - path: tests/test_llm_agent.py
+    change: 覆盖密钥防泄露、禁用回退和 mock LLM 输出合并。
+  - path: tests/test_run_local_task.py
+    change: 覆盖 workflow step 通过 llm_model 启用 LLM wrapper。
+verification:
+  - command: python -m pytest tests/test_llm_agent.py tests/test_run_local_task.py -q
+    result: 21 passed
+  - command: python -m pytest -q
+    result: 115 passed
+key_artifacts:
+  - agents/llm_agent.py
+  - tests/test_llm_agent.py
+  - workspace/tasks/llm-agent-001/review/acceptance_check.json
+  - workspace/tasks/llm-agent-001/final/target_effect_report.md
+next_recommended_action:
+  task_id: llm-provider-001
+  title: 接入真实 LLM provider 客户端
+  priority: medium
+  condition: 需要人工确认 provider、模型、凭证来源、网络策略和成本上限后执行。

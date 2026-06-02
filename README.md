@@ -198,6 +198,44 @@ python scripts/run_local_task.py --workflow optimization_execution --goal-approv
 
 - `workspace/tasks/planning-003/code/execution_plan.json`
 
+## 可配置 LLM Agent
+
+本项目的 Agent 默认保持本地确定性行为。需要 LLM 增强时，可以在 workflow step
+上配置 `llm_model`，由 `LLMAgent` 包装原有本地 Agent。未配置 `llm_model` 时，
+原有行为不变。
+
+离线 mock 示例：
+
+```bash
+python scripts/run_local_task.py \
+  --workflow llm_coding_plan_demo \
+  --goal-approved
+```
+
+真实 LLM provider 的密钥不能写入仓库配置，应通过环境变量或外部凭证提供。
+当前可用版只内置 `provider: mock` 作为离线验证客户端；`openai` 等真实 provider
+需要新增对应 `LLMClient` 后再启用。
+
+配置示例：
+
+```yaml
+models:
+  coding_plan_mock:
+    enabled: true
+    provider: mock
+    model: static-coding-plan
+    response:
+      llm_notes:
+        - mock LLM 输出仅用于离线验证配置链路。
+
+workflows:
+  llm_coding_plan_demo:
+    task_id: dev-005
+    steps:
+      - name: coding_plan
+        llm_model: coding_plan_mock
+```
+
 ## 第一轮任务
 
 ```bash

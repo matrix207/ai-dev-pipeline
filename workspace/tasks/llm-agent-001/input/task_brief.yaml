@@ -1,0 +1,17 @@
+task_id: llm-agent-001
+goal: 把本地确定性 Agent 扩展为可配置 LLM Agent。
+scope:
+  - 新增 LLM 配置模型和客户端协议。
+  - 支持使用 mock/static LLM 客户端进行离线验证。
+  - 支持在 workflow step 中通过 llm_model 配置包装本地 Agent。
+  - 保持未配置 llm_model 时的本地确定性行为不变。
+out_of_scope:
+  - 不在仓库中写入 API key 或 secret。
+  - 不在测试中访问真实外部 LLM 服务。
+  - 不把所有 Agent 一次性改造成真实 LLM 调用。
+acceptance_criteria:
+  - LLM 配置拒绝内联密钥字段。
+  - LLM 未启用时回退到本地确定性 Agent。
+  - mock LLM 启用时能合并结构化输出。
+  - coding_plan step 可通过 llm_model 配置启用 LLM wrapper。
+  - python -m pytest -q 通过。

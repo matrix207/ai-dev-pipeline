@@ -21,7 +21,17 @@ models:
   codex:
     provider: openai
     usage: local_coding_agent
-    auth: chatgpt_or_api_key
+    auth: env:OPENAI_API_KEY
+    enabled: false
+  coding_plan_mock:
+    enabled: true
+    provider: mock
+    model: static-coding-plan
+    usage: offline_llm_agent_validation
+    system_prompt: 增强编码计划，但不要绕过人工质量门。
+    response:
+      llm_notes:
+        - mock LLM 输出仅用于离线验证配置链路，不访问外部服务。
 
 workflows:
   bootstrap:
@@ -49,6 +59,12 @@ workflows:
     task_id: dev-005
     steps:
       - coding_plan
+    human_gate_required: true
+  llm_coding_plan_demo:
+    task_id: dev-005
+    steps:
+      - name: coding_plan
+        llm_model: coding_plan_mock
     human_gate_required: true
   automated_validation:
     task_id: validation-001
